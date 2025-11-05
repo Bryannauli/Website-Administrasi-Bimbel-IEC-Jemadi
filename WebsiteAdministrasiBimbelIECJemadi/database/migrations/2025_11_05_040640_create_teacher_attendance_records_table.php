@@ -20,10 +20,15 @@ return new class extends Migration
                     ->cascadeOnDelete();
 
             $table->enum('status', [
-                'present', 'absent', 'late', 'permission', 'sick', 'substitute'
+                'present', 
+                'absent', 
+                'late', 
+                'permission', 
+                'sick', 
+                'substitute'        // Guru pengganti yang hadir
             ]);
 
-            // catatan aktivitas kelas (matero yang diajarkan)
+            // catatan aktivitas kelas (materi yang diajarkan)
             $table->text('comment')->nullable();
 
             $table->timestamps();

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->enum('category', ['pre_level', 'level', 'step', 'private']);
             // Nama kelas: "Step 1", "Private Student", "Level 3"
             $table->string('name', 100);
-            // Classroom: nama negara (China, Italy, France, ...)
+            // Classroom: China, Italy, France, ...
             $table->string('classroom', 50);
             $table->time('start_time');
             $table->time('end_time');
