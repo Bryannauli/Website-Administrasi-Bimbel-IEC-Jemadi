@@ -13,28 +13,41 @@ class ClassModel extends Model
 
     protected $fillable = [
         'category',
-        'number',
+        'name',
         'classroom',
+        'start_time',
+        'end_time',
         'status',
         'form_teacher_id',
         'local_teacher_id',
+        'start_month',
+        'end_month',
+        'academic_year',
     ];
 
     // Relasi ke user (form teacher)
     public function formTeacher()
     {
-        return $this->belongsTo(User::class, 'form_teacher_id')->where('role', 'teacher');
+        return $this->belongsTo(User::class, 'form_teacher_id')
+                    ->where('role', 'teacher');
     }
 
     // Relasi ke user (local teacher)
     public function localTeacher()
     {
-        return $this->belongsTo(User::class, 'local_teacher_id')->where('role', 'teacher');
+        return $this->belongsTo(User::class, 'local_teacher_id')
+                    ->where('role', 'teacher');
     }
 
     // Relasi ke Student (satu kelas punya banyak siswa)
     public function students()
     {
-        return $this->hasMany(Student::class);
+        return $this->hasMany(Student::class, 'class_id');
+    }
+
+    // Relasi ke Schedule (satu kelas punya banyak jadwal)
+    public function schedules()
+    {
+        return $this->hasMany(Schedule::class, 'class_id');
     }
 }

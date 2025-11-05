@@ -14,17 +14,28 @@ return new class extends Migration
         Schema::create('classes', function (Blueprint $table) {
             $table->id();
             // Jenjang kelas
-            $table->enum('category', ['pre_level', 'level', 'step']);
-            // Nomor kelas (1–10, pre_level maksimal 5)
-            $table->unsignedTinyInteger('number');
+            $table->enum('category', ['pre_level', 'level', 'step', 'private']);
+            // Nama kelas: "Step 1", "Private Student", "Level 3"
+            $table->string('name', 100);
             // Classroom: nama negara (China, Italy, France, ...)
             $table->string('classroom', 50);
+            $table->time('start_time');
+            $table->time('end_time');
             $table->enum('status', ['active', 'inactive'])->default('active');
 
             // Relasi ke guru: form teacher dan local teacher
             $table->foreignId('form_teacher_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('local_teacher_id')->nullable()->constrained('users')->nullOnDelete();
 
+            $table->enum('start_month', [
+                'January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'
+            ]);
+            $table->enum('end_month', [
+                'January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'
+            ]);
+            $table->year('academic_year');
             $table->timestamps();
         });
     }
