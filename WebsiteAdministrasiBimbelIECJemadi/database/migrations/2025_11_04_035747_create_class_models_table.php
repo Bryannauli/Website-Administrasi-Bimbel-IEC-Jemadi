@@ -19,13 +19,14 @@ return new class extends Migration
             $table->string('name', 100);
             // Classroom: China, Italy, France, ...
             $table->string('classroom', 50);
-            $table->time('start_time');
-            $table->time('end_time');
-            $table->enum('status', ['active', 'inactive'])->default('active');
-
+            
             // Relasi ke guru: form teacher dan local teacher
             $table->foreignId('form_teacher_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('local_teacher_id')->nullable()->constrained('users')->nullOnDelete();
+
+            $table->time('start_time');
+            $table->time('end_time');
+            $table->enum('status', ['active', 'inactive'])->default('active');
 
             $table->enum('start_month', [
                 'January', 'February', 'March', 'April', 'May', 'June',

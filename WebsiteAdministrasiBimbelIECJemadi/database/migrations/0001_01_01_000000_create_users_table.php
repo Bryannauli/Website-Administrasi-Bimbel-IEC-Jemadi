@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('username')->unique();
             $table->string('name');
             
+            // informasi tambahan (boleh kosong)
             $table->string('email')->unique()->nullable();
             $table->string('phone')->unique()->nullable();
             

@@ -37,12 +37,16 @@ class AssessmentForm extends Model
      */
     public function updateSpeakingFromTest(string $type)
     {
-        $speakingTest = $this->student->speakingTests()
-            ->where('type', $type)
+        // Temukan hasil tes speaking yang relevan menggunakan join
+        $result = SpeakingTestResult::join('speaking_tests', 'speaking_tests.id', '=', 'speaking_test_results.speaking_test_id')
+            ->where('speaking_tests.class_id', $this->class_id)             // Cocokkan Class ID
+            ->where('speaking_tests.type', $this->type)                     // Cocokkan Type (mid/final)
+            ->where('speaking_test_results.student_id', $this->student_id)  // Cocokkan Student ID
+            ->select('speaking_test_results.*')                             // Pastikan mendapatkan data dari model result
             ->first();
 
-        if ($speakingTest) {
-            $this->speaking = $speakingTest->totalScore();
+        if ($result) {
+            $this->speaking = $result->totalScore();
             $this->save();
         }
     }

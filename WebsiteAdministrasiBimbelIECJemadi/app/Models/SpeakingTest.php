@@ -11,10 +11,7 @@ class SpeakingTest extends Model
 
     protected $fillable = [
         'class_id',
-        'student_id',
         'type',
-        'content_score',
-        'participation_score',
         'date',
         'topic',
         'interviewer_id',
@@ -24,19 +21,9 @@ class SpeakingTest extends Model
     {
         return $this->belongsTo(ClassModel::class, 'class_id');
     }
-    
-    public function student()
-    {
-        return $this->belongsTo(Student::class);
-    }
 
     public function interviewer()
     {
         return $this->belongsTo(User::class, 'interviewer_id')->where('role', 'teacher');
-    }
-
-    public function totalScore()
-    {
-        return $this->content_score + $this->participation_score;
     }
 }

@@ -17,15 +17,8 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('classes')
                 ->nullOnDelete();
-                
-            $table->foreignId('student_id')
-                    ->constrained('students')
-                    ->cascadeOnDelete();
 
             $table->enum('type', ['mid', 'final']);
-
-            $table->unsignedTinyInteger('content_score');
-            $table->unsignedTinyInteger('participation_score');
             $table->date('date');
             $table->string('topic', 200)->nullable();
 
@@ -36,7 +29,7 @@ return new class extends Migration
                     ->nullOnDelete();
 
             $table->timestamps();
-            $table->unique(['class_id', 'student_id', 'type']);
+            $table->unique(['class_id', 'type']);
         });
     }
 
