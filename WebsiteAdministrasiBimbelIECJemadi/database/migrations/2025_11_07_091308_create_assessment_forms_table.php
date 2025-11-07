@@ -25,7 +25,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('vocabulary')->nullable();
             $table->unsignedTinyInteger('grammar')->nullable();
             $table->unsignedTinyInteger('listening')->nullable();
-            $table->unsignedTinyInteger('speaking')->nullable(); // bisa diisi total dari speaking_tests
+            $table->unsignedTinyInteger('speaking')->nullable(); // bisa diisi total dari speaking_test_results
             $table->unsignedTinyInteger('reading')->nullable();
             $table->unsignedTinyInteger('spelling')->nullable();
 
