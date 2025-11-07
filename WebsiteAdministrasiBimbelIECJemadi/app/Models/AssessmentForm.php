@@ -46,4 +46,29 @@ class AssessmentForm extends Model
             $this->save();
         }
     }
+
+    /**
+     * Hitung rata-rata semua skor (abaikan null) dan bulatkan
+     * @return int|null
+     */
+    public function averageScore(): ?int
+    {
+        $scores = [
+            $this->vocabulary,
+            $this->grammar,
+            $this->listening,
+            $this->speaking,
+            $this->reading,
+            $this->spelling,
+        ];
+
+        // Hanya ambil yang tidak null
+        $validScores = array_filter($scores, fn($score) => !is_null($score));
+
+        if (empty($validScores)) {
+            return null; // jika semua null, kembalikan null
+        }
+
+        return (int) round(array_sum($validScores) / count($validScores));
+    }
 }
