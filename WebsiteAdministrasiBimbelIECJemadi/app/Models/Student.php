@@ -23,4 +23,14 @@ class Student extends Model
     {
         return $this->belongsTo(ClassModel::class, 'class_id');
     }
+
+    public function speakingTests()
+    {
+        return $this->hasMany(SpeakingTest::class);
+    }
+
+    public function assessmentForms()
+    {
+        return $this->hasMany(AssessmentForm::class);
+    }
 }

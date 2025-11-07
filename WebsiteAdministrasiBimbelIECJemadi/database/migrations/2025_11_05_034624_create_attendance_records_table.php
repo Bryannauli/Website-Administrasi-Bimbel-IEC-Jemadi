@@ -31,6 +31,8 @@ return new class extends Migration
             ]);
 
             $table->timestamps();
+            // Mencegah duplikat student_id untuk attendance_session_id yang sama
+            $table->unique(['attendance_session_id', 'student_id']);
         });
     }
 

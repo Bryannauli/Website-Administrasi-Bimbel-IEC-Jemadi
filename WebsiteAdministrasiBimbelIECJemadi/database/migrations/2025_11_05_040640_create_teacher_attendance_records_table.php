@@ -16,22 +16,29 @@ return new class extends Migration
                     ->cascadeOnDelete();
 
             $table->foreignId('teacher_id')
+                    ->nullable()
                     ->constrained('users')
-                    ->cascadeOnDelete();
+                    ->nullOnDelete();
 
+            // default untuk form/local, jika ada sub, bisa pakai (+)
             $table->enum('status', [
                 'present', 
                 'absent', 
                 'late', 
                 'permission', 
                 'sick', 
-                'substitute'        // Guru pengganti yang hadir
+                'substitute'        // Guru pengganti yang hadir -- atau nanti pakai present saja
             ]);
 
             // catatan aktivitas kelas (materi yang diajarkan)
             $table->text('comment')->nullable();
 
             $table->timestamps();
+            // Mencegah duplikat teacher_id untuk attendance_session_id yang sama
+            $table->unique(
+                ['attendance_session_id', 'teacher_id'], 
+                'unique_teacher_attendance_records'
+            );
         });
     }
 

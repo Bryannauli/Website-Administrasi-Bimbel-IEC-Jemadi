@@ -11,29 +11,27 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('speaking_tests', function (Blueprint $table) {
+        Schema::create('assessment_forms', function (Blueprint $table) {
             $table->id();
             $table->foreignId('class_id')
                 ->nullable()
                 ->constrained('classes')
                 ->nullOnDelete();
-                
+            
             $table->foreignId('student_id')
                     ->constrained('students')
                     ->cascadeOnDelete();
 
             $table->enum('type', ['mid', 'final']);
-
-            $table->unsignedTinyInteger('content_score');
-            $table->unsignedTinyInteger('participation_score');
             $table->date('date');
-            $table->string('topic', 200)->nullable();
 
-            // Interviewer (guru)
-            $table->foreignId('interviewer_id')
-                    ->nullable()
-                    ->constrained('users')
-                    ->nullOnDelete();
+            // Skor tiap skill (0–100), nullable karena bisa belum diisi
+            $table->unsignedTinyInteger('vocabulary')->nullable();
+            $table->unsignedTinyInteger('grammar')->nullable();
+            $table->unsignedTinyInteger('listening')->nullable();
+            $table->unsignedTinyInteger('speaking')->nullable(); // bisa diisi total dari speaking_tests
+            $table->unsignedTinyInteger('reading')->nullable();
+            $table->unsignedTinyInteger('spelling')->nullable();
 
             $table->timestamps();
             $table->unique(['class_id', 'student_id', 'type']);
@@ -45,6 +43,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('speaking_tests');
+        Schema::dropIfExists('assessment_forms');
     }
 };
