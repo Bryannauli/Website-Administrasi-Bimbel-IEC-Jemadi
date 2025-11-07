@@ -13,17 +13,13 @@ return new class extends Migration
     {
         Schema::create('assessment_forms', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('class_id')
-                ->nullable()
-                ->constrained('classes')
-                ->nullOnDelete();
+            $table->foreignId('assessment_session_id')
+                ->constrained('assessment_sessions')
+                ->cascadeOnDelete();
             
             $table->foreignId('student_id')
                     ->constrained('students')
                     ->cascadeOnDelete();
-
-            $table->enum('type', ['mid', 'final']);
-            $table->date('date');
 
             // Skor tiap skill (0–100), nullable karena bisa belum diisi
             $table->unsignedTinyInteger('vocabulary')->nullable();
@@ -34,7 +30,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('spelling')->nullable();
 
             $table->timestamps();
-            $table->unique(['class_id', 'student_id', 'type']);
+            $table->unique(['assessment_session_id', 'student_id']);
         });
     }
 

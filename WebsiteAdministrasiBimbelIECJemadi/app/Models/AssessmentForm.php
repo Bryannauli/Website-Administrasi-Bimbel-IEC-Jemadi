@@ -10,10 +10,8 @@ class AssessmentForm extends Model
     use HasFactory;
 
     protected $fillable = [
-        'class_id',
+        'assessment_session_id',
         'student_id',
-        'type',
-        'date',
         'vocabulary',
         'grammar',
         'listening',
@@ -22,9 +20,9 @@ class AssessmentForm extends Model
         'spelling',
     ];
 
-    public function classModel()
+    public function session()
     {
-        return $this->belongsTo(ClassModel::class, 'class_id');
+        return $this->belongsTo(AssessmentSession::class, 'assessment_session_id');
     }
 
     public function student()
@@ -35,14 +33,27 @@ class AssessmentForm extends Model
     /**
      * Update total speaking dari speaking test
      */
-    public function updateSpeakingFromTest(string $type)
+    public function updateSpeakingFromTest()
     {
+        // Pastikan relasi session sudah ter-load
+        $this->loadMissing('session');
+
+        // Jika session tidak ada, tidak ada yang bisa dilakukan
+        if (!$this->session) {
+            return;
+        }
+
+        // Ambil info dari session induk
+        $class_id = $this->session->class_id;
+        $type = $this->session->type;
+        $student_id = $this->student_id;
+
         // Temukan hasil tes speaking yang relevan menggunakan join
         $result = SpeakingTestResult::join('speaking_tests', 'speaking_tests.id', '=', 'speaking_test_results.speaking_test_id')
-            ->where('speaking_tests.class_id', $this->class_id)             // Cocokkan Class ID
-            ->where('speaking_tests.type', $this->type)                     // Cocokkan Type (mid/final)
-            ->where('speaking_test_results.student_id', $this->student_id)  // Cocokkan Student ID
-            ->select('speaking_test_results.*')                             // Pastikan mendapatkan data dari model result
+            ->where('speaking_tests.class_id', $class_id)             // Cocokkan Class ID
+            ->where('speaking_tests.type', $type)                     // Cocokkan Type (mid/final)
+            ->where('speaking_test_results.student_id', $student_id)  // Cocokkan Student ID
+            ->select('speaking_test_results.*')                       // Pastikan mendapatkan data dari model result
             ->first();
 
         if ($result) {
