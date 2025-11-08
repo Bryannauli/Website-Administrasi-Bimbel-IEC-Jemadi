@@ -1,4 +1,8 @@
 <p align="center">
+  <img src="assets/IEC.png" width="180" alt="Logo IEC Jemadi">
+</p>
+
+<p align="center">
   <h2 align="center">Website Administrasi Bimbel IEC Jemadi</h2>
 </p>
 
