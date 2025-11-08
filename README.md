@@ -47,6 +47,5 @@ Tujuan dari sistem ini adalah meningkatkan kerapian data, efisiensi pencatatan, 
 
 ## Cara Instalasi & Menjalankan Projek
 
-> Bagian ini belum diisi sesuai permintaan.  
 > Akan ditambahkan setelah struktur final project siap.
 
