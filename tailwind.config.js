@@ -7,13 +7,20 @@ export default {
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
+        "./resources/**/*.js",
     ],
 
     theme: {
         extend: {
-            fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+           fontFamily: {
+                sans: ['Poppins', ...defaultTheme.fontFamily.sans],
             },
+            colors: {
+                'brand-blue': '#4263EB', // Biru cerah untuk tombol dan teks
+                'brand-red': '#FF5050',  // Merah untuk frame
+                'bg-start': '#FFF5F6', // Gradien background (pink-ish)
+                'bg-end': '#F3F4FE',   // Gradien background (blue-ish)
+            }
         },
     },
 
