@@ -13,7 +13,7 @@
 Website Administrasi Bimbel IEC Jemadi adalah sistem berbasis web yang dirancang untuk membantu pengelolaan tugas administrasi bimbingan belajar, meliputi:
 
 - Manajemen data siswa
-- Pengelompokan kelas
+- Pengelompokan kelas dan tutor
 - Penjadwalan pembelajaran
 - Pencatatan perkembangan akademik dan kehadiran siswa
 
@@ -27,21 +27,21 @@ Tujuan dari sistem ini adalah meningkatkan kerapian data, efisiensi pencatatan, 
 |----------|------------|
 | **Laravel** | Backend & Web Framework |
 | **MySQL** | Database |
-| **Blade / Livewire / Vue** *(pilih yang digunakan)* | Frontend |
-| **Bootstrap / Tailwind** *(pilih yang digunakan)* | UI Styling |
+| **Blade / Livewire / Vue** | Frontend |
+| **Bootstrap / Tailwind** | Styling |
 | **XAMPP / Laragon** | Local Development Server |
 
 ---
 
-## Anggota Tim (Opsional)
+## Anggota Tim
 
-| Nama | Role |
-|------|------|
-| … | Developer |
-| … | UI/UX |
-| … | Dokumentasi |
-
-> Bagian ini dapat diisi atau dihapus sesuai kebutuhan.
+| NIM | Nama | Peran |
+|----|------|-------|
+| **241402036** | Ahmad Arif Fatahillah | Project Manager, Front-End Developer |
+| **241402043** | Rahma Sarita Nasution | UI/UX Designer |
+| **241402066** | Agnes Olivia Ketaren | Front-End Developer |
+| **241402073** | Richard Lim | Back-End Developer |
+| **241402108** | Bryan Sulivan Nauli | Back-End Developer |
 
 ---
 
