@@ -52,5 +52,43 @@ Tujuan dari sistem ini adalah meningkatkan kerapian data, efisiensi pencatatan, 
 
 ## Cara Instalasi & Menjalankan Projek
 
-> Akan diisi nanti setelah struktur project selesai.
+### 1. Clone Repository
+```bash
+git clone https://github.com/Bryannauli/Website-Administrasi-Bimbel-IEC-Jemadi.git
+cd Website-Administrasi-Bimbel-IEC-Jemadi
+```
 
+### 2. Install Dependency Backend
+```bash
+composer install
+```
+
+### 3. Install Dependency Frontend
+```bash
+npm install
+```
+
+### 4. Copy File Environment
+```bash
+cp .env.example .env
+```
+
+### 5. Sesuaikan Konfigurasi Database Pada `.env`
+Uncomment dan ubah sesuai database lokal:
+```env
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=iec_jemadi
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+### 6. Generate Application Key
+```bash
+php artisan key:generate
+```
+
+### 7. Setup Database (Command Custom)
+```bash
+php artisan migrate:setup
+```
