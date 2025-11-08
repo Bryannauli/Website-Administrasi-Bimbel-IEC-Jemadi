@@ -26,9 +26,10 @@ Tujuan dari sistem ini adalah meningkatkan kerapian data, efisiensi pencatatan, 
 | Teknologi | Keterangan |
 |----------|------------|
 | **Laravel** | Backend & Web Framework |
+| **Laravel Breeze** | Starter kit untuk autentikasi (Login, Register, Session) |
 | **MySQL** | Database |
-| **Blade / Livewire / Vue** | Frontend |
-| **Bootstrap / Tailwind** | Styling |
+| **Blade** | Frontend |
+| **Tailwind** | Styling |
 | **XAMPP / Laragon** | Local Development Server |
 
 ---
@@ -47,5 +48,5 @@ Tujuan dari sistem ini adalah meningkatkan kerapian data, efisiensi pencatatan, 
 
 ## Cara Instalasi & Menjalankan Projek
 
-> Akan ditambahkan setelah struktur final project siap.
+> Akan diisi nanti setelah struktur project selesai.
 
