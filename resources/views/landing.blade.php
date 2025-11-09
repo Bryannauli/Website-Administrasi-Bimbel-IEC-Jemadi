@@ -21,30 +21,32 @@
 
         <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             
-          <header class="py-6">
-    <nav class="flex justify-between items-center">
-        <div class="flex items-center space-x-2">
-            <img src="{{ asset('images/aims.png') }}" alt="AIMS Logo" class="h-10 w-10">
-            <img src="{{ asset('images/logo.png') }}" alt="IEC Logo" class="h-10">
-        </div>
-
-        <div class="hidden md:flex items-center space-x-10">
-            
-            <div class="flex items-center space-x-10">
-                <a href="#" class="text-gray-700 hover:text-brand-blue font-medium">Home</a>
-                <a href="#" class="text-gray-700 hover:text-brand-blue font-medium">About Us</a>
-                <a href="#" class="text-gray-700 hover:text-brand-blue font-medium">Services</a>
+    <header class="py-6">
+        <nav class="flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <img src="{{ asset('images/aims.png') }}" alt="AIMS Logo" class="h-10 w-10">
+                <img src="{{ asset('images/logo.png') }}" alt="IEC Logo" class="h-10">
             </div>
 
-            <div>
-                <a href="#" class="bg-brand-blue hover:bg-opacity-90 text-white font-bold py-2 px-8 rounded-lg shadow-md transition duration-300">
-                    Login
-                </a>
-            </div>
+            <div class="hidden md:flex items-center space-x-10">
+                <div class="flex items-center space-x-10">
+                    <a href="#" class="text-gray-700 hover:text-brand-blue font-medium">Home</a>
+                    <a href="#" class="text-gray-700 hover:text-brand-blue font-medium">About Us</a>
+                    <a href="#" class="text-gray-700 hover:text-brand-blue font-medium">Services</a>
+                </div>
 
-        </div>
-    </nav>
-</header>
+                <div class="flex items-center space-x-6"> 
+                    @if (Route::has('login')) @auth 
+                        <a href="{{ url('/dashboard') }}" class="bg-brand-blue hover:bg-opacity-90 text-white font-bold py-2 px-8 rounded-lg shadow-md transition duration-300"> Dashboard </a>
+                    @else 
+                        <a href="{{ route('login') }}" class="bg-brand-blue hover:bg-opacity-90 text-white font-bold py-2 px-8 rounded-lg shadow-md transition duration-300"> Login </a>
+                
+                        @if (Route::has('register')) <a href="{{ route('register') }}" class="text-gray-700 hover:text-brand-blue font-medium"> Register </a>
+                        @endif @endauth @endif 
+                </div>
+            </div>
+        </nav>
+    </header>
 
             <main class="py-10 md:py-16">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-start">
