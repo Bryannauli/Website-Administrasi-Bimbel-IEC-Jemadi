@@ -15,8 +15,9 @@ return new class extends Migration
             $table->id();
             $table->string('username')->unique();
             $table->string('name');
+            $table->string('photo')->nullable();
             
-            // informasi tambahan (boleh kosong)
+            // informasi tambahan
             $table->string('email')->unique()->nullable();
             $table->string('phone')->unique()->nullable();
             $table->timestamp('email_verified_at')->nullable();

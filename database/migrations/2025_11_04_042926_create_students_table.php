@@ -16,6 +16,7 @@ return new class extends Migration
             $table->id();
             $table->string('student_id')->unique();
             $table->string('name');
+            $table->enum('gender', ['male', 'female']);
             $table->string('phone')->nullable();
             $table->text('address')->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
