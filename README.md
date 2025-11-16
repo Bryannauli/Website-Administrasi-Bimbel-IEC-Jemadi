@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/IEC.png" width="180" alt="Logo IEC Jemadi">
+  <img src="public/images/IEC.png" width="180" alt="Logo IEC Jemadi">
 </p>
 
 <p align="center">
