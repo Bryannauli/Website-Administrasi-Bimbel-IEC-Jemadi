@@ -20,6 +20,6 @@ class TeacherAttendanceRecord extends Model
 
     public function teacher()
     {
-        return $this->belongsTo(User::class, 'teacher_id')->where('role', 'teacher');
+        return $this->belongsTo(User::class)->where('role', 'teacher');
     }
 }

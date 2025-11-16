@@ -14,7 +14,7 @@ return new class extends Migration
         // ini untuk kelola data siswanya, kalo misal di masa depan siswa bisa login kita gabungkan ke tabel user
         Schema::create('students', function (Blueprint $table) {
             $table->id();
-            $table->string('student_id')->unique();
+            $table->string('student_number')->unique();
             $table->string('name');
             $table->enum('gender', ['male', 'female']);
             $table->string('phone')->nullable();
