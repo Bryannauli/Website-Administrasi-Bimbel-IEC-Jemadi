@@ -92,3 +92,13 @@ php artisan key:generate
 ```bash
 php artisan migrate:setup
 ```
+
+### 8. Jalankan Frontend (Development)
+```bash
+npm run dev
+```
+
+### 9. Jalankan Server Laravel
+```bash
+php artisan serve
+```
