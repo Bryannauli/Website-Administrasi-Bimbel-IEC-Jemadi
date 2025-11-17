@@ -88,10 +88,18 @@ DB_PASSWORD=
 php artisan key:generate
 ```
 
-### 7. Setup Database (Command Custom)
+### 7. Setup Database & Data Awal (Command Custom)
+Menjalankan migrasi + data awal (Direkomendasikan)
+```bash
+php artisan migrate:setup --seed
+```
+Jika hanya ingin migrasi (database kosong)
 ```bash
 php artisan migrate:setup
 ```
+Saat seeding berhasil, Anda bisa login dengan akun:
+- Username: admin
+- password: admin123
 
 ### 8. Jalankan Frontend (Development)
 ```bash
