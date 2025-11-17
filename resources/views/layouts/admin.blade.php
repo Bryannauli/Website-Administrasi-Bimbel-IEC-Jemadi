@@ -66,12 +66,17 @@
             </nav>
             
             {{-- Logout Button --}}
-            <div class="p-6 border-t border-white/[0.08]"> {{-- Padding dan border disesuaikan --}}
-                <a href="#" class="flex items-center justify-center space-x-3 p-3 rounded-lg bg-[#5377F9] hover:bg-[#4364e6] transition-all text-sm font-semibold"> {{-- Warna dan hover disesuaikan --}}
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                    <span>Log Out</span>
-                </a>
-            </div>
+            <div class="p-6 border-t border-white/[0.08]">
+    <form method="POST" action="{{ route('logout') }}">
+        @csrf
+        
+        <button type="submit" 
+            class="w-full flex items-center justify-center space-x-3 p-3 rounded-lg bg-[#5377F9] hover:bg-[#4364e6] transition-all text-sm font-semibold">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Log Out</span>
+        </button>
+    </form>
+</div>
         </aside>
 
         {{-- Main Content Area --}}
