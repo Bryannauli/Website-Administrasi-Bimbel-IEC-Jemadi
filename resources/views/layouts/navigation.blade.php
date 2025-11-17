@@ -1,20 +1,19 @@
 @php
 // Definisikan kelas untuk link aktif dan tidak aktif
-$activeClasses = 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200';
-$inactiveClasses = 'text-gray-600 hover:text-gray-900 hover:bg-pink-100 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700';
-$activeClassesIcon = 'text-blue-600 dark:text-blue-300';
-$inactiveClassesIcon = 'text-gray-400 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-300';
+$activeClasses = 'bg-blue-100 text-blue-700';
+$inactiveClasses = 'text-gray-600 hover:text-gray-900 hover:bg-pink-100';
+$activeClassesIcon = 'text-blue-600';
+$inactiveClassesIcon = 'text-gray-400 group-hover:text-gray-500';
 
 // Definisikan kelas untuk link sub-menu aktif
 $subActiveClasses = 'bg-blue-600 text-white';
-$subInactiveClasses = 'text-gray-700 hover:bg-pink-100 dark:text-gray-300 dark:hover:bg-gray-700';
+$subInactiveClasses = 'text-gray-700 hover:bg-pink-100';
 @endphp
 
 {{-- Sidebar Penuh --}}
 {{-- PERUBAHAN DI SINI: Ditambahkan "fixed top-0 left-0 z-20" --}}
 <div class="fixed top-0 left-0 z-20 flex flex-col w-64 h-screen bg-gradient-to-br from-red-100 to-blue-100 shadow-lg">
     
-    <!-- Logo -->
     <div class="flex items-center justify-center h-20 shadow-sm">
         <a href="{{ route('dashboard') }}" class="flex items-center space-x-2">
             <img src="{{ asset('images/aims.png') }}" alt="AIMS Logo" class="h-10 w-10">
@@ -22,10 +21,8 @@ $subInactiveClasses = 'text-gray-700 hover:bg-pink-100 dark:text-gray-300 dark:h
         </a>
     </div>
 
-    <!-- Menu Navigasi -->
     <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
         
-        <!-- Home (dengan Sub-menu) -->
         <div x-data="{ open: request()->routeIs('dashboard') || request()->routeIs('analytics') }">
             <button @click="open = !open" 
                     class="group flex items-center justify-between w-full px-3 py-2 text-sm font-medium rounded-md {{ $inactiveClasses }}">
@@ -53,7 +50,6 @@ $subInactiveClasses = 'text-gray-700 hover:bg-pink-100 dark:text-gray-300 dark:h
             </div>
         </div>
 
-        <!-- Students -->
         <x-nav-link href="#" {{-- Ganti # dengan route --}} :active="request()->routeIs('students.*')" 
                     class="group {{ request()->routeIs('students.*') ? $activeClasses : $inactiveClasses }}">
             <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ request()->routeIs('students.*') ? $activeClassesIcon : $inactiveClassesIcon }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -65,7 +61,6 @@ $subInactiveClasses = 'text-gray-700 hover:bg-pink-100 dark:text-gray-300 dark:h
             </svg>
         </x-nav-link>
 
-        <!-- Class Schedule -->
         <x-nav-link href="#" {{-- Ganti # dengan route --}} :active="request()->routeIs('classes.*')" 
                     class="group {{ request()->routeIs('classes.*') ? $activeClasses : $inactiveClasses }}">
             <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ request()->routeIs('classes.*') ? $activeClassesIcon : $inactiveClassesIcon }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -77,7 +72,6 @@ $subInactiveClasses = 'text-gray-700 hover:bg-pink-100 dark:text-gray-300 dark:h
             </svg>
         </x-nav-link>
 
-        <!-- Teachers -->
         <x-nav-link href="#" {{-- Ganti # dengan route --}} :active="request()->routeIs('teachers.*')" 
                     class="group {{ request()->routeIs('teachers.*') ? $activeClasses : $inactiveClasses }}">
             <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ request()->routeIs('teachers.*') ? $activeClassesIcon : $inactiveClassesIcon }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -89,7 +83,6 @@ $subInactiveClasses = 'text-gray-700 hover:bg-pink-100 dark:text-gray-300 dark:h
             </svg>
         </x-nav-link>
 
-        <!-- Authentication -->
         <x-nav-link href="#" {{-- Ganti # dengan route --}} :active="request()->routeIs('auth.*')" 
                     class="group {{ request()->routeIs('auth.*') ? $activeClasses : $inactiveClasses }}">
             <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ request()->routeIs('auth.*') ? $activeClassesIcon : $inactiveClassesIcon }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -103,31 +96,28 @@ $subInactiveClasses = 'text-gray-700 hover:bg-pink-100 dark:text-gray-300 dark:h
 
     </nav>
 
-    <!-- Bagian Bawah Sidebar (User & Logout) -->
-    <div class="mt-auto p-4 border-t border-gray-200 dark:border-gray-700">
-        <!-- User Info -->
+    <div class="mt-auto p-4 border-t border-gray-200">
         <div class="flex items-center mb-4">
             {{-- Avatar & Nama --}}
             <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&color=0D9488&background=CCFBF1" alt="Avatar" class="h-10 w-10 rounded-full mr-3">
             <div>
-                <div class="font-semibold text-sm text-gray-800 dark:text-gray-100">{{ Auth::user()->name }}</div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">{{ Auth::user()->email }}</div>
+                <div class="font-semibold text-sm text-gray-800">{{ Auth::user()->name }}</div>
+                <div class="text-xs text-gray-500">{{ Auth::user()->email }}</div>
             </div>
             {{-- Tombol Titik Tiga --}}
-            <button class="ml-auto text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
+            <button class="ml-auto text-gray-400 hover:text-gray-600">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                 </svg>
             </button>
         </div>
         
-        <!-- Logout Button -->
         <form method="POST" action="{{ route('logout') }}">
             @csrf
             <a href="{{ route('logout') }}"
                     onclick="event.preventDefault(); this.closest('form').submit();"
-                    class="group flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:hover:bg-blue-800">
-                <svg class="mr-3 h-5 w-5 text-blue-600 dark:text-blue-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    class="group flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200">
+                <svg class="mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
                 {{ __('Log Out') }}
