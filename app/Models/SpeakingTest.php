@@ -23,7 +23,7 @@ class SpeakingTest extends Model
 
     public function interviewer()
     {
-        return $this->belongsTo(User::class, 'interviewer_id')->where('role', 'teacher');
+        return $this->belongsTo(User::class, 'interviewer_id')->where('is_teacher', true);
     }
 
     public function results()
