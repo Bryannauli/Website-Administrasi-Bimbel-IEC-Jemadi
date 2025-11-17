@@ -9,12 +9,13 @@ use Illuminate\Support\Facades\Artisan;
 
 class SafeMigrate extends Command
 {
-    protected $signature = 'migrate:setup {--force}';
-    protected $description = 'Run database migrations with prompt to create database if missing';
+    protected $signature = 'migrate:setup {--force} {--seed}';
+    protected $description = 'Run database migrations (and optionally seeds) with prompt to create database if missing';
 
     public function handle()
     {
         $db = Config::get('database.connections.mysql.database');
+        $force = $this->option('force');
 
         try {
             DB::connection()->getPdo();
@@ -22,9 +23,13 @@ class SafeMigrate extends Command
 
             $this->warn("Database '$db' tidak ditemukan.");
 
-            if (! $this->confirm("Buat database '$db' sekarang?")) {
+            if (! $force && ! $this->confirm("Buat database '$db' sekarang?")) {
                 $this->info("Migrasi dibatalkan.");
                 return Command::FAILURE;
+            }
+            
+            if ($force) {
+                $this->info("Membuat database '$db' (dipaksa oleh --force)...");
             }
 
             // STEP PENTING: Set database menjadi null dulu agar connect ke server MySQL berhasil
@@ -44,7 +49,17 @@ class SafeMigrate extends Command
             DB::purge('mysql');
         }
 
-        $this->call('migrate', ['--force' => $this->option('force')]);
+        // Jalankan migrasi
+        $this->info("Menjalankan migrasi...");
+        $this->call('migrate', ['--force' => $force]);
+
+        // Cek apakah opsi --seed digunakan
+        if ($this->option('seed')) {
+            $this->info("Menjalankan seeder...");
+            $this->call('db:seed', ['--force' => $force]);
+        }
+
+        $this->info("✅ Setup database selesai.");
         return Command::SUCCESS;
     }
 }
