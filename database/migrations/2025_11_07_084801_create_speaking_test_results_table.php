@@ -22,8 +22,8 @@ return new class extends Migration
                 ->cascadeOnDelete();
 
             // masing masing skor 0–50, nanti total dihitung manual
-            $table->unsignedTinyInteger('content_score');
-            $table->unsignedTinyInteger('participation_score');
+            $table->unsignedTinyInteger('content_score')->nullable();
+            $table->unsignedTinyInteger('participation_score')->nullable();
 
             $table->timestamps();
             $table->unique(['speaking_test_id', 'student_id']);

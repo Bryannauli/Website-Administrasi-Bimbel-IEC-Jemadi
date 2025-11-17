@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('speaking_tests', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('class_id')
-                ->nullable()
-                ->constrained('classes')
-                ->nullOnDelete();
+            
+            $table->foreignId('assessment_session_id')
+                ->constrained('assessment_sessions')
+                ->cascadeOnDelete()
+                ->unique();
 
-            $table->enum('type', ['mid', 'final']);
             $table->date('date');
             $table->string('topic', 200)->nullable();
 
@@ -29,7 +29,6 @@ return new class extends Migration
                     ->nullOnDelete();
 
             $table->timestamps();
-            $table->unique(['class_id', 'type']);
         });
     }
 

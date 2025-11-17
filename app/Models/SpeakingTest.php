@@ -10,16 +10,15 @@ class SpeakingTest extends Model
     use HasFactory;
 
     protected $fillable = [
-        'class_id',
-        'type',
+        'assessment_session_id',
         'date',
         'topic',
         'interviewer_id',
     ];
 
-    public function classModel()
+    public function assessmentSession()
     {
-        return $this->belongsTo(ClassModel::class, 'class_id');
+        return $this->belongsTo(AssessmentSession::class);
     }
 
     public function interviewer()
