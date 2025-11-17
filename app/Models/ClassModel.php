@@ -29,14 +29,14 @@ class ClassModel extends Model
     public function formTeacher()
     {
         return $this->belongsTo(User::class, 'form_teacher_id')
-                    ->where('role', 'teacher');
+                    ->where('is_teacher', true);
     }
 
     // Relasi ke user (local teacher)
     public function localTeacher()
     {
         return $this->belongsTo(User::class, 'local_teacher_id')
-                    ->where('role', 'teacher');
+                    ->where('is_teacher', true);
     }
 
     // Relasi ke Student (satu kelas punya banyak siswa)
