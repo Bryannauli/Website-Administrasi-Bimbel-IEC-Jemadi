@@ -11,7 +11,7 @@
     <div class="mb-8 p-6 bg-white rounded-xl shadow-lg flex justify-between items-center">
         <div>
             <h2 class="text-3xl font-bold text-gray-800 mb-2">Welcome, Moni Roy School Team!</h2> {{-- Ukuran dan margin disesuaikan --}}
-            <p class="text-gray-600 text-base leading-relaxed max-w-lg">Manage your school operations with ease. Stay updated on academics, attendance, finances, and more—all in one place. Let's keep shaping a brighter future together!</p> {{-- Font size dan line-height --}}
+            <p class="text-gray-600 text-base leading-relaxed max-w-lg">Manage your bimbel operations with ease. Stay updated on academics, attendance, finances, and more—all in one place. Let's keep shaping a brighter future together!</p> {{-- Font size dan line-height --}}
         </div>
         <div>
             <img src="https://i.imgur.com/I2dYq1I.png" alt="Illustration" class="h-40">
