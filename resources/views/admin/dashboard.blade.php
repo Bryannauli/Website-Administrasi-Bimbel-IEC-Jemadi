@@ -1,19 +1,19 @@
 <x-app-layout>
     {{-- Slot header dari Breeze tidak digunakan di desain ini, jadi kita kosongkan --}}
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight hidden">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight hidden ">
             {{ __('Dashboard') }}
         </h2>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-6 ml-64">
+
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             
             {{-- Ini adalah awal dari konten dashboard kustom Anda --}}
             <div class="space-y-6">
 
-                <div class="text-sm text-gray-500">
-                    Home > <span class="font-semibold text-gray-700">Dashboard</span>
+                <div class="text-sm text-gray-500">> Dashboard
                 </div>
 
                 <div class="w-full bg-white p-6 rounded-xl shadow-sm flex justify-between items-center">
@@ -232,12 +232,7 @@
             </div>
             {{-- Ini adalah akhir dari konten dashboard kustom Anda --}}
 
-            <footer class="mt-6 text-center text-sm text-gray-500">
-                <div class="flex justify-between items-center">
-                    <span>Copyright ©2025 International Education Centre Jemadi</span>
-                    <span>©2025 AIMS. All right reserved.</span>
-                </div>
-            </footer>
+    
 
         </div>
     </div>

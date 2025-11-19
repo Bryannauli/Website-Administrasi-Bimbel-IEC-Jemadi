@@ -1,65 +1,78 @@
-@extends('layouts.app')
+<x-app-layout>
 
-@section('title', 'Students - AIMS')
+    <x-slot name="header">
+<div class="ml-64 p-6">
 
-@section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-gray-600 hover:text-gray-900">Home</a>
     <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
         <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
     </svg>
     <span class="text-gray-900 font-medium">Students</span>
-@endsection
 
-@section('content')
     <h1 class="text-3xl font-bold mb-8">
         <span class="text-red-500">Students</span>
     </h1>
 
-    <!-- Stats Card -->
-    <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-8">
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Students</h3>
-                    <p class="text-4xl font-bold text-gray-900">5,909</p>
+ <div class="bg-white rounded-xl shadow-md p-4 mb-6 max-w-md">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-6">
+            <div>
+                <h3 class="text-base font-semibold text-gray-800 mb-1">Students</h3>
+                <p class="text-2xl font-bold text-gray-900">5,909</p>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-md">
+                    <span class="text-xs font-medium text-gray-700">Active</span>
+                    <span class="text-base font-bold text-gray-900">4287</span>
                 </div>
-                <div class="flex items-center gap-4">
-                    <div class="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg">
-                        <span class="text-sm font-medium text-gray-700">Active</span>
-                        <span class="text-lg font-bold text-gray-900">4287</span>
-                    </div>
-                    <div class="flex items-center gap-2 px-4 py-2 bg-red-50 rounded-lg">
-                        <span class="text-sm font-medium text-gray-700">Inactive</span>
-                        <span class="text-lg font-bold text-gray-900">752</span>
-                    </div>
+
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-red-50 rounded-md">
+                    <span class="text-xs font-medium text-gray-700">Inactive</span>
+                    <span class="text-base font-bold text-gray-900">752</span>
                 </div>
             </div>
-            <button class="text-gray-400 hover:text-gray-600">
-                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"/>
-                </svg>
-            </button>
         </div>
+
+        <button class="text-gray-400 hover:text-gray-600">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"/>
+            </svg>
+        </button>
     </div>
+</div>
+
 
     <!-- Table Card -->
-    <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+  <div class="bg-white rounded-xl shadow-md overflow-hidden max-w-4xl mx-auto">
+
         <!-- Table Header Actions -->
         <div class="p-6 border-b border-gray-200">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
-                    <select class="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <option>All Classes</option>
-                        <option>English</option>
-                        <option>Math</option>
-                    </select>
-                    <button class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2">
+                  <div class="relative inline-block">
+    <select
+        class="appearance-none px-4 pr-10 py-2 border border-gray-300 rounded-lg text-sm text-gray-700
+               focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white cursor-pointer">
+        <option>All Classes</option>
+        <option>English</option>
+        <option>Math</option>
+    </select>
+
+    <!-- Custom Arrow -->
+    <svg class="w-4 h-4 text-gray-500 absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none"
+         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+    </svg>
+</div>
+
+                    <button class="pl-3 pr-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2">
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"/>
                         </svg>
                         Add Student
                     </button>
-                    <span class="text-sm text-gray-600">5 row selected</span>
+    
                 </div>
                 
                 <div class="relative">
@@ -76,60 +89,57 @@
             <table class="w-full">
                 <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
-                        <th class="px-6 py-4 text-left">
-                            <input type="checkbox" class="w-4 h-4 rounded border-gray-300">
+                         <th class="px-4 py-4 text-left text-sm font-semibold text-gray-700">
+                             <div class="flex items-center gap-2">
+                                No.
+                            
+                            </div>
                         </th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                        <th class="px-4 py-4 text-left text-sm font-semibold text-gray-700">
+                            <div class="flex items-center gap-2">
+                                Student Number
+                                <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M5 12a1 1 0 102 0V6.414l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L5 6.414V12zM15 8a1 1 0 10-2 0v5.586l-1.293-1.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L15 13.586V8z"/>
+                                </svg>
+                            </div>
+                        </th>
+                            <th class="px-4 py-4 text-left text-sm font-semibold text-gray-700">
                             <div class="flex items-center gap-2">
                                 Name
-                                <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M5 12a1 1 0 102 0V6.414l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L5 6.414V12zM15 8a1 1 0 10-2 0v5.586l-1.293-1.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L15 13.586V8z"/>
-                                </svg>
                             </div>
                         </th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                            <div class="flex items-center gap-2">
-                                Id
-                                <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M5 12a1 1 0 102 0V6.414l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L5 6.414V12zM15 8a1 1 0 10-2 0v5.586l-1.293-1.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L15 13.586V8z"/>
-                                </svg>
-                            </div>
-                        </th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Email</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                        <th class="px-4 py-4 text-left text-sm font-semibold text-gray-700">Gender</th>
+                        <th class="px-4 py-4 text-left text-sm font-semibold text-gray-700">
                             <div class="flex items-center gap-2">
                                 Class
-                                <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M5 12a1 1 0 102 0V6.414l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L5 6.414V12zM15 8a1 1 0 10-2 0v5.586l-1.293-1.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L15 13.586V8z"/>
-                                </svg>
                             </div>
                         </th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Status</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Actions</th>
+                        <th class="px-4 py-4 text-left text-sm font-semibold text-gray-700">Status</th>
+                        <th class="px-4 py-4 text-left text-sm font-semibold text-gray-700">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
                     <!-- Row 1 -->
                     <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4">
-                            <input type="checkbox" class="w-4 h-4 rounded border-gray-300" checked>
+                        <td class="px-4 py-4">
+                           <span class="text-gray-600">1</span>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="font-medium text-gray-800">Lee Hanjin</span>
+                        <td class="px-4 py-4">
+                             <span class="text-gray-600">127893683</span>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="text-gray-600">127893683</span>
+                       <td class="px-4 py-4">
+                            <span class="text-gray-600">Lee Hanjin</span>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="text-gray-600">hnjn@gmail.com</span>
+                       <td class="px-4 py-4">
+                            <span class="text-gray-600">Man</span>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="text-gray-800 font-medium">English</span>
+                       <td class="px-4 py-4">
+                            <span class="text-gray-600">English</span>
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-4 py-4">
                             <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">Active</span>
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-4 py-4">
                             <div class="flex items-center gap-3">
                                 <button class="text-gray-400 hover:text-blue-600 transition-colors">
                                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -153,25 +163,25 @@
 
                     <!-- Repeat rows -->
                     <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4">
-                            <input type="checkbox" class="w-4 h-4 rounded border-gray-300" checked>
+                              <td class="px-4 py-4">
+                           <span class="text-gray-600">1</span>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="font-medium text-gray-800">Lee Hanjin</span>
+                        <td class="px-4 py-4">
+                             <span class="text-gray-600">127893683</span>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="text-gray-600">127893683</span>
+                        <td class="px-4 py-4">
+                            <span class="text-gray-600">Lee Hanjin</span>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="text-gray-600">hnjn@gmail.com</span>
+                        <td class="px-4 py-4">
+                            <span class="text-gray-600">Man</span>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="text-gray-800 font-medium">English</span>
+                        <td class="px-4 py-4">
+                            <span class="text-gray-600">English</span>
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-4 py-4">
                             <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">Active</span>
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-4 py-4">
                             <div class="flex items-center gap-3">
                                 <button class="text-gray-400 hover:text-blue-600 transition-colors">
                                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -194,25 +204,25 @@
                     </tr>
 
                     <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4">
-                            <input type="checkbox" class="w-4 h-4 rounded border-gray-300" checked>
+                              <td class="px-4 py-4">
+                           <span class="text-gray-600">1</span>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="font-medium text-gray-800">Lee Hanjin</span>
+                        <td class="px-4 py-4">
+                             <span class="text-gray-600">127893683</span>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="text-gray-600">127893683</span>
+                        <td class="px-4 py-4">
+                            <span class="text-gray-600">Lee Hanjin</span>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="text-gray-600">hnjn@gmail.com</span>
+                        <td class="px-4 py-4">
+                            <span class="text-gray-600">Man</span>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="text-gray-800 font-medium">English</span>
+                        <td class="px-4 py-4">
+                            <span class="text-gray-600">English</span>
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-4 py-4">
                             <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">Active</span>
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-4 py-4">
                             <div class="flex items-center gap-3">
                                 <button class="text-gray-400 hover:text-blue-600 transition-colors">
                                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -235,25 +245,25 @@
                     </tr>
 
                     <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4">
-                            <input type="checkbox" class="w-4 h-4 rounded border-gray-300" checked>
+                             <td class="px-4 py-4">
+                           <span class="text-gray-600">1</span>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="font-medium text-gray-800">Lee Hanjin</span>
+                        <td class="px-4 py-4">
+                             <span class="text-gray-600">127893683</span>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="text-gray-600">127893683</span>
+                        <td class="px-4 py-4">
+                            <span class="text-gray-600">Lee Hanjin</span>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="text-gray-600">hnjn@gmail.com</span>
+                        <td class="px-4 py-4">
+                            <span class="text-gray-600">Man</span>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="text-gray-800 font-medium">English</span>
+                        <td class="px-4 py-4">
+                            <span class="text-gray-600">English</span>
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-4 py-4">
                             <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">Active</span>
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-4 py-4">
                             <div class="flex items-center gap-3">
                                 <button class="text-gray-400 hover:text-blue-600 transition-colors">
                                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -276,25 +286,25 @@
                     </tr>
 
                     <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4">
-                            <input type="checkbox" class="w-4 h-4 rounded border-gray-300" checked>
+                             <td class="px-4 py-4">
+                           <span class="text-gray-600">1</span>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="font-medium text-gray-800">Lee Hanjin</span>
+                        <td class="px-4 py-4">
+                             <span class="text-gray-600">127893683</span>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="text-gray-600">127893683</span>
+                        <td class="px-4 py-4">
+                            <span class="text-gray-600">Lee Hanjin</span>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="text-gray-600">hnjn@gmail.com</span>
+                        <td class="px-4 py-4">
+                            <span class="text-gray-600">Man</span>
                         </td>
-                        <td class="px-6 py-4">
-                            <span class="text-gray-800 font-medium">English</span>
+                        <td class="px-4 py-4">
+                            <span class="text-gray-600">English</span>
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-4 py-4">
                             <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">Active</span>
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-4 py-4">
                             <div class="flex items-center gap-3">
                                 <button class="text-gray-400 hover:text-blue-600 transition-colors">
                                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -330,4 +340,5 @@
             </button>
         </div>
     </div>
-@endsection
+
+</x-app-layout>
