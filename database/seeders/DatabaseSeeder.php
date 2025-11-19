@@ -14,6 +14,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(MySQLUserSeeder::class);
+        
         // Admin default
         User::create([
             'username' => 'admin',
@@ -27,7 +29,7 @@ class DatabaseSeeder extends Seeder
             'status' => 'active',
         ]);
 
-        // Akun tes
+        // Akun tes teacher
         User::create([
             'username' => 'tes',
             'name' => 'AkunTest',

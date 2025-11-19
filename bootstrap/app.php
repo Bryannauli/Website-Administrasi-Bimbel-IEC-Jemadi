@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use App\Http\Middleware\DynamicDBConnection;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -11,10 +12,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->web(append: [
+            DynamicDBConnection::class,
+        ]);
+
         $middleware->alias([
-            'role' => \App\Http\Middleware\CheckRole::class,
-            // 'admin' => \App\Http\Middleware\CheckIsAdmin::class, // (Contoh lain)
-            // 'teacher' => \App\Http\Middleware\CheckIsTeacher::class, // (Contoh lain)
+            'admin' => \App\Http\Middleware\IsAdmin::class,
+            'teacher' => \App\Http\Middleware\IsTeacher::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
