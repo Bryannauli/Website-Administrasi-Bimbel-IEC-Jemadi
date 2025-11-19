@@ -19,7 +19,7 @@ class IsTeacher
         $user = Auth::user();
 
         if(!$user){
-            redirect()->route('landing');
+            return redirect()->route('landing');
         }
         
         if($user->is_teacher){

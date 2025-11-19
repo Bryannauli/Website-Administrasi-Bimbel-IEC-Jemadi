@@ -19,7 +19,7 @@ class DynamicDBConnection
     public function handle(Request $request, Closure $next): Response
     {
         if (Auth::check()) {
-            $role = Auth::user()->user_role;
+            $role = Auth::user()->role;
 
             switch ($role) {
                 case 'admin':

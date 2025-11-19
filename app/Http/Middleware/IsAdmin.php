@@ -20,7 +20,7 @@ class IsAdmin
         $user = Auth::user();
 
         if(!$user){ 
-            redirect()->route('landing');
+            return redirect()->route('landing');
         }
 
         if($user->role === 'admin'){

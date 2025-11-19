@@ -36,9 +36,9 @@ Route::get('/dashboard', function () {
 // --- Rute Admin ---
 Route::get('/admin/dashboard', function () {
     return view('admin.dashboard');
-})->middleware(['auth', 'verified', 'role:admin'])->name('admin.dashboard');
+})->middleware(['auth', 'verified', 'admin'])->name('admin.dashboard');
 Route::get('/admin/student', [StudentController::class, 'index'])
-     ->name('admin.student');
+    ->name('admin.student');
 
 // --- Rute Teacher  ---
 Route::get('/teacher/dashboard', function () {
