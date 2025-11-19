@@ -13,7 +13,6 @@ class MySQLUserSeeder extends Seeder
      */
     public function run(): void
     {
-        // admin db user
         DB::statement("
             CREATE USER IF NOT EXISTS 'iec_user'@'%' IDENTIFIED BY 'iec12345';
         ");
