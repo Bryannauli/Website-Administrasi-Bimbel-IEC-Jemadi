@@ -23,7 +23,7 @@ class IsTeacher
         }
         
         if($user->is_teacher){
-            return $next->$request;
+            return $next($request);
         }
 
         return response()->view('errors.403', [], 403);

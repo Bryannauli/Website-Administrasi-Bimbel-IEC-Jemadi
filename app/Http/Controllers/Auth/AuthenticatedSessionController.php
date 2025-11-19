@@ -43,17 +43,21 @@ public function store(Request $request)
 
     $user = Auth::user();
 
-    // Redirect berdasarkan role
-    if ($user->isAdmin()) {
+    // Redirect berdasarkan role (prioritaskan admin terlebih dahulu)
+    if ($user->role == 'admin') {
         return redirect()->route('admin.dashboard');
     }
 
-    if ($user->isTeacher()) {
+    if ($user->is_teacher) {
         return redirect()->route('teacher.dashboard');
     }
 
     // Tidak ada role lain
-    abort(403, 'Role tidak dikenal');
+    Auth::logout();
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    return redirect('/login')->with('error', 'Anda tidak memiliki akses yang diizinkan.');
 }
 
 

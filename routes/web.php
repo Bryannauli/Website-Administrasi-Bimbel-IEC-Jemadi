@@ -38,7 +38,7 @@ Route::get('/admin/dashboard', function () {
 
 // --- Rute Teacher  ---
 Route::get('/teacher/dashboard', function () {
-    return view('teacher.dashboard'); 
+    return view('admin.dashboard'); 
 })->middleware(['auth', 'verified', 'teacher'])->name('teacher.dashboard');
 
 Route::middleware('auth')->group(function () {
