@@ -7,25 +7,20 @@
 
         <title>{{ config('app.name', 'AIMS IEC') }}</title>
 
-        <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
-        <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased">
         {{-- PERUBAHAN: Latar belakang utama diubah ke bg-blue-50 --}}
         <div class="min-h-screen flex bg-blue-50 ">
             
-            <!-- Sidebar (dari navigation.blade.php) -->
             @include('layouts.navigation')
 
-            <!-- Konten Utama -->
             <div class="flex-1 flex flex-col ml-64 h-screen overflow-y-auto">
                 
-                <!-- Header Atas (Bagian Profil Pengguna) - Ini sudah putih -->
-                <header class="sticky top-0 bg-white  shadow-sm w-full z-10">
+                <header class="sticky top-0 bg-white shadow-sm w-full z-10">
                     <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
                         
                         {{-- Judul Halaman (dari slot header) --}}
@@ -38,11 +33,10 @@
                             <div class="flex-1"></div>
                         @endif
 
-                        <!-- Profil Pengguna & Notifikasi -->
                         <div class="flex items-center space-x-4">
                             
                             {{-- Tombol Notifikasi --}}
-                            <button class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 relative">
+                            <button class="text-gray-500 hover:text-gray-700 relative">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341A6.002 6.002 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                                 </svg>
@@ -53,11 +47,10 @@
                                 </span>
                             </button>
 
-                            <!-- Dropdown Profil -->
                             <div class="hidden sm:flex sm:items-center">
                                 <x-dropdown align="right" width="48">
                                     <x-slot name="trigger">
-                                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none transition ease-in-out duration-150">
+                                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
                                             {{-- Ganti dengan gambar profil jika ada, atau gunakan inisial --}}
                                             <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&color=E91E63&background=F8BBD0" alt="Avatar" class="h-8 w-8 rounded-full mr-2">
                                             <div class="text-left">
@@ -78,7 +71,6 @@
                                             {{ __('Profile') }}
                                         </x-dropdown-link>
 
-                                        <!-- Authentication -->
                                         <form method="POST" action="{{ route('logout') }}">
                                             @csrf
                                             <x-dropdown-link :href="route('logout')"
@@ -94,7 +86,6 @@
                     </div>
                 </header>
 
-                <!-- Page Content -->
                 <main>
                     {{ $slot }}
                 </main>

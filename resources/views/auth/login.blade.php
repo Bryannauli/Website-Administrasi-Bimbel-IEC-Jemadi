@@ -37,18 +37,18 @@
                     @csrf
 
                     <div class="mb-5">
-                        <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                        <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
                         <input
-                            id="email"
-                            type="email"
-                            name="email"
-                            :value="old('email')"
+                            id="username"
+                            type="username"
+                            name="username"
+                            :value="old('username')"
                             required
                             autofocus
                             autocomplete="username"
                             class="block mt-1 w-full border-0 border-b-2 border-gray-300 focus:border-blue-600 focus:ring-0"
                         />
-                        <x-input-error :messages="$errors->get('email')" class="mt-2" />
+                        <x-input-error :messages="$errors->get('username')" class="mt-2" />
                     </div>
 
                     <div class="mb-5">
@@ -82,14 +82,6 @@
                             {{ __('Login') }}
                         </button>
                     </div>
-
-                    <p class="text-center text-sm text-gray-600 mt-6">
-                        Don't have an account?
-                        <a href="{{ route('register') }}" class="font-medium text-blue-600 hover:underline">
-                            Create an Account
-                        </a>
-                    </p>
-
                 </form>
             </div>
         </div>

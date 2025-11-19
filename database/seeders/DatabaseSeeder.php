@@ -26,5 +26,18 @@ class DatabaseSeeder extends Seeder
             'is_teacher' => false,
             'status' => 'active',
         ]);
+
+        // Akun tes
+        User::create([
+            'username' => 'tes',
+            'name' => 'AkunTest',
+            'photo' => null,
+            'email' => null,
+            'phone' => null,
+            'password' => Hash::make('tes123'),
+            'role' => 'teacher',
+            'is_teacher' => true,
+            'status' => 'active',
+        ]);
     }
 }
