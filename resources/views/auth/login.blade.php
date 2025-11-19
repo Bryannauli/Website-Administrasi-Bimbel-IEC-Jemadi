@@ -40,7 +40,7 @@
                         <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
                         <input
                             id="username"
-                            type="username"
+                            type="text"
                             name="username"
                             :value="old('username')"
                             required

@@ -18,20 +18,27 @@
             
             @include('layouts.navigation')
 
-            <div class="flex-1 flex flex-col ml-64 h-screen overflow-y-auto">
+            <div class="flex-1 flex flex-col  h-screen overflow-y-auto">
                 
                 <header class="sticky top-0 bg-white shadow-sm w-full z-10">
+                    
                     <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
                         
-                        {{-- Judul Halaman (dari slot header) --}}
-                        @if (isset($header))
-                            <div class="flex-1">
-                                {{ $header }}
-                            </div>
-                        @else
-                            {{-- Placeholder agar header tidak bergeser --}}
-                            <div class="flex-1"></div>
-                        @endif
+                        
+                    <div class="flex items-center space-x-3">
+    <a href="{{ route('dashboard') }}" class="flex items-center space-x-2">
+        <img src="{{ asset('images/aims.png') }}" alt="AIMS Logo" class="h-10">
+        <img src="{{ asset('images/logo.png') }}" alt="IEC Logo" class="h-10">
+    </a>
+
+    {{-- Jika masih ingin judul halaman di samping logo --}}
+    @if (isset($header))
+        <div class="text-lg font-semibold text-gray-800 ml-4">
+            {{ $header }}
+        </div>
+    @endif
+</div>
+
 
                         <div class="flex items-center space-x-4">
                             
@@ -89,6 +96,13 @@
                 <main>
                     {{ $slot }}
                 </main>
+                <footer class=" bg-white ml-64 mt-6 py-4 border-t">
+    <div class="max-w-7xl mx-auto px-4 flex justify-between items-center text-sm text-gray-500">
+        <span>Copyright ©2025 International Education Centre Jemadi</span>
+        <span>©2025 AIMS. All right reserved.</span>
+    </div>
+</footer>
+
             </div>
         </div>
     </body>
