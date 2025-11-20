@@ -32,10 +32,11 @@ public function store(Request $request)
     if (!Auth::attempt([
         'username' => $request->username,
         'password' => $request->password,
+        'is_active' => true, // Pastikan hanya login jika akun aktif
     ], $request->boolean('remember'))) {
 
         return back()->withErrors([
-            'username' => 'Username atau password salah.',
+            'username' => 'Invalid credentials or your account is inactive.',
         ]);
     }
 

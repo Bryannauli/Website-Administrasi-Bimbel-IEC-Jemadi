@@ -7,8 +7,12 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
+    // Cek login status
+    if (Auth::check()) {
+        return redirect()->route('dashboard');
+    }
     return view('landing');
-});
+})->name('landing');
 
 Route::get('/dashboard', function () {
     if (!Auth::check()) {
@@ -23,9 +27,9 @@ Route::get('/dashboard', function () {
     }
     
     // Cek status Teacher
-    if ($user->is_teacher) {
-        return redirect()->route('teacher.dashboard');
-    }
+    // if ($user->is_teacher) {
+    //     return redirect()->route('teacher.dashboard');
+    // }
 
     // Jika tidak memiliki role/status yang diizinkan
     Auth::logout();
@@ -42,7 +46,7 @@ Route::get('/admin/student', [StudentController::class, 'index'])
 
 // --- Rute Teacher  ---
 Route::get('/teacher/dashboard', function () {
-    return view('admin.dashboard'); 
+    return view('teacher.dashboard'); 
 })->middleware(['auth', 'verified', 'teacher'])->name('teacher.dashboard');
 
 Route::middleware('auth')->group(function () {

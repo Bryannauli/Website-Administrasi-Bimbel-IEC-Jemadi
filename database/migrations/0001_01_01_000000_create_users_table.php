@@ -25,7 +25,7 @@ return new class extends Migration
             $table->string('password');
             $table->enum('role', ['admin', 'teacher']);
             $table->boolean('is_teacher')->default(false);
-            $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->boolean('is_active')->default(true);
             $table->rememberToken();
             $table->timestamps();
         });

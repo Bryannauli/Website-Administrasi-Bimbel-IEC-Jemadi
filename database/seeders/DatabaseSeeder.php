@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('admin123'),
             'role' => 'admin',
             'is_teacher' => false,
-            'status' => 'active',
+            'is_active' => true,
         ]);
 
         // Akun tes teacher
@@ -39,7 +39,7 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('tes123'),
             'role' => 'teacher',
             'is_teacher' => true,
-            'status' => 'active',
+            'is_active' => true,
         ]);
     }
 }

@@ -26,8 +26,6 @@ return new class extends Migration
 
             $table->time('start_time');
             $table->time('end_time');
-            $table->enum('status', ['active', 'inactive'])->default('active');
-
             $table->enum('start_month', [
                 'January', 'February', 'March', 'April', 'May', 'June',
                 'July', 'August', 'September', 'October', 'November', 'December'
@@ -37,6 +35,8 @@ return new class extends Migration
                 'July', 'August', 'September', 'October', 'November', 'December'
             ]);
             $table->year('academic_year');
+            
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

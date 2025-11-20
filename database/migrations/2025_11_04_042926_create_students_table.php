@@ -19,7 +19,7 @@ return new class extends Migration
             $table->enum('gender', ['male', 'female']);
             $table->string('phone')->nullable();
             $table->text('address')->nullable();
-            $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->boolean('is_active')->default(true);
             $table->foreignId('class_id')->nullable()->constrained('classes')->nullOnDelete();
             $table->timestamps();
         });

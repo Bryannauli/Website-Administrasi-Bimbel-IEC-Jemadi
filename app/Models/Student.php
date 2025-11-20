@@ -15,7 +15,7 @@ class Student extends Model
         'gender',
         'phone',
         'address',
-        'status',
+        'is_active',
         'class_id',
     ];
 

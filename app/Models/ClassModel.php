@@ -17,12 +17,12 @@ class ClassModel extends Model
         'classroom',
         'start_time',
         'end_time',
-        'status',
         'form_teacher_id',
         'local_teacher_id',
         'start_month',
         'end_month',
         'academic_year',
+        'is_active',
     ];
 
     // Relasi ke user (form teacher)
