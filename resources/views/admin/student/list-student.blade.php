@@ -1,3 +1,4 @@
+<!-- admin/student/list-student -->
 @extends('layouts.app')
 
 @section('title', 'Student Details - AIMS')

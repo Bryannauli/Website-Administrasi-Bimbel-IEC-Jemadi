@@ -33,16 +33,33 @@ Route::get('/dashboard', function () {
 
     // Jika tidak memiliki role/status yang diizinkan
     Auth::logout();
-    return redirect('/login')->with('error', 'Anda tidak memiliki akses.');
+    return redirect('/login')->with('error', 'You do not have access to this application. Please contact the administrator.');
 
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 // --- Rute Admin ---
-Route::get('/admin/dashboard', function () {
-    return view('admin.dashboard');
-})->middleware(['auth', 'verified', 'admin'])->name('admin.dashboard');
-Route::get('/admin/student', [StudentController::class, 'index'])
-    ->name('admin.student');
+Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', function () {
+        return view('admin.dashboard');
+    })->name('dashboard');
+
+    // Grouping Route untuk Student
+    Route::prefix('student')->name('student.')->group(function () {
+        // Menampilkan daftar siswa
+        Route::get('/', [StudentController::class, 'index'])->name('index');
+        
+        // Menampilkan form tambah siswa
+        Route::get('/add', [StudentController::class, 'add'])->name('add');
+        
+        // Proses simpan data (bisa ditambahkan nanti)
+        Route::post('/', [StudentController::class, 'store'])->name('store');
+        
+        // Menampilkan detail siswa
+        // {id} adalah placeholder untuk ID siswa
+        Route::get('/{id}', [StudentController::class, 'detail'])->name('detail');
+    });
+
+});
 
 // --- Rute Teacher  ---
 Route::get('/teacher/dashboard', function () {

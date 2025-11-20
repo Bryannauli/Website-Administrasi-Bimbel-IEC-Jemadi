@@ -58,7 +58,7 @@ public function store(Request $request)
     $request->session()->invalidate();
     $request->session()->regenerateToken();
 
-    return redirect('/login')->with('error', 'Anda tidak memiliki akses yang diizinkan.');
+    return redirect('/login')->with('error', 'You do not have access to this application. Please contact the administrator.');
 }
 
 
