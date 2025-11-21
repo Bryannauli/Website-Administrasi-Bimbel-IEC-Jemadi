@@ -19,9 +19,9 @@
                 <!-- Welcome Banner -->
                 <div class="w-full bg-white p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-center">
                     <div class="text-gray-800 mb-4 md:mb-0 text-center md:text-left">
-                        <h2 class="text-2xl font-bold text-pink-600">Welcome, {{ Auth::user()->name }}!</h2>
+                        <h2 class="text-2xl font-bold bg-gradient-to-r from-blue-500 to-red-500 bg-clip-text text-transparent">Welcome, {{ Auth::user()->name }}!</h2>
                         <p class="mt-2 text-gray-700 max-w-md">
-                            Manage your school operations with ease. Stay updated on academics, attendance, finances, and more—all in one place.
+                            Manage your school operations with ease. Stay updated on academics, attendance, finances, and more all in one place.
                         </p>
                     </div>
                     <div class="hidden sm:block">

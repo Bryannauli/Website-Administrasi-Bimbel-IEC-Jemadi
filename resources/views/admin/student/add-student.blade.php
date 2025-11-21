@@ -1,6 +1,8 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center gap-2 text-sm text-gray-600">
+   
+    </x-slot>
+     <div class="flex items-center gap-2 text-sm text-gray-600 ml-6 mt-6">
             <a href="{{ route('dashboard') }}" class="hover:text-gray-900">Home</a>
             
             <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
@@ -15,16 +17,13 @@
             
             <span class="text-gray-900 font-medium">Add New Student</span>
         </div>
-    </x-slot>
-
     <div class="p-6">
         
         <form action="{{ route('admin.student.store') }}" method="POST" enctype="multipart/form-data">
             @csrf <div class="flex items-center justify-between mb-8">
-                <h1 class="text-3xl font-bold">
-                    <span class="text-red-500">Add New </span>
-                    <span class="text-purple-600">Student</span>
-                </h1>
+                <h2 class="text-4xl font-bold bg-gradient-to-r from-blue-500 to-red-500 bg-clip-text text-transparent">
+                  Add New Student
+                </h2>
                 
                 <div class="flex items-center gap-3">
                     <a href="{{ route('admin.student.index') }}" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors text-center">

@@ -5,7 +5,7 @@ $activeClasses = 'bg-blue-200 text-blue-700';
 $inactiveClassesIcon = 'text-gray-700 group-hover:text-blue-700';
 $activeClassesIcon = 'text-blue-700';
 
-$subActiveClasses = 'bg-blue-600 text-white'; // Ubah teks jadi putih agar kontras di bg biru tua
+$subActiveClasses = 'bg-blue-100 text-blue-700'; // Ubah teks jadi putih agar kontras di bg biru tua
 $subInactiveClasses = 'text-gray-700 hover:bg-blue-100 hover:text-blue-700';
 @endphp
 
@@ -90,16 +90,14 @@ $subInactiveClasses = 'text-gray-700 hover:bg-blue-100 hover:text-blue-700';
 
             {{-- SUBMENU --}}
             <div x-show="open" x-transition class="mt-2 space-y-1">
-                <a href="#" {{-- ganti route --}}
-                    class="block px-4 py-2 ml-4 rounded-md text-sm font-medium
-                  {{ request()->routeIs('student.index') ? $subActiveClasses : $subInactiveClasses }}">
-                    All Students
-                </a>
-                <a href="#"
-                    class="block px-4 py-2 ml-4 rounded-md text-sm font-medium
-                  {{ request()->routeIs('students.assesment') ? $subActiveClasses : $subInactiveClasses }}">
-                    Assesment
-                </a>
+<a href="{{ route('admin.student.index') }}"
+   class="block px-4 py-2 ml-4 rounded-md text-sm font-medium
+   {{ request()->routeIs('admin.student.index') ? $subActiveClasses : $subInactiveClasses }}">
+    All Students
+</a>
+
+
+               
                 <a href="#"
                     class="block px-4 py-2 ml-4 rounded-md text-sm font-medium
                   {{ request()->routeIs('students.attendance') ? $subActiveClasses : $subInactiveClasses }}">
@@ -138,6 +136,11 @@ $subInactiveClasses = 'text-gray-700 hover:bg-blue-100 hover:text-blue-700';
                     class="block px-4 py-2 ml-4 rounded-md text-sm font-medium
                   {{ request()->routeIs('classes.index') ? $subActiveClasses : $subInactiveClasses }}">
                     Class Schedule
+                </a>
+                 <a href="{{ route('admin.assessment.index') }}"
+                    class="block px-4 py-2 ml-4 rounded-md text-sm font-medium
+                  {{ request()->routeIs('admin.assesment.index') ? $subActiveClasses : $subInactiveClasses }}">
+                    Assesment
                 </a>
             </div>
         </div>

@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\AssessmentController;
+use App\Http\Controllers\AssessmentFormController;
 
 
 use Illuminate\Support\Facades\Route;
@@ -72,5 +74,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+// Rute Assesment
+ Route::get('/admin/assessment', [AssessmentController::class, 'index'])->name('admin.assessment.index');
+ Route::get('/admin/assessment/show', [AssessmentController::class, 'show'])->name('admin.assessment.show');
+    Route::get('/admin/assessment/create', [AssessmentController::class, 'create'])->name('admin.assessment.create');
 
 require __DIR__.'/auth.php';

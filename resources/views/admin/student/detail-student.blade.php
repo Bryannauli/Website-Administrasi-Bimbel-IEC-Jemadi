@@ -1,6 +1,8 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center gap-2 text-sm text-gray-600">
+      
+    </x-slot>
+  <div class="flex items-center gap-2 text-sm text-gray-600 mt-6 ml-6">
             <a href="{{ route('dashboard') }}" class="hover:text-gray-900">Home</a>
             
             <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
@@ -15,13 +17,10 @@
             
             <span class="text-gray-900 font-medium">Student Details</span>
         </div>
-    </x-slot>
-
     <div class="p-6">
-        <h1 class="text-3xl font-bold mb-8">
-            <span class="text-red-500">Student </span>
-            <span class="text-purple-600">Details</span>
-        </h1>
+        <h2 class="text-2xl mb-6 font-bold bg-gradient-to-r from-blue-500 to-red-500 bg-clip-text text-transparent">
+          Student Details
+        </h2>
 
         <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
             <div class="flex items-center justify-between">
@@ -96,8 +95,8 @@
                 <div class="border-t border-gray-100 pt-8">
                     <div class="flex items-center justify-between mb-6">
                         <h3 class="text-lg font-semibold text-gray-800">Attendance</h3>
-                        <select class="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option>📅 This Month</option>
+                        <select class="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-8">
+                            <option>This Month</option>
                             <option>Last Month</option>
                             <option>This Year</option>
                         </select>
@@ -161,47 +160,39 @@
                     </div>
 
                     <div>
-                        <div class="flex items-center justify-between mb-4">
-                            <h4 class="font-semibold text-gray-800">Last 7 Days</h4>
-                            <p class="text-sm text-gray-500">14 May 2024 - 21 May 2024</p>
-                        </div>
-                        
-                        <div class="flex items-center gap-2 justify-between md:justify-start">
-                            <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-                                <span class="text-white font-bold text-sm">M</span>
-                            </div>
-                            <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-                                <span class="text-white font-bold text-sm">T</span>
-                            </div>
-                            <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-                                <span class="text-white font-bold text-sm">W</span>
-                            </div>
-                            <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-                                <span class="text-white font-bold text-sm">T</span>
-                            </div>
-                            <div class="w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center">
-                                <span class="text-white font-bold text-sm">F</span>
-                            </div>
-                            <div class="w-12 h-12 bg-gray-300 rounded-lg flex items-center justify-center">
-                                <span class="text-white font-bold text-sm">S</span>
-                            </div>
-                        </div>
+                      <div class="flex items-center justify-center mb-4">
+    <h4 class="font-semibold text-gray-800">Last 7 Days</h4> </div>
+    <div class="flex items-center justify-center mb-4">
+    <p class="text-sm text-gray-500">14 May 2024 - 21 May 2024</p>
+</div>
+
+
+<div class="flex justify-center gap-2 mt-4">
+    <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+        <span class="text-white font-bold text-sm">M</span>
+    </div>
+    <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+        <span class="text-white font-bold text-sm">T</span>
+    </div>
+    <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+        <span class="text-white font-bold text-sm">W</span>
+    </div>
+    <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+        <span class="text-white font-bold text-sm">T</span>
+    </div>
+    <div class="w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center">
+        <span class="text-white font-bold text-sm">F</span>
+    </div>
+    <div class="w-12 h-12 bg-gray-300 rounded-lg flex items-center justify-center">
+        <span class="text-white font-bold text-sm">S</span>
+    </div>
+</div>
+
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="fixed bottom-6 left-6 z-50">
-        <button class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors">
-            <div class="relative">
-                <img src="https://ui-avatars.com/api/?name=Raja&background=fff&color=3b82f6&size=40" alt="Chat" class="w-10 h-10 rounded-full">
-                <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
-            </div>
-        </button>
-        <div class="mt-2 text-center bg-white/80 backdrop-blur-sm rounded px-2 py-1">
-            <p class="text-xs font-semibold text-gray-700">Raja</p>
-            <p class="text-xs text-gray-500">Teacher</p>
-        </div>
-    </div>
+   
 </x-app-layout>

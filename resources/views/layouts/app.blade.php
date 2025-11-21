@@ -8,6 +8,7 @@
         <title>{{ config('app.name', 'AIMS IEC') }}</title>
 
         <link rel="preconnect" href="https://fonts.bunny.net">
+        
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -90,14 +91,14 @@
                 <div class="text-xs text-gray-500">Admin</div>
             </div>
 
-            <x-dropdown-link :href="route('profile.edit')"  class="bg-white text-gray-800 hover:bg-blue-50 hover:text-blue-600 dark:bg-white dark:text-gray-800 dark:hover:bg-blue-50 dark:hover:text-blue-600">
+            <x-dropdown-link :href="route('profile.edit')"  class="bg-white text-gray-800 hover:!bg-blue-50 hover:text-blue-600 dark:bg-white dark:text-gray-800 dark:hover:bg-blue-50 dark:hover:text-blue-600">
                 {{ __('Profile') }}
             </x-dropdown-link>
 
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <x-dropdown-link :href="route('logout')"
-                        onclick="event.preventDefault(); this.closest('form').submit();"  class="bg-white text-gray-800 hover:bg-blue-50 hover:text-blue-600 dark:bg-white dark:text-gray-800 dark:hover:bg-blue-50 dark:hover:text-blue-600">
+                        onclick="event.preventDefault(); this.closest('form').submit();"  class="bg-white text-gray-800 hover:!bg-blue-50 hover:text-blue-600 dark:bg-white dark:text-gray-800 dark:hover:bg-blue-50 dark:hover:text-blue-600">
                     {{ __('Log Out') }}
                 </x-dropdown-link>
             </form>
