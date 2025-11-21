@@ -5,14 +5,32 @@ $activeClasses = 'bg-blue-200 text-blue-700';
 $inactiveClassesIcon = 'text-gray-700 group-hover:text-blue-700';
 $activeClassesIcon = 'text-blue-700';
 
-
-$subActiveClasses = 'bg-blue-600 text-blue-700';
+$subActiveClasses = 'bg-blue-600 text-white'; // Ubah teks jadi putih agar kontras di bg biru tua
 $subInactiveClasses = 'text-gray-700 hover:bg-blue-100 hover:text-blue-700';
 @endphp
 
-<div class="fixed top-20 left-0 z-20 flex flex-col w-64 h-screen bg-gradient-to-br from-red-100 to-blue-100 shadow-lg">
+{{-- 
+    LOGIKA RESPONSIVE:
+    1. :class mengatur posisi (muncul/sembunyi) berdasarkan 'sidebarOpen'.
+    2. lg:translate-x-0 memastikan sidebar selalu muncul di layar besar.
+    3. inset-y-0 memastikan tinggi penuh.
+--}}
+<div :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+     class="fixed inset-y-0 left-0 z-30 flex flex-col w-64 h-screen bg-gradient-to-br from-red-100 to-blue-100 shadow-lg transform transition-transform duration-300 ease-in-out">
 
-    <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto mt-5">
+    {{-- Tombol Close (Hanya di Mobile) --}}
+    <div class="lg:hidden flex justify-end px-4 pt-4">
+        <button @click="sidebarOpen = false" class="text-gray-600 hover:text-gray-900">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </div>
+
+    {{-- Spacer agar menu tidak tertutup header (Di desktop header ada di samping, di mobile sidebar menutupi header) --}}
+    <div class="h-10 lg:h-20"></div> 
+
+    <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
 
         {{-- DASHBOARD DROPDOWN --}}
         <div x-data="{ open: {{ request()->routeIs('dashboard') || request()->routeIs('analytics') ? 'true' : 'false' }} }">
@@ -32,7 +50,7 @@ $subInactiveClasses = 'text-gray-700 hover:bg-blue-100 hover:text-blue-700';
                     class="ml-auto h-5 w-5 transform transition-transform"
                     xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd"
-                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                        d="M5.293 7.293a1 1 0 011.41 0L10 10.56l3.36-3.35a1 1 0 111.41 1.41l-4.06 4a1 1 0 01-1.41 0l-4.06-4a1 1 0 010-1.41z"
                         clip-rule="evenodd" />
                 </svg>
             </button>
@@ -44,8 +62,6 @@ $subInactiveClasses = 'text-gray-700 hover:bg-blue-100 hover:text-blue-700';
                           {{ request()->routeIs('dashboard') ? $subActiveClasses : $subInactiveClasses }}">
                     Dashboard
                 </a>
-
-
             </div>
         </div>
 
@@ -74,20 +90,19 @@ $subInactiveClasses = 'text-gray-700 hover:bg-blue-100 hover:text-blue-700';
 
             {{-- SUBMENU --}}
             <div x-show="open" x-transition class="mt-2 space-y-1">
-                <a href="{{ route('admin.student.index') }}"
+                <a href="#" {{-- ganti route --}}
                     class="block px-4 py-2 ml-4 rounded-md text-sm font-medium
-                  {{ request()->routeIs('students.index') ? $subActiveClasses : $subInactiveClasses }}">
+                  {{ request()->routeIs('student.index') ? $subActiveClasses : $subInactiveClasses }}">
                     All Students
                 </a>
-                <a href=""
+                <a href="#"
                     class="block px-4 py-2 ml-4 rounded-md text-sm font-medium
-                  {{ request()->routeIs('students.index') ? $subActiveClasses : $subInactiveClasses }}">
+                  {{ request()->routeIs('students.assesment') ? $subActiveClasses : $subInactiveClasses }}">
                     Assesment
                 </a>
-
-                <a href=""
+                <a href="#"
                     class="block px-4 py-2 ml-4 rounded-md text-sm font-medium
-                  {{ request()->routeIs('students.create') ? $subActiveClasses : $subInactiveClasses }}">
+                  {{ request()->routeIs('students.attendance') ? $subActiveClasses : $subInactiveClasses }}">
                     Attendance
                 </a>
             </div>
@@ -119,13 +134,11 @@ $subInactiveClasses = 'text-gray-700 hover:bg-blue-100 hover:text-blue-700';
             </button>
 
             <div x-show="open" x-transition class="mt-2 space-y-1">
-                <a href="}"
+                <a href="#"
                     class="block px-4 py-2 ml-4 rounded-md text-sm font-medium
                   {{ request()->routeIs('classes.index') ? $subActiveClasses : $subInactiveClasses }}">
                     Class Schedule
                 </a>
-
-
             </div>
         </div>
 
@@ -158,13 +171,8 @@ $subInactiveClasses = 'text-gray-700 hover:bg-blue-100 hover:text-blue-700';
                   {{ request()->routeIs('teachers.index') ? $subActiveClasses : $subInactiveClasses }}">
                     Attendance
                 </a>
-
-
             </div>
         </div>
-
-
-
 
     </nav>
 
