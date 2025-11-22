@@ -16,7 +16,7 @@
                 </div>
 
                 {{-- Title --}}
-                <h1 class="text-3xl font-bold text-red-500">
+                <h1 class="text-3xl font-bold bg-gradient-to-b from-blue-500 to-red-500 bg-clip-text text-transparent">
                     Assesment
                 </h1>
             </div>

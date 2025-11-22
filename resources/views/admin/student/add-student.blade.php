@@ -21,7 +21,7 @@
         
         <form action="{{ route('admin.student.store') }}" method="POST" enctype="multipart/form-data">
             @csrf <div class="flex items-center justify-between mb-8">
-                <h2 class="text-4xl font-bold bg-gradient-to-r from-blue-500 to-red-500 bg-clip-text text-transparent">
+                <h2 class="text-3xl font-bold bg-gradient-to-r from-blue-500 to-red-500 bg-clip-text text-transparent">
                   Add New Student
                 </h2>
                 

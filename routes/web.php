@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\ClassController;
 use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\AssessmentFormController;
 
@@ -78,6 +79,14 @@ Route::middleware('auth')->group(function () {
 // Rute Assesment
  Route::get('/admin/assessment', [AssessmentController::class, 'index'])->name('admin.assessment.index');
  Route::get('/admin/assessment/show', [AssessmentController::class, 'show'])->name('admin.assessment.show');
-    Route::get('/admin/assessment/create', [AssessmentController::class, 'create'])->name('admin.assessment.create');
+    Route::post('/admin/assessment/create', [AssessmentController::class, 'create'])->name('admin.assessment.create');
+
+
+// Rute Class
+Route::get('/admin/classes', [ClassController::class, 'index'])->name('admin.classes.index');
+ Route::post('/admin/classes/store', [ClassController::class, 'store'])->name('admin.classes.store');
+Route::put('/admin/classes/{id}', [ClassController::class, 'update'])
+    ->name('admin.classes.update');
+
 
 require __DIR__.'/auth.php';
