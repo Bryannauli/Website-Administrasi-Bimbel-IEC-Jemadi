@@ -83,8 +83,8 @@ DB_USERNAME=root
 DB_PASSWORD=
 ```
 
-#### **Credential Khusus Role (Digunakan Seeder/Admin Tools)**
-Tambahan variabel ini diperlukan untuk login awal role tertentu:
+#### **Credential Khusus Role**
+Tambahkan variabel dibawah ini untuk koneksi database role tertentu:
 ```env
 DB_IEC_ADMIN_USERNAME=iec_admin
 DB_IEC_ADMIN_PASSWORD=IEC_Jemadi_Admin
