@@ -73,7 +73,7 @@ npm install
 cp .env.example .env
 ```
 
-### 5. Sesuaikan Konfigurasi Database Pada `.env`
+### 5. Konfigurasi File `.env`
 Uncomment dan ubah sesuai database lokal:
 ```env
 DB_HOST=127.0.0.1
@@ -82,6 +82,17 @@ DB_DATABASE=iec_jemadi
 DB_USERNAME=root
 DB_PASSWORD=
 ```
+
+#### **Credential Khusus Role (Digunakan Seeder/Admin Tools)**
+Tambahan variabel ini diperlukan untuk login awal role tertentu:
+```env
+DB_IEC_ADMIN_USERNAME=iec_admin
+DB_IEC_ADMIN_PASSWORD=IEC_Jemadi_Admin
+
+DB_IEC_TEACHER_USERNAME=iec_teacher
+DB_IEC_TEACHER_PASSWORD=IEC_Teacher123
+```
+> Pastikan nilai di atas **sinkron dengan seeder pengguna** agar login awal berfungsi.
 
 ### 6. Generate Application Key
 ```bash

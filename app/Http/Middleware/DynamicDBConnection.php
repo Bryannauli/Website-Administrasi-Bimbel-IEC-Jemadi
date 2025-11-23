@@ -23,10 +23,10 @@ class DynamicDBConnection
 
             switch ($role) {
                 case 'admin':
-                    Config::set('database.default', 'iec_mysql');
+                    Config::set('database.default', 'iec_admin');
                     break;
                 case 'teacher':
-                    Config::set('database.default', 'iec_mysql');
+                    Config::set('database.default', 'iec_teacher');
                     break;
                 default:
                     Config::set('database.default', 'mysql');
