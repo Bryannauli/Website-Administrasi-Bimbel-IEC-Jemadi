@@ -85,8 +85,11 @@ Route::middleware('auth')->group(function () {
 // Rute Class
 Route::get('/admin/classes', [ClassController::class, 'index'])->name('admin.classes.index');
  Route::post('/admin/classes/store', [ClassController::class, 'store'])->name('admin.classes.store');
-Route::put('/admin/classes/{id}', [ClassController::class, 'update'])
-    ->name('admin.classes.update');
+Route::put('/admin/classes/{id}', [ClassController::class, 'update'])->name('admin.classes.update');
+//  Route::get('/admin/classes/{id}', [ClassController::class, 'show'])->name('admin.class.show');
+Route::get('/admin/classes/detail/{id}', [ClassController::class, 'detailClass'])->name('admin.class.detailclass');
+   Route::get('/admin/classes//{id}', [ClassController::class, 'class'])->name('admin.classes.class');
+  Route::get('/admin/classes/{id}/students', [ClassController::class, 'students'])->name('admin.classes.students');
 
 
 require __DIR__.'/auth.php';
