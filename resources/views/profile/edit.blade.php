@@ -1,3 +1,5 @@
+<!-- views/profile/edit -->
+
 <x-app-layout>
     {{-- Header tidak ditampilkan sesuai layout dashboard Anda --}}
     <x-slot name="header">

@@ -11,6 +11,14 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
+    // Display the admin user's profile form.
+    public function editAdmin(Request $request): View
+    {
+        return view('admin.profile', [
+            'user' => $request->user(),
+        ]);
+    }
+
     /**
      * Display the user's profile form.
      */

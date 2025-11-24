@@ -1,3 +1,5 @@
+<!-- views/admin/dashboard -->
+
 <x-app-layout>
     {{-- Slot header dari Breeze tidak digunakan di desain ini, jadi kita kosongkan --}}
     <x-slot name="header">

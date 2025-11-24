@@ -47,11 +47,12 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
         return view('admin.dashboard');
     })->name('dashboard');
 
+    Route::get('/profile', [ProfileController::class, 'editAdmin'])->name('profile');
+
     // Grouping Route untuk Student
     Route::prefix('student')->name('student.')->group(function () {
         // Menampilkan daftar siswa
         Route::get('/', [StudentController::class, 'index'])->name('index');
-        
         // Menampilkan form tambah siswa
         Route::get('/add', [StudentController::class, 'add'])->name('add');
         

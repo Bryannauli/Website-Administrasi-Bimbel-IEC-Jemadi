@@ -14,6 +14,8 @@ class MySQLUserSeeder extends Seeder
     public function run(): void
     {
         DB::statement("DROP USER IF EXISTS 'iec_user'@'%';");
+        DB::statement("DROP USER IF EXISTS 'iec_admin'@'%';");
+        DB::statement("DROP USER IF EXISTS 'iec_teacher'@'%';");
         
         DB::statement("
             CREATE USER IF NOT EXISTS 'iec_admin'@'%' IDENTIFIED BY 'IEC_Jemadi_Admin';
