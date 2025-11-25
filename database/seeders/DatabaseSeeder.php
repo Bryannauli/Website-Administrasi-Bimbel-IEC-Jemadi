@@ -32,7 +32,7 @@ class DatabaseSeeder extends Seeder
         // Akun tes teacher
         User::create([
             'username' => 'tes',
-            'name' => 'AkunTest',
+            'name' => 'Teacher Tes',
             'photo' => null,
             'email' => null,
             'phone' => null,
