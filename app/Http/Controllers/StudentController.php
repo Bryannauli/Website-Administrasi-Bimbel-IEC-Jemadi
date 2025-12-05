@@ -5,115 +5,61 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 
 
 class StudentController extends Controller
 {
     // Halaman List Siswa
-   public function index(Request $request)
+    public function index(Request $request)
     {
         // ==========================================
-        // DATA DUMMY (PENGGANTI DATABASE)
+        // 1. PANGGIL STORED PROCEDURE (SUMMARY)
         // ==========================================
-        $dummyStudents = collect([
-            (object)[
-                'id' => 1,
-                'student_id' => 'S-2025001',
-                'name' => 'Ahmad Yusuf',
-                'email' => 'ahmad@example.com',
-                'phone' => '0812-3456-7890',
-                'gender' => 'Man',
-                'class_name' => 'Vocabulary - Basic',
-                'status' => 'active',
-                'avatar_color' => 'bg-purple-100 text-purple-600',
-                'avatar_initial' => 'AY'
-            ],
-            (object)[
-                'id' => 2,
-                'student_id' => 'S-2025002',
-                'name' => 'Budi Santoso',
-                'email' => 'budi@example.com',
-                'phone' => '0812-9876-5432',
-                'gender' => 'Man',
-                'class_name' => 'Grammar - Intermediate',
-                'status' => 'inactive',
-                'avatar_color' => 'bg-pink-100 text-pink-600',
-                'avatar_initial' => 'BS'
-            ],
-            (object)[
-                'id' => 3,
-                'student_id' => 'S-2025003',
-                'name' => 'Citra Dewi',
-                'email' => 'citra@example.com',
-                'phone' => '0813-4567-8901',
-                'gender' => 'Woman',
-                'class_name' => 'Vocabulary - Basic',
-                'status' => 'active',
-                'avatar_color' => 'bg-blue-100 text-blue-600',
-                'avatar_initial' => 'CD'
-            ],
-            (object)[
-                'id' => 4,
-                'student_id' => 'S-2025004',
-                'name' => 'Dian Sastro',
-                'email' => 'dian@example.com',
-                'phone' => '0813-1122-3344',
-                'gender' => 'Woman',
-                'class_name' => 'Speaking - Advanced',
-                'status' => 'pending',
-                'avatar_color' => 'bg-yellow-100 text-yellow-600',
-                'avatar_initial' => 'DS'
-            ],
-            (object)[
-                'id' => 5,
-                'student_id' => 'S-2025005',
-                'name' => 'Eko Prasetyo',
-                'email' => 'eko@example.com',
-                'phone' => '0812-5566-7788',
-                'gender' => 'Man',
-                'class_name' => 'Grammar - Basic',
-                'status' => 'active',
-                'avatar_color' => 'bg-green-100 text-green-600',
-                'avatar_initial' => 'EP'
-            ],
-             (object)[
-                'id' => 6,
-                'student_id' => 'S-2025006',
-                'name' => 'Fani Rahma',
-                'email' => 'fani@example.com',
-                'phone' => '0812-9988-7766',
-                'gender' => 'Woman',
-                'class_name' => 'Listening - Intermediate',
-                'status' => 'active',
-                'avatar_color' => 'bg-red-100 text-red-600',
-                'avatar_initial' => 'FR'
-            ],
-        ]);
+        try {
+            $result = DB::select('CALL get_student_summary()');
+
+            $total_students = $result[0]->total_students ?? 0;
+            $total_active   = $result[0]->total_active ?? 0;
+            $total_inactive = $result[0]->total_inactive ?? 0;
+
+        } catch (\Exception $e) {
+            $total_students = 0;
+            $total_active   = 0;
+            $total_inactive = 0;
+        }
+
 
         // ==========================================
-        // LOGIKA SEARCH & PAGINATION MANUAL
+        // 2. QUERY DATA STUDENTS DARI DATABASE
         // ==========================================
-        
-        // 1. Filter Search (Jika ada input search)
-        if ($request->has('search') && $request->search != '') {
-            $searchTerm = strtolower($request->search);
-            $dummyStudents = $dummyStudents->filter(function ($student) use ($searchTerm) {
-                return str_contains(strtolower($student->name), $searchTerm) || 
-                       str_contains(strtolower($student->student_id), $searchTerm);
+        $query = \App\Models\Student::query();
+
+        // SEARCH
+        if ($request->search) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('full_name', 'LIKE', "%$search%")
+                ->orWhere('student_id', 'LIKE', "%$search%");
             });
         }
 
-        // 2. Pagination Manual (Agar links() di view tetap bekerja)
-        $currentPage = LengthAwarePaginator::resolveCurrentPage();
-        $perPage = 5; // Tampilkan 5 data per halaman
-        $currentItems = $dummyStudents->slice(($currentPage - 1) * $perPage, $perPage)->all();
-        
-        $students = new LengthAwarePaginator($currentItems, count($dummyStudents), $perPage);
-        $students->setPath($request->url()); // Set URL agar link pagination benar
+        // PAGINATION
+        $students = $query->paginate(5);
 
-        return view('admin.student.student', compact('students')); 
+
+        // ==========================================
+        // 3. RETURN VIEW
+        // ==========================================
+        return view('admin.student.student', compact(
+            'students',
+            'total_students',
+            'total_active',
+            'total_inactive'
+        ));
     }
+
 
     // Halaman Form Tambah Siswa
     public function add()
@@ -134,5 +80,4 @@ class StudentController extends Controller
         // Untuk sementara redirect kembali ke index
         return redirect()->route('admin.student.index');
     }
-
 }

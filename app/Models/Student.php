@@ -19,7 +19,9 @@ class Student extends Model
         'class_id',
     ];
 
-    // Relasi ke kelas
+    /**
+     * Relasi ke kelas
+     */
     public function classModel()
     {
         return $this->belongsTo(ClassModel::class, 'class_id');
