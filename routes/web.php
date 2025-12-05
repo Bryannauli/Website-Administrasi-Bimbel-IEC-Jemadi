@@ -44,6 +44,9 @@ Route::get('/dashboard', function () {
 // --- Rute Admin ---
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/admin/attendance-summary', [DashboardController::class, 'attendanceSummary']);
+    Route::get('/admin/attendance-stats', [DashboardController::class, 'attendanceStats']);
+    Route::get('/admin/weekly-absence', [DashboardController::class, 'weeklyAbsence']);
 
     Route::get('/profile', [ProfileController::class, 'editAdmin'])->name('profile');
 

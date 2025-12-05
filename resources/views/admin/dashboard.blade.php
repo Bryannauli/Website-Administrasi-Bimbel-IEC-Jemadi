@@ -118,14 +118,14 @@
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-lg font-semibold text-gray-900">Total Attendance</h3>
                             <div class="flex space-x-2 text-sm">
-                                <button class="text-blue-600 font-medium">Today</button>
-                                <button class="text-gray-400 hover:text-gray-600">All</button>
+                                <button id="btnToday" class="text-blue-600 font-medium">Today</button>
+                                <button id="btnAll" class="text-gray-400 hover:text-gray-600">All</button>
                             </div>
                         </div>
 
                         <div class="flex flex-col items-center justify-center space-y-4">
                             <div class="relative w-36 h-36">
-                                <div class="w-36 h-36 rounded-full" style="background: conic-gradient(rgb(59, 130, 246) 0% 60%, rgb(244, 114, 182) 60% 75%, rgb(229, 231, 235) 75% 100%);">
+                                <div class="w-36 h-36 rounded-full" id="attendanceChart">
                                     <div class="absolute inset-4 rounded-full bg-white"></div>
                                 </div>
                                 <div class="absolute inset-0 flex items-center justify-center">
@@ -134,11 +134,32 @@
                                     </button>
                                 </div>
                             </div>
-                            <ul class="space-y-3 text-sm text-gray-700 w-full px-4">
-                                <li class="flex items-center justify-between"><span class="flex items-center"><span class="w-3 h-3 rounded-full bg-blue-500 mr-2"></span>Present</span> <span>60%</span></li>
-                                <li class="flex items-center justify-between"><span class="flex items-center"><span class="w-3 h-3 rounded-full bg-pink-500 mr-2"></span>Excused</span> <span>15%</span></li>
-                                <li class="flex items-center justify-between"><span class="flex items-center"><span class="w-3 h-3 rounded-full bg-gray-300 mr-2"></span>Absent</span> <span>25%</span></li>
-                            </ul>
+                                <ul class="space-y-3 text-sm text-gray-700 w-full px-4">
+                                    <li class="flex justify-between">
+                                        <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-blue-500 mr-2"></span>Present</span>
+                                        <span id="presentVal">0%</span>
+                                    </li>
+
+                                    <li class="flex justify-between">
+                                        <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-green-500 mr-2"></span>Permission</span>
+                                        <span id="permissionVal">0%</span>
+                                    </li>
+
+                                    <li class="flex justify-between">
+                                        <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-yellow-500 mr-2"></span>Sick</span>
+                                        <span id="sickVal">0%</span>
+                                    </li>
+
+                                    <li class="flex justify-between">
+                                        <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-purple-500 mr-2"></span>Late</span>
+                                        <span id="lateVal">0%</span>
+                                    </li>
+
+                                    <li class="flex justify-between">
+                                        <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-gray-400 mr-2"></span>Absent</span>
+                                        <span id="absentVal">0%</span>
+                                    </li>
+                                </ul>
                         </div>
                     </div>
 
@@ -151,18 +172,112 @@
                             </button>
                         </div>
                         
-                        <div class="w-full h-48 flex justify-around items-end space-x-2 border-b border-gray-200 pb-2 min-w-[300px]">
-                            @foreach(['M','T','W','T','F','S'] as $day)
-                            <div class="flex flex-col items-center flex-1">
-                                <div class="w-4 sm:w-6 bg-blue-200 rounded-t-lg" style="height: {{ rand(30,90) }}%;"></div>
-                                <span class="mt-1 text-xs text-gray-500">{{ $day }}</span>
-                            </div>
-                            @endforeach
+                        <div id="weeklyChart" 
+                            class="w-full h-48 flex justify-around items-end space-x-2 border-b border-gray-200 pb-2 min-w-[300px]">
                         </div>
+
                     </div>
 
                 </div>
             </div>
         </div>
     </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    function updateAttendanceChart(data) {
+        let total = data.present + data.permission + data.sick + data.late + data.absent;
+        if (total === 0) total = 1;
+
+        const p  = (data.present / total) * 100;
+        const pm = (data.permission / total) * 100;
+        const s  = (data.sick / total) * 100;
+        const l  = (data.late / total) * 100;
+        const a  = (data.absent / total) * 100;
+
+        // Update angka persentase di bawah chart
+        document.getElementById("presentVal").innerText = p.toFixed(1) + "%";
+        document.getElementById("permissionVal").innerText = pm.toFixed(1) + "%";
+        document.getElementById("sickVal").innerText = s.toFixed(1) + "%";
+        document.getElementById("lateVal").innerText = l.toFixed(1) + "%";
+        document.getElementById("absentVal").innerText = a.toFixed(1) + "%";
+
+        // Update tampilan chart
+        const chart = document.getElementById("attendanceChart");
+
+        chart.style.background = `
+            conic-gradient(
+                rgb(59, 130, 246) 0% ${p}%,
+                rgb(16, 185, 129) ${p}% ${p + pm}%,
+                rgb(234, 179, 8) ${p + pm}% ${p + pm + s}%,
+                rgb(168, 85, 247) ${p + pm + s}% ${p + pm + s + l}%,
+                rgb(156, 163, 175) ${p + pm + s + l}% 100%
+            )
+        `;
+    }
+
+    function loadStats(type) {
+        fetch(`/admin/attendance-stats?type=${type}`)
+            .then(res => res.json())
+            .then(data => {
+                console.log("Attendance data:", data);
+                updateAttendanceChart(data);
+            })
+            .catch(err => console.error("Error:", err));
+    }
+
+    // Tombol
+    const btnToday = document.getElementById("btnToday");
+    const btnAll = document.getElementById("btnAll");
+
+    btnToday.addEventListener("click", function () {
+        btnToday.classList.add("text-blue-600");
+        btnAll.classList.remove("text-blue-600");
+        loadStats("today");
+    });
+
+    btnAll.addEventListener("click", function () {
+        btnAll.classList.add("text-blue-600");
+        btnToday.classList.remove("text-blue-600");
+        loadStats("all");
+    });
+
+    // load default
+    loadStats("today");
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    function loadWeeklyAbsence() {
+        fetch("/admin/weekly-absence")
+            .then(res => res.json())
+            .then(data => {
+                renderWeeklyChart(data);
+            })
+            .catch(err => console.error(err));
+    }
+
+    function renderWeeklyChart(data) {
+        const container = document.getElementById("weeklyChart");
+        container.innerHTML = "";
+
+        data.forEach(item => {
+            const height = item.total * 10 + 5;
+
+            const column = `
+                <div class="flex flex-col items-center flex-1">
+                    <div class="w-4 sm:w-6 bg-blue-500 rounded-t-lg" style="height: ${height}px;"></div>
+                    <span class="mt-1 text-xs text-gray-500">${item.day_label}</span>
+                </div>
+            `;
+
+            container.innerHTML += column;
+        });
+    }
+
+    loadWeeklyAbsence();
+});
+});
+</script>
+
 </x-app-layout>
