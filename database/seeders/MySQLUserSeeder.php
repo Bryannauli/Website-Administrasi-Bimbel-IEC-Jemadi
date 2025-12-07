@@ -16,9 +16,10 @@ class MySQLUserSeeder extends Seeder
 
         // Buat user ADMIN
         DB::statement("CREATE USER 'iec_admin'@'%' IDENTIFIED BY 'IEC_Jemadi_Admin';");
+        // Berikan semua hak akses kecuali yang bisa manipulasi struktur tabel
         DB::statement("
             GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE,
-            SHOW VIEW, CREATE, REFERENCES, ALTER, INDEX
+            SHOW VIEW, REFERENCES, INDEX
             ON iec_jemadi.* TO 'iec_admin'@'%';
         ");
 
