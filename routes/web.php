@@ -57,8 +57,15 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
         // Menampilkan form tambah siswa
         Route::get('/add', [StudentController::class, 'add'])->name('add');
         
-        // Proses simpan data (bisa ditambahkan nanti)
+        // Proses simpan data
         Route::post('/', [StudentController::class, 'store'])->name('store');
+
+        // Menampilkan form edit siswa
+        Route::get('/edit/{id}', [StudentController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [StudentController::class, 'update'])->name('update');
+        
+        // Proses hapus siswa
+        Route::delete('/{id}', [StudentController::class, 'delete'])->name('delete');
         
         // Menampilkan detail siswa
         // {id} adalah placeholder untuk ID siswa

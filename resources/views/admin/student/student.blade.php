@@ -133,22 +133,6 @@
                                 {{ $student->class_id ?? '-' }}
                             </td>
 
-                            {{-- Status badge --}}
-                            <td class="px-6 py-4">
-                                @php
-                                    $status = strtolower($student->status);
-                                    $badge = [
-                                        'active'   => 'bg-blue-100 text-blue-700',
-                                        'inactive' => 'bg-red-100 text-red-700',
-                                        'pending'  => 'bg-yellow-100 text-yellow-700',
-                                    ][$status] ?? 'bg-gray-100 text-gray-700';
-                                @endphp
-
-                                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $badge }}">
-                                    {{ ucfirst($student->status) }}
-                                </span>
-                            </td>
-
                             {{-- Actions --}}
                             <td class="px-6 py-4">
                                 <div class="flex items-center justify-center gap-3">
@@ -173,8 +157,7 @@
 
                                     {{-- Delete --}}
                                     <div class="group relative">
-                                        <form action="{{ route('admin.student.delete', $student->id) }}" method="POST"
-                                            onsubmit="return confirm('Delete this student?')">
+                                        <form action="{{ route('admin.student.delete', $student->id) }}" method="POST">
                                             @csrf
                                             @method('DELETE')
                                             <button class="text-gray-400 hover:text-red-600 transition-colors">
@@ -225,4 +208,27 @@
 
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        document.querySelectorAll('.btn-delete').forEach(btn => {
+            btn.addEventListener('click', function(){
+                let form = this.closest('form');
+
+                Swal.fire({
+                    title: "Yakin ingin menghapus?",
+                    text: "Siswa tidak akan benar-benar dihapus, hanya dinonaktifkan.",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "Ya, nonaktifkan",
+                    cancelButtonText: "Batal"
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                })
+            });
+        });
+    </script>
 </x-app-layout>
