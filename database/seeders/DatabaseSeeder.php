@@ -15,31 +15,8 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(MySQLUserSeeder::class);
-        
-        // Admin default
-        User::create([
-            'username' => 'admin',
-            'name' => 'Administrator',
-            'photo' => null,
-            'email' => null,
-            'phone' => null,
-            'password' => Hash::make('admin123'),
-            'role' => 'admin',
-            'is_teacher' => false,
-            'is_active' => true,
-        ]);
-
-        // Akun tes teacher
-        User::create([
-            'username' => 'tes',
-            'name' => 'Teacher Tes',
-            'photo' => null,
-            'email' => null,
-            'phone' => null,
-            'password' => Hash::make('tes123'),
-            'role' => 'teacher',
-            'is_teacher' => true,
-            'is_active' => true,
-        ]);
+        $this->call(UserSeeder::class);
+        $this->call(ClassSeeder::class);
+        $this->call(StudentSeeder::class);
     }
 }
