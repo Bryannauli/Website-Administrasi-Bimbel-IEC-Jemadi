@@ -32,15 +32,23 @@ class StudentController extends Controller
                     ->orderBy('academic_year', 'desc')
                     ->pluck('academic_year');
 
-        // B. Query untuk isi Dropdown Kelas (Dropdown kedua)
+        // B. Ambil Daftar Kategori Unik (Pre-level, Level, Step, dll)
+        $categories = ClassModel::select('category')->distinct()->pluck('category');
+
+        // C. Query untuk isi Dropdown Kelas (Dipengaruhi Tahun & Kategori)
         $classQuery = ClassModel::orderBy('name', 'asc');
 
-        // Jika user MEMILIH Tahun, filter daftar kelasnya
+        // Jika tahun akademik dipilih, saring daftar kelasnya
         if ($request->filled('academic_year')) {
             $classQuery->where('academic_year', $request->academic_year);
         }
+
+        // Jika kategori dipilih, saring daftar kelasnya
+        if ($request->filled('category')) {
+            $classQuery->where('category', $request->category);
+        }
         
-        $classes = $classQuery->get(); // Eksekusi query kelas
+        $classes = $classQuery->get();
 
         // 3. QUERY DATA SISWA (UTAMA)
         $query = Student::with('classModel');
@@ -54,10 +62,17 @@ class StudentController extends Controller
             });
         }
 
-        // Filter B: Berdasarkan Kelas Spesifik
+        // Filter B: Berdasarkan Kategori Kelas (via Relasi Kelas)
+        if ($request->filled('category') && $request->class_id != 'no_class') {
+            $query->whereHas('classModel', function($q) use ($request) {
+                $q->where('category', $request->category);
+            });
+        }
+
+        // Filter C: Berdasarkan Kelas Spesifik
         if ($request->filled('class_id')) {
             if ($request->class_id == 'no_class') {
-                // Cari yang class_id-nya NULL
+                // Cari yang class_id-nya NULL jika memilih "Tanpa Kelas"
                 $query->whereNull('class_id'); 
             } else {
                 // Cari berdasarkan ID kelas
@@ -65,7 +80,7 @@ class StudentController extends Controller
             }
         }
 
-        // Filter C: Search
+        // Filter D: Search
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -74,7 +89,7 @@ class StudentController extends Controller
             });
         }
 
-        // Filter D: Sort
+        // Filter E: Sort
         $sort = $request->get('sort', 'newest');
         switch ($sort) {
             case 'name_asc': $query->orderBy('name', 'asc'); break;
@@ -93,6 +108,7 @@ class StudentController extends Controller
             'students',
             'classes',
             'years',
+            'categories',
             'total_students',
             'total_active',
             'total_inactive'
