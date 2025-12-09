@@ -25,13 +25,19 @@
         <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
-                    <img src="https://ui-avatars.com/api/?name=Hanjin&background=6366f1&color=fff&size=64" alt="Hanjin" class="w-16 h-16 rounded-full">
+                    <img src="https://ui-avatars.com/api/?name={{ urlencode($student->name) }}&background=6366f1&color=fff&size=64"
+                        alt="{{ $student->name }}" class="w-16 h-16 rounded-full">
+
                     <div>
-                        <h2 class="text-xl font-bold text-gray-800">Hanjin</h2>
-                        <p class="text-blue-600 font-medium">127893683</p>
+                        <h2 class="text-xl font-bold text-gray-800">{{ $student->name }}</h2>
+                        <p class="text-blue-600 font-medium">{{ $student->student_id }}</p>
                     </div>
                 </div>
-                <span class="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium text-sm">Active</span>
+                <span class="px-4 py-2 
+                    {{ $student->is_active ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700' }}
+                    rounded-lg font-medium text-sm">
+                    {{ $student->is_active ? 'Active' : 'Inactive' }}
+                </span>
             </div>
         </div>
 
@@ -55,38 +61,33 @@
                         <div>
                             <div class="mb-4">
                                 <p class="text-sm text-gray-500 mb-1">Full Name</p>
-                                <p class="text-gray-800 font-medium">Lee Hanjin</p>
-                            </div>
-                            <div class="mb-4">
-                                <p class="text-sm text-gray-500 mb-1">Email</p>
-                                <p class="text-gray-800 font-medium">hnjn@gmail.com</p>
+                                <p class="text-gray-800 font-medium">{{ $student->name }}</p>
                             </div>
                             <div class="mb-4">
                                 <p class="text-sm text-gray-500 mb-1">Phone Number</p>
-                                <p class="text-gray-800 font-medium">08527837748</p>
+                                <p class="text-gray-800 font-medium">{{ $student->phone }}</p>
+
                             </div>
                             <div>
                                 <p class="text-sm text-gray-500 mb-1">Gender</p>
-                                <p class="text-gray-800 font-medium">Man</p>
+                                <p class="text-gray-800 font-medium">{{ $student->gender }}</p>
                             </div>
                         </div>
 
                         <div>
                             <div class="mb-4">
-                                <p class="text-sm text-gray-500 mb-1">Type</p>
-                                <p class="text-gray-800 font-medium">Student</p>
-                            </div>
-                            <div class="mb-4">
                                 <p class="text-sm text-gray-500 mb-1">Address</p>
-                                <p class="text-gray-800 font-medium">Jl. Gatot Subroto</p>
+                                <p class="text-gray-800 font-medium">{{ $student->Address }}</p>
                             </div>
                             <div class="mb-4">
                                 <p class="text-sm text-gray-500 mb-1">Join Date</p>
-                                <p class="text-gray-800 font-medium">10 Januari 2023</p>
+                                <p class="text-gray-800 font-medium">{{ $student->created_at }}</p>
                             </div>
                             <div>
                                 <p class="text-sm text-gray-500 mb-1">Class</p>
-                                <span class="inline-block px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">English1-A</span>
+                                <span class="inline-block px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                                    {{ $student->classModel->name ?? 'No Class Assigned' }}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -106,21 +107,23 @@
                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
                         </svg>
-                        <span>No of total working days <strong>28 Days</strong></span>
+                        <span>No of total working days <strong>{{ $totalDays }} Days</strong></span>
                     </div>
 
                     <div class="grid grid-cols-3 gap-6 mb-8">
                         <div class="text-center p-4 bg-gray-50 rounded-xl">
                             <p class="text-sm text-gray-500 mb-2">Present</p>
-                            <p class="text-3xl font-bold text-blue-600">25</p>
+                            <p class="text-3xl font-bold text-blue-600">{{ $summary['present'] }}</p>
                         </div>
+
                         <div class="text-center p-4 bg-gray-50 rounded-xl">
                             <p class="text-sm text-gray-500 mb-2">Absent</p>
-                            <p class="text-3xl font-bold text-red-500">2</p>
+                            <p class="text-3xl font-bold text-red-500">{{ $summary['absent'] }}</p>
                         </div>
+
                         <div class="text-center p-4 bg-gray-50 rounded-xl">
-                            <p class="text-sm text-gray-500 mb-2">Holiday</p>
-                            <p class="text-3xl font-bold text-gray-800">0</p>
+                            <p class="text-sm text-gray-500 mb-2">Late</p>
+                            <p class="text-3xl font-bold text-yellow-500">{{ $summary['late'] }}</p>
                         </div>
                     </div>
 
@@ -135,7 +138,7 @@
                             </svg>
                             <div class="absolute inset-0 flex flex-col items-center justify-center">
                                 <span class="text-sm text-gray-500 mb-1">Attendance</span>
-                                <span class="text-4xl font-bold text-gray-800">95%</span>
+                                <span class="text-4xl font-bold text-gray-800">{{ $presentPercent }}%</span>
                             </div>
                         </div>
 

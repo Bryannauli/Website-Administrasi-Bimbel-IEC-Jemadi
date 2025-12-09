@@ -68,8 +68,8 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
         Route::delete('/{id}', [StudentController::class, 'delete'])->name('delete');
         
         // Menampilkan detail siswa
-        // {id} adalah placeholder untuk ID siswa
-        Route::get('/{id}', [StudentController::class, 'detail'])->name('detail');
+        Route::get('/detail/{id}', [StudentController::class, 'detail'])->name('detail');
+
     });
 
 });
