@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use App\Models\ClassModel;
 use App\Models\Student;
+use App\Models\AttendanceRecord;
+use App\Models\AttendanceSession;
 
 
 
@@ -43,7 +45,7 @@ class StudentController extends Controller
         if ($request->search) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('full_name', 'LIKE', "%$search%")
+                $q->where('name', 'LIKE', "%$search%")
                 ->orWhere('student_id', 'LIKE', "%$search%");
             });
         }
@@ -75,10 +77,48 @@ class StudentController extends Controller
     // Halaman Detail Siswa
     public function detail($id)
     {
-        // Nanti $id digunakan untuk mengambil data dari database
-        return view('admin.student.detail-student');
+        $student = Student::findOrFail($id);
+
+        // Ambil semua attendance student ini
+        $attendance = AttendanceRecord::with('session')
+                        ->where('student_id', $id)
+                        ->orderBy('attendance_session_id', 'DESC')
+                        ->get();
+
+        // Summary Attendance
+        $summary = [
+            'present'     => $attendance->where('status', 'present')->count(),
+            'absent'      => $attendance->where('status', 'absent')->count(),
+            'late'        => $attendance->where('status', 'late')->count(),
+            'permission'  => $attendance->where('status', 'permission')->count(),
+            'sick'        => $attendance->where('status', 'sick')->count(),
+        ];
+
+        // Total Working Days
+        $totalDays = $attendance->count();
+
+        // Present Percentage
+        $presentPercent = $totalDays > 0
+            ? round(($summary['present'] / $totalDays) * 100)
+            : 0;
+
+        // Last 7 days attendance
+        $last7 = AttendanceRecord::with('session')
+                    ->where('student_id', $id)
+                    ->orderBy('attendance_session_id', 'DESC')
+                    ->limit(7)
+                    ->get();
+
+        return view('admin.student.detail-student', compact(
+            'student',
+            'attendance',
+            'summary',
+            'presentPercent',
+            'totalDays',
+            'last7'
+        ));
     }
-    
+
     public function store(Request $request)
     {
         $request->validate([

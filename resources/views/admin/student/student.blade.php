@@ -120,7 +120,7 @@
 
                             {{-- Name --}}
                             <td class="px-6 py-4 font-medium">
-                                {{ $student->full_name }}
+                                {{ $student->name }}
                             </td>
 
                             {{-- Gender --}}
