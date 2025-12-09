@@ -19,46 +19,80 @@ class StudentController extends Controller
     // Halaman List Siswa
     public function index(Request $request)
     {
-        // ==========================================
-        // 1. PANGGIL STORED PROCEDURE (SUMMARY)
-        // ==========================================
-        try {
-            $result = DB::select('CALL get_student_summary()');
+        // 1. STATISTIK
+        $total_students = Student::count();
+        $total_active   = Student::where('is_active', 1)->count();
+        $total_inactive = Student::where('is_active', 0)->count();
 
-            $total_students = $result[0]->total_students ?? 0;
-            $total_active   = $result[0]->total_active ?? 0;
-            $total_inactive = $result[0]->total_inactive ?? 0;
 
-        } catch (\Exception $e) {
-            $total_students = 0;
-            $total_active   = 0;
-            $total_inactive = 0;
+        // 2. SIAPKAN DATA FILTER (TAHUN & KELAS)
+        // A. Ambil daftar tahun unik dari tabel kelas untuk dropdown pertama
+        $years = ClassModel::select('academic_year')
+                    ->distinct()
+                    ->orderBy('academic_year', 'desc')
+                    ->pluck('academic_year');
+
+        // B. Query untuk isi Dropdown Kelas (Dropdown kedua)
+        $classQuery = ClassModel::orderBy('name', 'asc');
+
+        // Jika user MEMILIH Tahun, filter daftar kelasnya
+        if ($request->filled('academic_year')) {
+            $classQuery->where('academic_year', $request->academic_year);
         }
+        
+        $classes = $classQuery->get(); // Eksekusi query kelas
 
+        // 3. QUERY DATA SISWA (UTAMA)
+        $query = Student::with('classModel');
 
-        // ==========================================
-        // 2. QUERY DATA STUDENTS DARI DATABASE
-        // ==========================================
-        $query = Student::where('is_active', 1);
-
-        // SEARCH
-        if ($request->search) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'LIKE', "%$search%")
-                ->orWhere('student_id', 'LIKE', "%$search%");
+        // Filter A: Berdasarkan Tahun Akademik (via Relasi Kelas)
+        // PENTING: Jika user mencari siswa "Tanpa Kelas", kita harus ABAIKAN filter tahun.
+        // Karena siswa tanpa kelas tidak punya tahun akademik.
+        if ($request->filled('academic_year') && $request->class_id != 'no_class') {
+            $query->whereHas('classModel', function($q) use ($request) {
+                $q->where('academic_year', $request->academic_year);
             });
         }
 
-        // PAGINATION
-        $students = $query->paginate(5);
+        // Filter B: Berdasarkan Kelas Spesifik
+        if ($request->filled('class_id')) {
+            if ($request->class_id == 'no_class') {
+                // Cari yang class_id-nya NULL
+                $query->whereNull('class_id'); 
+            } else {
+                // Cari berdasarkan ID kelas
+                $query->where('class_id', $request->class_id);
+            }
+        }
+
+        // Filter C: Search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'LIKE', "%$search%")
+                    ->orWhere('student_number', 'LIKE', "%$search%");
+            });
+        }
+
+        // Filter D: Sort
+        $sort = $request->get('sort', 'newest');
+        switch ($sort) {
+            case 'name_asc': $query->orderBy('name', 'asc'); break;
+            case 'name_desc': $query->orderBy('name', 'desc'); break;
+            case 'number_asc': $query->orderBy('student_number', 'asc'); break;
+            case 'oldest': $query->orderBy('created_at', 'asc'); break;
+            case 'newest': default: $query->orderBy('created_at', 'desc'); break;
+        }
+
+        // Eksekusi Pagination
+        $students = $query->paginate(10)->appends($request->query());
 
 
-        // ==========================================
-        // 3. RETURN VIEW
-        // ==========================================
+        // 4. RETURN VIEW
         return view('admin.student.student', compact(
             'students',
+            'classes',
+            'years',
             'total_students',
             'total_active',
             'total_inactive'

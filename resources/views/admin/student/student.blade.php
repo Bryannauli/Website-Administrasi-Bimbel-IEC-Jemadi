@@ -55,27 +55,79 @@
                     <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
                             
-                            {{-- Filter Class (Ditempatkan di samping kiri tombol Add) --}}
-                            <form action="{{ route('admin.student.index') }}" method="GET" class="relative w-full sm:w-auto">
-                                {{-- Pertahankan query search jika ada --}}
+                            {{-- FILTER & SORT CONTAINER --}}
+                            <form action="{{ route('admin.student.index') }}" method="GET" class="relative w-full sm:w-auto flex flex-col sm:flex-row items-center gap-3">
+                                
+                                {{-- 1. HIDDEN INPUTS --}}
                                 @if(request('search'))
                                     <input type="hidden" name="search" value="{{ request('search') }}">
                                 @endif
 
-                                <div class="relative">
-                                    <select name="class_id" onchange="this.form.submit()" class="appearance-none w-full sm:w-48 px-4 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white cursor-pointer">
-                                        <option value="">All Classes</option>
-                                        {{-- Loop data kelas dari database --}}
-                                        @if(isset($classes))
-                                            @foreach($classes as $classItem)
-                                                <option value="{{ $classItem->id }}" {{ request('class_id') == $classItem->id ? 'selected' : '' }}>
-                                                    {{ $classItem->name }}
-                                                </option>
-                                            @endforeach
-                                        @endif
+                                {{-- 2. DROPDOWN TAHUN AKADEMIK --}}
+                                <div class="relative w-full sm:w-auto">
+                                    {{-- Hapus 'appearance-none' agar panah bawaan browser muncul --}}
+                                    <select name="academic_year" onchange="this.form.submit()" 
+                                            class="w-full sm:w-36 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer">
+                                        <option value="">All Years</option>
+                                        @foreach($years as $year)
+                                            <option value="{{ $year }}" {{ request('academic_year') == $year ? 'selected' : '' }}>
+                                                {{ $year }}
+                                            </option>
+                                        @endforeach
                                     </select>
-                                    
+                                    {{-- Kode DIV SVG panah kustom sudah DIHAPUS disini --}}
                                 </div>
+
+                                {{-- 3. DROPDOWN KELAS --}}
+                                <div class="relative w-full sm:w-48"> {{-- Hapus w-auto biar rapi --}}
+                                    <select name="class_id" onchange="this.form.submit()" 
+                                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer">
+                                        
+                                        <option value="">All Classes</option>
+
+                                        {{-- OPSI UNTUK SISWA TANPA KELAS --}}
+                                        <option value="no_class" class="text-red-600 font-semibold" 
+                                            {{ request('class_id') == 'no_class' ? 'selected' : '' }}>
+                                            ⚠ No Class Assigned
+                                        </option>
+                                        <option disabled>----------------</option>
+                                        
+                                        @forelse($classes as $classItem)
+                                            <option value="{{ $classItem->id }}" {{ request('class_id') == $classItem->id ? 'selected' : '' }}>
+                                                {{ $classItem->name }}
+                                            </option>
+                                        @empty
+                                            {{-- Jangan tampilkan "No classes found" jika kita sedang memilih No Class --}}
+                                            @if(request('class_id') != 'no_class')
+                                                <option value="" disabled class="text-gray-400">No classes found in this year</option>
+                                            @endif
+                                        @endforelse
+                                    </select>
+                                </div>
+
+                                {{-- 4. DROPDOWN SORT BY --}}
+                                <div class="relative w-full sm:w-auto">
+                                    <select name="sort" onchange="this.form.submit()" 
+                                            class="w-full sm:w-40 px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer">
+                                        <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Newest</option>
+                                        <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest</option>
+                                        <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>Name (A-Z)</option>
+                                        <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Name (Z-A)</option>
+                                        <option value="number_asc" {{ request('sort') == 'number_asc' ? 'selected' : '' }}>Student ID</option>
+                                    </select>
+                                </div>
+
+                                {{-- 5. TOMBOL RESET --}}
+                                @if(request('class_id') || request('academic_year') || request('sort') || request('search'))
+                                    <a href="{{ route('admin.student.index') }}" 
+                                    class="flex items-center justify-center px-3 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg transition-colors group" 
+                                    title="Reset All Filters">
+                                        <svg class="w-5 h-5 group-hover:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    </a>
+                                @endif
+
                             </form>
 
                             {{-- Add Button --}}
@@ -162,10 +214,17 @@
 
                                     {{-- 7. Class Name (Relasi) --}}
                                     <td class="px-6 py-4 text-center whitespace-nowrap">
-                                        {{-- Menampilkan Nama Kelas, bukan ID --}}
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            {{ $student->classModel->name ?? '-' }}
-                                        </span>
+                                        @if($student->classModel)
+                                            {{-- Jika Punya Kelas (Biru) --}}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                {{ $student->classModel->name }}
+                                            </span>
+                                        @else
+                                            {{-- Jika Tidak Punya Kelas / NULL (Merah) --}}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-600 border border-red-200">
+                                                Unassigned
+                                            </span>
+                                        @endif
                                     </td>
 
                                     {{-- 8. Is Active (Status) --}}
