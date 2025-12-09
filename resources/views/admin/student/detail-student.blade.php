@@ -163,34 +163,38 @@
                     </div>
 
                     <div>
-                      <div class="flex items-center justify-center mb-4">
-    <h4 class="font-semibold text-gray-800">Last 7 Days</h4> </div>
-    <div class="flex items-center justify-center mb-4">
-    <p class="text-sm text-gray-500">14 May 2024 - 21 May 2024</p>
-</div>
 
+                    <div class="flex items-center justify-center mb-4">
+                        <h4 class="font-semibold text-gray-800">Last 7 Days</h4>
+                    </div>
 
-<div class="flex justify-center gap-2 mt-4">
-    <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-        <span class="text-white font-bold text-sm">M</span>
-    </div>
-    <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-        <span class="text-white font-bold text-sm">T</span>
-    </div>
-    <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-        <span class="text-white font-bold text-sm">W</span>
-    </div>
-    <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-        <span class="text-white font-bold text-sm">T</span>
-    </div>
-    <div class="w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center">
-        <span class="text-white font-bold text-sm">F</span>
-    </div>
-    <div class="w-12 h-12 bg-gray-300 rounded-lg flex items-center justify-center">
-        <span class="text-white font-bold text-sm">S</span>
-    </div>
-</div>
+                    <div class="flex items-center justify-center mb-4">
+                        <p class="text-sm text-gray-500">{{ $rangeStart }} - {{ $rangeEnd }}</p>
+                    </div>
 
+                    <div class="flex justify-center gap-2 mt-4">
+
+                        @foreach ($last7Days as $day)
+
+                            @php
+                                $color = match($day['status']) {
+                                    'present' => 'bg-green-500 text-white',
+                                    'late' => 'bg-yellow-400 text-white',
+                                    'absent' => 'bg-red-500 text-white',
+                                    default => 'bg-gray-300 text-white', // no data
+                                };
+                            @endphp
+
+                            <div class="w-12 h-12 rounded-lg flex items-center justify-center {{ $color }}">
+                                <span class="font-bold text-sm">
+                                    {{ strtoupper(substr($day['day'], 0, 1)) }} <!-- M T W T F S -->
+                                </span>
+                            </div>
+
+                        @endforeach
+
+                    </div>
+                    
                     </div>
                 </div>
             </div>

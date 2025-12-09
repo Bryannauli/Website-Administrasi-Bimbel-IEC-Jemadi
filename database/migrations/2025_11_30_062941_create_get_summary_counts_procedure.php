@@ -14,7 +14,7 @@ return new class extends Migration
         DB::unprepared("
             CREATE PROCEDURE get_summary_counts()
             BEGIN
-                SELECT 'students' AS type, COUNT(*) AS total FROM students
+                SELECT 'students' AS type, COUNT(*) AS total FROM students WHERE is_active = 1
                 UNION ALL
                 SELECT 'teachers', COUNT(*) FROM users WHERE role = 'teacher'
                 UNION ALL

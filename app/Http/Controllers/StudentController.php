@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -103,11 +103,30 @@ class StudentController extends Controller
             : 0;
 
         // Last 7 days attendance
-        $last7 = AttendanceRecord::with('session')
-                    ->where('student_id', $id)
-                    ->orderBy('attendance_session_id', 'DESC')
-                    ->limit(7)
-                    ->get();
+        $last7Days = [];
+        $today = Carbon::today();
+
+        for ($i = 6; $i >= 0; $i--) {
+            $date = $today->copy()->subDays($i)->format('Y-m-d');
+
+            $record = DB::table('attendance_records')
+                ->join('attendance_sessions', 'attendance_records.attendance_session_id', '=', 'attendance_sessions.id')
+                ->where('attendance_records.student_id', $student->id)
+                ->where('attendance_sessions.date', $date)
+                ->select('attendance_records.status')
+                ->first();
+
+            $status = $record->status ?? 'none'; // jika tidak ada data
+
+            $last7Days[] = [
+                'date' => $date,
+                'day' => Carbon::parse($date)->format('D'), // M, T, W, T, F
+                'status' => $status
+            ];
+
+            // Rentang tanggal
+            $rangeStart = $today->copy()->subDays(6)->format('d M Y');
+            $rangeEnd   = $today->format('d M Y');
 
         return view('admin.student.detail-student', compact(
             'student',
@@ -115,9 +134,11 @@ class StudentController extends Controller
             'summary',
             'presentPercent',
             'totalDays',
-            'last7'
+            'last7Days',
+            'rangeStart',
+            'rangeEnd',
         ));
-    }
+    }}
 
     public function store(Request $request)
     {
