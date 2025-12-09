@@ -1,6 +1,5 @@
 <x-app-layout>
 
-    {{-- Header Slot (Opsional, bisa dikosongkan jika desain custom) --}}
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight hidden">
             {{ __('Students') }}
@@ -8,7 +7,6 @@
     </x-slot>
 
     {{-- KONTEN UTAMA --}}
-    {{-- HAPUS 'ml-64'. Gunakan container standar Breeze/Tailwind --}}
     <div class="py-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
@@ -23,43 +21,31 @@
                 </div>
 
                 <h1 class="text-3xl font-bold bg-gradient-to-b from-blue-500 to-red-500 bg-clip-text text-transparent">
-                    Students
+                    Students Data
                 </h1>
             </div>
 
             {{-- Stats Card --}}
-            {{-- Responsive: flex-col di HP, flex-row di Desktop --}}
             <div class="bg-white rounded-xl shadow-sm p-4 mb-8 max-w-xl border border-gray-100">
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    
                     <div class="flex items-center gap-6 w-full sm:w-auto">
                         <div>
                             <h3 class="text-sm font-semibold text-gray-500 mb-1">Total Students</h3>
-                            <p class="text-3xl font-bold text-gray-900">{{ number_format($total_students) }}</p>
+                            <p class="text-3xl font-bold text-gray-900">{{ number_format($total_students ?? 0) }}</p>
                         </div>
-
-                        {{-- Badges --}}
                         <div class="flex gap-3">
                             <div class="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-lg border border-blue-100">
                                 <span class="text-xs font-medium">Active</span>
-                                <span class="text-sm font-bold">{{ number_format($total_active) }}</span>
+                                <span class="text-sm font-bold">{{ number_format($total_active ?? 0) }}</span>
                             </div>
-
                             <div class="flex items-center gap-2 px-3 py-1 bg-red-50 text-red-700 rounded-lg border border-red-100">
                                 <span class="text-xs font-medium">Inactive</span>
-                                <span class="text-sm font-bold">{{ number_format($total_inactive) }}</span>
+                                <span class="text-sm font-bold">{{ number_format($total_inactive ?? 0) }}</span>
                             </div>
                         </div>
                     </div>
-
-                    <button class="text-gray-400 hover:text-gray-600 self-end sm:self-center">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
-                        </svg>
-                    </button>
                 </div>
             </div>
-
 
             {{-- Table Section --}}
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -67,162 +53,212 @@
                 {{-- Table Header Actions --}}
                 <div class="p-4 sm:p-6 border-b border-gray-200">
                     <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                        
                         <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-                            {{-- Filter Class --}}
-                            <div class="relative w-full sm:w-auto">
-                                <select class="appearance-none w-full sm:w-48 px-4 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white cursor-pointer">
-                                    <option>All Classes</option>
-                                    <option>English</option>
-                                    <option>Math</option>
-                                </select>
-                               
-                            </div>
+                            
+                            {{-- Filter Class (Ditempatkan di samping kiri tombol Add) --}}
+                            <form action="{{ route('admin.student.index') }}" method="GET" class="relative w-full sm:w-auto">
+                                {{-- Pertahankan query search jika ada --}}
+                                @if(request('search'))
+                                    <input type="hidden" name="search" value="{{ request('search') }}">
+                                @endif
+
+                                <div class="relative">
+                                    <select name="class_id" onchange="this.form.submit()" class="appearance-none w-full sm:w-48 px-4 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white cursor-pointer">
+                                        <option value="">All Classes</option>
+                                        {{-- Loop data kelas dari database --}}
+                                        @if(isset($classes))
+                                            @foreach($classes as $classItem)
+                                                <option value="{{ $classItem->id }}" {{ request('class_id') == $classItem->id ? 'selected' : '' }}>
+                                                    {{ $classItem->name }}
+                                                </option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                    
+                                </div>
+                            </form>
 
                             {{-- Add Button --}}
-                            <a href="{{ route('admin.student.add', 1) }}" class="w-full sm:w-auto flex justify-center items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm">
+                            <a href="{{ route('admin.student.add') }}" class="w-full sm:w-auto flex justify-center items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
                                 </svg>
-                                Add Student
+                                Add New Student
                             </a>
                         </div>
 
                         {{-- Search --}}
                         <div class="relative w-full sm:w-auto">
-                            <input type="text" placeholder="Search student..." class="w-full sm:w-64 pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
-                            <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                            </svg>
+                            <form action="{{ route('admin.student.index') }}" method="GET">
+                                {{-- Pertahankan filter class jika ada --}}
+                                @if(request('class_id'))
+                                    <input type="hidden" name="class_id" value="{{ request('class_id') }}">
+                                @endif
+                                
+                                <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name or ID..." class="w-full sm:w-72 pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                                <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                                </svg>
+                            </form>
                         </div>
                     </div>
                 </div>
 
                 {{-- Table --}}
-                <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-max">
+                        <thead class="bg-gray-50 text-xs text-gray-500 font-bold uppercase border-b border-gray-200">
+                            <tr>
+                                <th class="px-6 py-4 whitespace-nowrap">No</th>
+                                <th class="px-6 py-4 whitespace-nowrap">Student ID</th>
+                                <th class="px-6 py-4 whitespace-nowrap">Name</th>
+                                <th class="px-6 py-4 whitespace-nowrap">Gender</th>
+                                <th class="px-6 py-4 whitespace-nowrap">Phone</th>
+                                <th class="px-6 py-4 whitespace-nowrap">Address</th>
+                                <th class="px-6 py-4 whitespace-nowrap">Class</th>
+                                <th class="px-6 py-4 whitespace-nowrap text-center">Active</th>
+                                <th class="px-6 py-4 whitespace-nowrap text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
 
-                    @php
-                        $startNumber = ($students->currentPage() - 1) * $students->perPage() + 1;
-                    @endphp
+                            @php
+                                $startNumber = ($students->currentPage() - 1) * $students->perPage() + 1;
+                            @endphp
 
-                    @forelse ($students as $index => $student)
-                        <tr class="hover:bg-gray-50 transition-colors">
+                            @forelse ($students as $index => $student)
+                                <tr class="hover:bg-gray-50 transition-colors">
+                                    
+                                    {{-- 1. No (Auto Increment) --}}
+                                    <td class="px-6 py-4 text-gray-500 font-medium whitespace-nowrap">
+                                        {{ $startNumber + $index }}
+                                    </td>
 
-                            {{-- Nomor --}}
-                            <td class="px-6 py-4 text-gray-500">
-                                {{ $startNumber + $index }}
-                            </td>
+                                    {{-- 2. Student Number --}}
+                                    <td class="px-6 py-4 font-bold text-gray-900 whitespace-nowrap">
+                                        {{ $student->student_number ?? $student->student_id }}
+                                    </td>
 
-                            {{-- Student Number --}}
-                            <td class="px-6 py-4 font-medium text-gray-900">
-                                {{ $student->student_id }}
-                            </td>
+                                    {{-- 3. Name --}}
+                                    <td class="px-6 py-4 font-semibold text-gray-800 whitespace-nowrap">
+                                        {{ $student->name }}
+                                    </td>
 
-                            {{-- Name --}}
-                            <td class="px-6 py-4 font-medium">
-                                {{ $student->name }}
-                            </td>
+                                    {{-- 4. Gender --}}
+                                    <td class="px-6 py-4 capitalize whitespace-nowrap">
+                                        {{ $student->gender }}
+                                    </td>
 
-                            {{-- Gender --}}
-                            <td class="px-6 py-4">
-                                {{ $student->gender }}
-                            </td>
+                                    {{-- 5. Phone --}}
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        {{ $student->phone ?? '-' }}
+                                    </td>
 
-                            {{-- Class (sementara pakai class_id) --}}
-                            <td class="px-6 py-4">
-                                {{ $student->class_id ?? '-' }}
-                            </td>
+                                    {{-- 6. Address --}}
+                                    {{-- HAPUS TRUNCATE & LIMIT AGAR TERLIHAT SEMUA KESAMPING --}}
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        {{ $student->address ?? '-' }}
+                                    </td>
 
-                            {{-- Actions --}}
-                            <td class="px-6 py-4">
-                                <div class="flex items-center justify-center gap-3">
+                                    {{-- 7. Class Name (Relasi) --}}
+                                    <td class="px-6 py-4 text-center whitespace-nowrap">
+                                        {{-- Menampilkan Nama Kelas, bukan ID --}}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            {{ $student->classModel->name ?? '-' }}
+                                        </span>
+                                    </td>
 
-                                    {{-- View --}}
-                                    <div class="group relative">
-                                        <a href="{{ route('admin.student.detail', $student->id) }}"
-                                        class="text-gray-400 hover:text-blue-600 transition-colors">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                            </svg>
-                                        </a>
+                                    {{-- 8. Is Active (Status) --}}
+                                    <td class="px-6 py-4 text-center whitespace-nowrap">
+                                        @if($student->is_active == 1 || $student->status == 'active')
+                                            <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">
+                                                Active
+                                            </span>
+                                        @else
+                                            <span class="px-3 py-1 bg-gray-100 text-gray-500 rounded-full text-xs font-bold">
+                                                Inactive
+                                            </span>
+                                        @endif
+                                    </td>
 
-                                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block">
-                                            <div class="bg-gray-800 text-white text-xs rounded py-1 px-2">View Details</div>
-                                            <div class="w-2 h-2 bg-gray-800 rotate-45 absolute left-1/2 -translate-x-1/2 -bottom-1"></div>
+                                    {{-- 9. Actions --}}
+                                    <td class="px-6 py-4 text-center whitespace-nowrap">
+                                        <div class="flex items-center justify-center gap-3">
+                                            
+                                            {{-- View --}}
+                                            <a href="{{ route('admin.student.detail', $student->id) }}" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View Details">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                            </a>
+
+                                            {{-- Edit --}}
+                                            <a href="{{ route('admin.student.edit', $student->id) }}" class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Edit">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                            </a>
+
+                                            {{-- Delete --}}
+                                            <form action="{{ route('admin.student.delete', $student->id) }}" method="POST" class="inline-block">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="button" class="btn-delete p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                </button>
+                                            </form>
+
                                         </div>
-                                    </div>
-
-                                    {{-- Delete --}}
-                                    <div class="group relative">
-                                        <form action="{{ route('admin.student.delete', $student->id) }}" method="POST">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button class="text-gray-400 hover:text-red-600 transition-colors">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                            </button>
-                                        </form>
-
-                                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block">
-                                            <div class="bg-gray-800 text-white text-xs rounded py-1 px-2">Delete</div>
-                                            <div class="w-2 h-2 bg-gray-800 rotate-45 absolute left-1/2 -translate-x-1/2 -bottom-1"></div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="9" class="px-6 py-10 text-center text-gray-500">
+                                        <div class="flex flex-col items-center justify-center">
+                                            <svg class="w-12 h-12 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                                            <p class="text-base font-medium">No students found.</p>
                                         </div>
-                                    </div>
+                                    </td>
+                                </tr>
+                            @endforelse
 
-                                    {{-- Edit --}}
-                                    <div class="group relative">
-                                        <a href="{{ route('admin.student.edit', $student->id) }}"
-                                        class="text-gray-400 hover:text-green-600 transition-colors">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                            </svg>
-                                        </a>
+                        </tbody>
+                    </table>
+                </div>
 
-                                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block">
-                                            <div class="bg-gray-800 text-white text-xs rounded py-1 px-2">Edit Data</div>
-                                            <div class="w-2 h-2 bg-gray-800 rotate-45 absolute left-1/2 -translate-x-1/2 -bottom-1"></div>
-                                        </div>
-                                    </div>
-
-                                </div>
-                            </td>
-                        </tr>
-
-                    @empty
-                        <tr>
-                            <td colspan="7" class="px-6 py-4 text-center text-gray-500">
-                                No students found.
-                            </td>
-                        </tr>
-                    @endforelse
-
-                </tbody>
+                {{-- Pagination Manual --}}
+                <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white">
+                    @if ($students->onFirstPage())
+                        <button class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-400 bg-white cursor-not-allowed" disabled>Previous</button>
+                    @else
+                        <a href="{{ $students->previousPageUrl() }}" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 hover:text-gray-800 transition-colors">Previous</a>
+                    @endif
+                    
+                    <span class="text-sm text-gray-500 font-medium">Page {{ $students->currentPage() }} of {{ $students->lastPage() }}</span>
+                    
+                    @if ($students->hasMorePages())
+                        <a href="{{ $students->nextPageUrl() }}" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 hover:text-gray-800 transition-colors">Next</a>
+                    @else
+                        <button class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-400 bg-white cursor-not-allowed" disabled>Next</button>
+                    @endif
+                </div>
 
             </div>
-
         </div>
     </div>
 
+    {{-- Script SweetAlert untuk Delete --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
     <script>
         document.querySelectorAll('.btn-delete').forEach(btn => {
-            btn.addEventListener('click', function(){
+            btn.addEventListener('click', function(e){
+                e.preventDefault();
                 let form = this.closest('form');
-
                 Swal.fire({
-                    title: "Yakin ingin menghapus?",
-                    text: "Siswa tidak akan benar-benar dihapus, hanya dinonaktifkan.",
+                    title: "Delete Student?",
+                    text: "This action cannot be undone.",
                     icon: "warning",
                     showCancelButton: true,
-                    confirmButtonText: "Ya, nonaktifkan",
-                    cancelButtonText: "Batal"
+                    confirmButtonColor: "#EF4444",
+                    cancelButtonColor: "#6B7280",
+                    confirmButtonText: "Yes, delete",
+                    cancelButtonText: "Cancel"
                 }).then((result) => {
                     if (result.isConfirmed) {
                         form.submit();
