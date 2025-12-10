@@ -34,7 +34,7 @@
                 
                 {{-- Card Header --}}
                 <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-                    <h1 class="text-xl font-bold text-gray-900">Add New Student</h1>
+                    <h1 class="text-xl font-bold bg-gradient-to-b from-blue-500 to-red-500 bg-clip-text text-transparent">Add New Student</h1>
                     <p class="text-sm text-gray-500 mt-1">Please fill in the student data correctly.</p>
                 </div>
 

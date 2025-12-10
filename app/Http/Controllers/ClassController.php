@@ -138,6 +138,26 @@ class ClassController extends Controller
         return redirect()->route('admin.classes.index')->with('success', 'Class updated successfully!');
     }
     
+public function detailClass($id)
+{
+    // Ambil class sekaligus relasi schedules (sesuaikan nama relasi di model)
+    $class = ClassModel::with(['schedules', 'formTeacher', 'localTeacher', 'students'])->findOrFail($id);
+
+    // Ambil koleksi jadwal dari relasi
+    $schedules = $class->schedules;
+
+    // (Optional) hitung beberapa properti seperti di sebelumnya
+    $class->students_count = $class->students ? $class->students->count() : 0;
+    $class->teachers_count = collect([$class->formTeacher, $class->localTeacher])->filter()->count();
+    $class->total_sessions = $class->schedules->count() * 4;
+    $class->completed_sessions = 0; // ganti dengan logika attendance kalau ada
+    $class->progress_percent = $class->total_sessions ? round(($class->completed_sessions / $class->total_sessions) * 100) : 0;
+
+    // Pastikan nama view sesuai file blade kamu
+    return view('admin.classes.detailclass', compact('class', 'schedules'));
+}
+
+
     // --- Method Placeholder untuk View Detail ---
     public function class($id) { return view('admin.classes.class'); }
     public function students($id) { return view('admin.classes.students'); }
