@@ -29,8 +29,8 @@
                 </ol>
             </nav>
 
-            {{-- FORM CARD --}}
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            {{-- MAIN FORM CARD (UPDATE) --}}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
                 
                 {{-- Card Header --}}
                 <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
@@ -94,24 +94,16 @@
                                     class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 shadow-sm transition-colors">{{ old('address', $student->address) }}</textarea>
                             </div>
 
-                            {{-- 6. Student Status (DIPINDAHKAN KE SINI) --}}
+                            {{-- 6. Student Status (Switch) --}}
                             <div class="md:col-span-2 bg-gray-50 rounded-lg p-4 border border-gray-200">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Student Status</label>
                                 
                                 <div class="flex items-center">
-                                    {{-- Hidden Input --}}
                                     <input type="hidden" name="is_active" value="0">
-
-                                    {{-- Switch Container --}}
                                     <label class="relative inline-flex items-center cursor-pointer">
-                                        {{-- Checkbox Asli --}}
                                         <input type="checkbox" name="is_active" id="status_toggle" value="1" class="sr-only peer"
                                             {{ old('is_active', $student->is_active) ? 'checked' : '' }}>
-                                        
-                                        {{-- Visual Switch --}}
                                         <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
-                                        
-                                        {{-- Label Text --}}
                                         <span class="ml-3 text-sm font-medium text-gray-900" id="status_label">
                                             {{ old('is_active', $student->is_active) ? 'Active (Studying)' : 'Inactive (Graduated/Out)' }}
                                         </span>
@@ -120,13 +112,10 @@
                                 @error('is_active') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                             </div>
 
-                            {{-- 7. Class Assignment (FILTERED) --}}
+                            {{-- 7. Class Assignment (Filtered) --}}
                             <div class="md:col-span-2 bg-blue-50/50 p-4 rounded-lg border border-blue-100">
                                 <label class="block text-sm font-bold text-gray-700 mb-3">Class Assignment</label>
-                                
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    
-                                    {{-- A. FILTER KATEGORI --}}
                                     <div>
                                         <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Filter by Category</label>
                                         <div class="relative">
@@ -139,16 +128,12 @@
                                             </select>
                                         </div>
                                     </div>
-
-                                    {{-- B. PILIH KELAS (Target) --}}
                                     <div>
                                         <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Select Class</label>
                                         <div class="relative">
                                             <select name="class_id" id="class_selector" 
                                                     class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 shadow-sm bg-white cursor-pointer text-sm">
-                                                
                                                 <option value="">Select Class (Unassigned)</option>
-                                                
                                                 @foreach ($classes as $class)
                                                     <option value="{{ $class->id }}" 
                                                             data-category="{{ $class->category }}"
@@ -157,11 +142,9 @@
                                                     </option>
                                                 @endforeach
                                             </select>
-                                            
                                             @error('class_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                                         </div>
                                     </div>
-
                                 </div>
                                 <p class="text-xs text-gray-500 mt-2">* Change the category on the left to find the class easier.</p>
                             </div>
@@ -170,14 +153,10 @@
 
                         {{-- Action Buttons --}}
                         <div class="mt-8 flex items-center justify-end gap-3 pt-6 border-t border-gray-100">
-                            
-                            {{-- Cancel Button --}}
                             <a href="{{ route('admin.student.index') }}" 
                                class="px-5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 transition-colors">
                                 Cancel
                             </a>
-
-                            {{-- Save Button --}}
                             <button type="submit" 
                                     class="px-5 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-sm transition-colors">
                                 Update Changes
@@ -188,10 +167,35 @@
                 </div>
             </div>
 
+
+            {{-- DANGER ZONE (DELETE PERMANENTLY) --}}
+            <div class="bg-red-50 rounded-xl shadow-sm border border-red-200 overflow-hidden mb-10">
+                <div class="px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-red-800">Danger Zone</h3>
+                        <p class="text-sm text-red-600 mt-1">
+                            Deleting this student will permanently remove all their data, including grades and attendance.
+                        </p>
+                    </div>
+                    
+                    <form action="{{ route('admin.student.delete', $student->id) }}" method="POST">
+                        @csrf
+                        @method('DELETE')
+                        {{-- TOMBOL MERAH SOLID --}}
+                        <button type="button" class="btn-delete-permanent whitespace-nowrap px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg font-medium text-sm transition-all shadow-sm focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                            Delete Permanently
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+
         </div>
     </div>
 
     {{-- JAVASCRIPT --}}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             
@@ -211,7 +215,7 @@
                 }
             });
 
-            // Set Initial Color style
+            // Set Initial Status Color
             if(statusToggle.checked) {
                 statusLabel.classList.add('text-green-700', 'font-bold');
             } else {
@@ -255,6 +259,30 @@
                 classSelector.value = ""; 
                 filterClasses();
             });
+
+
+            // --- LOGIC 3: DELETE CONFIRMATION ---
+            document.querySelectorAll('.btn-delete-permanent').forEach(btn => {
+                btn.addEventListener('click', function(e){
+                    e.preventDefault();
+                    let form = this.closest('form');
+                    Swal.fire({
+                        title: "Are you sure?",
+                        text: "This action cannot be undone. All data associated with this student will be lost.",
+                        icon: "error",
+                        showCancelButton: true,
+                        confirmButtonColor: "#EF4444",
+                        cancelButtonColor: "#6B7280",
+                        confirmButtonText: "Yes, Delete Permanently",
+                        cancelButtonText: "Cancel"
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.submit();
+                        }
+                    })
+                });
+            });
+
         });
     </script>
 

@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use App\Models\ClassModel;
 use App\Models\Student;
@@ -131,15 +132,40 @@ class StudentController extends Controller
         return view('admin.student.add-student', compact('classes', 'categories'));
     }
 
+    public function store(Request $request)
+    {
+        $request->validate([
+            'student_number' => 'required|unique:students',
+            'name'           => 'required|string|max:255',
+            'gender'         => 'required|in:male,female',
+            'phone'          => 'nullable',
+            'address'        => 'nullable',
+            'class_id'       => 'nullable|exists:classes,id',
+        ]);
+        
+        Student::create([
+            'student_number' => $request->student_number,
+            'name'           => $request->name,
+            'gender'         => $request->gender,
+            'phone'          => $request->phone,
+            'address'        => $request->address,
+            'class_id'       => $request->class_id,
+            'is_active'      => 1,
+        ]);
+        
+        return redirect()->route('admin.student.index')
+        ->with('success', 'Student berhasil ditambahkan!');
+    }
+    
     // Halaman Detail Siswa
     public function detail($id)
     {
         $student = Student::findOrFail($id);
-
+        
         // Ambil semua attendance student ini
         $attendance = AttendanceRecord::with('session')
-                        ->where('student_id', $id)
-                        ->orderBy('attendance_session_id', 'DESC')
+        ->where('student_id', $id)
+        ->orderBy('attendance_session_id', 'DESC')
                         ->get();
 
         // Summary Attendance
@@ -197,31 +223,52 @@ class StudentController extends Controller
         ));
     }}
 
-    public function store(Request $request)
+    // Halaman Edit Siswa
+    public function edit($id)
     {
-        $request->validate([
-            'student_number' => 'required|unique:students',
+        $student = Student::findOrFail($id);
+        
+        // 1. Ambil HANYA kelas yang AKTIF
+        $classes = \App\Models\ClassModel::where('is_active', true)
+        ->orderBy('category')
+        ->orderBy('name')
+        ->get();
+        
+        // 2. Ambil daftar kategori unik untuk dropdown filter
+        $categories = $classes->pluck('category')->unique();
+        
+        return view('admin.student.edit-student', compact('student', 'classes', 'categories'));
+    }
+    
+    // Proses Update Siswa
+    public function update(Request $request, $id)
+    {
+        // Validasi
+        $data = $request->validate([
+            'student_number' => ['required', 'string', \Illuminate\Validation\Rule::unique('students')->ignore($id)],
             'name'           => 'required|string|max:255',
             'gender'         => 'required|in:male,female',
-            'phone'          => 'nullable',
-            'address'        => 'nullable',
+            'phone'          => 'nullable|string|max:30',
+            'address'        => 'nullable|string',
             'class_id'       => 'nullable|exists:classes,id',
+            'is_active'      => 'required|boolean', 
         ]);
-
-        Student::create([
-            'student_number' => $request->student_number,
-            'name'           => $request->name,
-            'gender'         => $request->gender,
-            'phone'          => $request->phone,
-            'address'        => $request->address,
-            'class_id'       => $request->class_id,
-            'is_active'      => 1,
-        ]);
-
-        return redirect()->route('admin.student.index')
-                            ->with('success', 'Student berhasil ditambahkan!');
+        
+        try {
+            $student = Student::findOrFail($id);
+            
+            // Update data
+            $student->update($data);
+            
+            return redirect()->route('admin.student.index')
+            ->with('success', 'Student updated successfully.');
+            
+        } catch (\Throwable $e) {
+            Log::error('Student update failed: '.$e->getMessage());
+            return back()->withInput()->with('error', 'Update failed: '.$e->getMessage());
+        }
     }
-
+    
     public function toggleStatus($id)
     {
         $student = Student::findOrFail($id);
@@ -235,7 +282,7 @@ class StudentController extends Controller
         
         return back()->with('success', "Student has been {$statusText}.");
     }
-
+    
     public function delete($id)
     {
         try {
@@ -249,51 +296,6 @@ class StudentController extends Controller
         } catch (\Illuminate\Database\QueryException $e) {
             // Cegah error jika data masih nyangkut di tabel lain (Foreign Key)
             return back()->with('error', 'Cannot delete student. Remove their class/grades/attendance data first.');
-        }
-    }
-
-    public function edit($id)
-    {
-        $student = Student::findOrFail($id);
-
-        // 1. Ambil HANYA kelas yang AKTIF
-        $classes = \App\Models\ClassModel::where('is_active', true)
-                    ->orderBy('category')
-                    ->orderBy('name')
-                    ->get();
-
-        // 2. Ambil daftar kategori unik untuk dropdown filter
-        $categories = $classes->pluck('category')->unique();
-
-        return view('admin.student.edit-student', compact('student', 'classes', 'categories'));
-    }
-
-    public function update(Request $request, $id)
-    {
-        // Validasi
-        $data = $request->validate([
-            'student_number' => ['required', 'string', \Illuminate\Validation\Rule::unique('students')->ignore($id)],
-            'name'           => 'required|string|max:255',
-            'gender'         => 'required|in:male,female',
-            'phone'          => 'nullable|string|max:30',
-            'address'        => 'nullable|string',
-            'class_id'       => 'nullable|exists:classes,id',
-            // Pastikan is_active divalidasi sebagai boolean (0 atau 1)
-            'is_active'      => 'required|boolean', 
-        ]);
-
-        try {
-            $student = Student::findOrFail($id);
-            
-            // Update data
-            $student->update($data);
-
-            return redirect()->route('admin.student.index')
-                ->with('success', 'Student updated successfully.');
-                
-        } catch (\Throwable $e) {
-            \Log::error('Student update failed: '.$e->getMessage());
-            return back()->withInput()->with('error', 'Update failed: '.$e->getMessage());
         }
     }
 }
