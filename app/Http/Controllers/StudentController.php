@@ -115,13 +115,20 @@ class StudentController extends Controller
         ));
     }
 
-
     // Halaman Form Tambah Siswa
     public function add()
     {
-        $classes = ClassModel::where('is_active', 1)->get();
+        // 1. Ambil HANYA kelas yang AKTIF
+        // Urutkan berdasarkan kategori lalu nama, biar rapi
+        $classes = \App\Models\ClassModel::where('is_active', true)
+                    ->orderBy('category')
+                    ->orderBy('name')
+                    ->get();
 
-        return view('admin.student.add-student', compact('classes'));
+        // 2. Ambil daftar kategori unik dari koleksi kelas aktif tadi
+        $categories = $classes->pluck('category')->unique();
+
+        return view('admin.student.add-student', compact('classes', 'categories'));
     }
 
     // Halaman Detail Siswa
@@ -212,62 +219,81 @@ class StudentController extends Controller
         ]);
 
         return redirect()->route('admin.student.index')
-                         ->with('success', 'Student berhasil ditambahkan!');
+                            ->with('success', 'Student berhasil ditambahkan!');
+    }
+
+    public function toggleStatus($id)
+    {
+        $student = Student::findOrFail($id);
+        
+        // Switch status (jika 1 jadi 0, jika 0 jadi 1)
+        $student->update([
+            'is_active' => !$student->is_active
+        ]);
+
+        $statusText = $student->is_active ? 'activated' : 'deactivated';
+        
+        return back()->with('success', "Student has been {$statusText}.");
     }
 
     public function delete($id)
     {
-        $student = Student::findOrFail($id);
+        try {
+            $student = Student::findOrFail($id);
+            $student->delete();
 
-        // ubah status jadi tidak aktif
-        $student->update([
-            'is_active' => 0
-        ]);
-
-        return redirect()
-            ->route('admin.student.index')
-            ->with('success', 'Student has been deactivated.');
+            return redirect()
+                ->route('admin.student.index')
+                ->with('success', 'Student data permanently deleted.');
+                
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Cegah error jika data masih nyangkut di tabel lain (Foreign Key)
+            return back()->with('error', 'Cannot delete student. Remove their class/grades/attendance data first.');
+        }
     }
 
     public function edit($id)
     {
         $student = Student::findOrFail($id);
-        $classes = ClassModel::where('is_active', 1)->get();
 
-        return view('admin.student.edit-student', compact('student', 'classes'));
+        // 1. Ambil HANYA kelas yang AKTIF
+        $classes = \App\Models\ClassModel::where('is_active', true)
+                    ->orderBy('category')
+                    ->orderBy('name')
+                    ->get();
+
+        // 2. Ambil daftar kategori unik untuk dropdown filter
+        $categories = $classes->pluck('category')->unique();
+
+        return view('admin.student.edit-student', compact('student', 'classes', 'categories'));
     }
 
     public function update(Request $request, $id)
     {
-        // validasi sederhana
+        // Validasi
         $data = $request->validate([
-            'student_number' => ['required', 'string', Rule::unique('students','student_number')->ignore($id)],
+            'student_number' => ['required', 'string', \Illuminate\Validation\Rule::unique('students')->ignore($id)],
             'name'           => 'required|string|max:255',
             'gender'         => 'required|in:male,female',
             'phone'          => 'nullable|string|max:30',
             'address'        => 'nullable|string',
             'class_id'       => 'nullable|exists:classes,id',
-            'is_active'      => 'nullable|boolean',
+            // Pastikan is_active divalidasi sebagai boolean (0 atau 1)
+            'is_active'      => 'required|boolean', 
         ]);
 
         try {
             $student = Student::findOrFail($id);
-
-            // Pastikan data boolean ter-handle
-            if (!isset($data['is_active'])) {
-                $data['is_active'] = 1;
-            }
-
+            
+            // Update data
             $student->update($data);
 
             return redirect()->route('admin.student.index')
                 ->with('success', 'Student updated successfully.');
+                
         } catch (\Throwable $e) {
-            // Log error supaya mudah dibaca
-            \Log::error('Student update failed: '.$e->getMessage(), ['id'=>$id, 'data'=>$data]);
-
-            return back()->withInput()
-                ->with('error', 'Update failed: '.$e->getMessage());
+            \Log::error('Student update failed: '.$e->getMessage());
+            return back()->withInput()->with('error', 'Update failed: '.$e->getMessage());
         }
     }
 }

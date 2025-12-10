@@ -63,6 +63,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
         // Menampilkan form edit siswa
         Route::get('/edit/{id}', [StudentController::class, 'edit'])->name('edit');
         Route::put('/update/{id}', [StudentController::class, 'update'])->name('update');
+        Route::patch('/{id}/toggle-status', [StudentController::class, 'toggleStatus'])->name('toggleStatus');
         
         // Proses hapus siswa
         Route::delete('/{id}', [StudentController::class, 'delete'])->name('delete');
