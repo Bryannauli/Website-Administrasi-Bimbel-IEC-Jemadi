@@ -27,6 +27,7 @@ return new class extends Migration
 
             $table->timestamps();
             $table->unique(['speaking_test_id', 'student_id']);
+            $table->softDeletes();
         });
     }
 

@@ -11,7 +11,10 @@ return new class extends Migration
         Schema::create('student_logs', function (Blueprint $table) {
             $table->id();
             // Menghubungkan log dengan siswa yang diedit
-            $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
+            $table->foreignId('student_id')
+                    ->nullable()
+                    ->constrained('students')
+                    ->nullOnDelete();
             
             // Menghubungkan dengan user yang melakukan aksi (Admin/Teacher)
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();

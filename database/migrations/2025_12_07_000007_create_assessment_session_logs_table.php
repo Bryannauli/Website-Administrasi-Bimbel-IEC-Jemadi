@@ -8,10 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('assessment_form_logs', function (Blueprint $table) {
+        Schema::create('assessment_session_logs', function (Blueprint $table) {
             $table->id();
-            // Menghubungkan log dengan form penilaian yang diedit
-            $table->foreignId('assessment_form_id')->constrained('assessment_forms')->onDelete('cascade');
+            // Menghubungkan log dengan sesi penilaian yang diedit
+            $table->foreignId('assessment_session_id')
+                ->nullable()
+                ->constrained('assessment_sessions')
+                ->nullOnDelete();
             
             // Menghubungkan dengan user yang melakukan aksi
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
@@ -26,6 +29,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('assessment_form_logs');
+        Schema::dropIfExists('assessment_session_logs');
     }
 };

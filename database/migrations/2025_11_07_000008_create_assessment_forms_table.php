@@ -31,6 +31,7 @@ return new class extends Migration
 
             $table->timestamps();
             $table->unique(['assessment_session_id', 'student_id']);
+            $table->softDeletes();
         });
     }
 

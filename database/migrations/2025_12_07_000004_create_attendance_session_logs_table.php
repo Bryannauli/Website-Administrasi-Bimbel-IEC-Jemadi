@@ -11,8 +11,9 @@ class CreateAttendanceSessionLogsTable extends Migration
         Schema::create('attendance_session_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('attendance_session_id')
+                ->nullable()
                 ->constrained('attendance_sessions')
-                ->onDelete('cascade');
+                ->nullOnDelete();
 
             $table->foreignId('user_id')
                 ->nullable()

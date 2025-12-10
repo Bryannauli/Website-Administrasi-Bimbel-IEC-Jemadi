@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ClassModel extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'classes';
 
@@ -49,5 +50,10 @@ class ClassModel extends Model
     public function schedules()
     {
         return $this->hasMany(Schedule::class, 'class_id');
+    }
+
+    public function logs()
+    {
+        return $this->hasMany(ClassLog::class, 'class_id');
     }
 }

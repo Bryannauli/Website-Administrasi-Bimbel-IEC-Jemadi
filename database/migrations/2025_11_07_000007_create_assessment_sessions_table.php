@@ -23,6 +23,7 @@ return new class extends Migration
 
             $table->timestamps();
             $table->unique(['class_id', 'type']);
+            $table->softDeletes();
         });
     }
 

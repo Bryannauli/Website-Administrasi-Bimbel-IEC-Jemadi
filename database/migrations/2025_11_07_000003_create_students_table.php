@@ -22,6 +22,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->foreignId('class_id')->nullable()->constrained('classes')->nullOnDelete();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

@@ -286,16 +286,19 @@ class StudentController extends Controller
     public function delete($id)
     {
         try {
+            // FindOrFail otomatis hanya mencari data yg aktif (belum dihapus)
             $student = Student::findOrFail($id);
+            
+            // Karena pakai Trait SoftDeletes, ini otomatis jadi Soft Delete
             $student->delete();
 
             return redirect()
                 ->route('admin.student.index')
-                ->with('success', 'Student data permanently deleted.');
+                // Ubah pesan agar informatif
+                ->with('success', 'Student moved to trash. Data is safe and hidden.');
                 
-        } catch (\Illuminate\Database\QueryException $e) {
-            // Cegah error jika data masih nyangkut di tabel lain (Foreign Key)
-            return back()->with('error', 'Cannot delete student. Remove their class/grades/attendance data first.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to delete student: ' . $e->getMessage());
         }
     }
 }

@@ -4,15 +4,19 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateAttendanceRecordLogsTable extends Migration 
+class CreateTeacherAttendanceRecordLogsTable extends Migration 
 {
     public function up(): void
     {
-        Schema::create('attendance_record_logs', function (Blueprint $table) {
+        Schema::create('teacher_attendance_record_logs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('attendance_record_id')
-                ->constrained('attendance_records')
-                ->onDelete('cascade');
+            
+            $table->unsignedBigInteger('teacher_attendance_record_id')->nullable(); 
+            
+            $table->foreign('teacher_attendance_record_id', 'teacher_log_record_fk')
+                    ->references('id')
+                    ->on('teacher_attendance_records')
+                    ->nullOnDelete();
 
             $table->foreignId('user_id')
                 ->nullable()
@@ -28,6 +32,6 @@ class CreateAttendanceRecordLogsTable extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('attendance_record_logs');
+        Schema::dropIfExists('teacher_attendance_record_logs');
     }
 }
