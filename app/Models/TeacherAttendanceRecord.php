@@ -22,4 +22,9 @@ class TeacherAttendanceRecord extends Model
     {
         return $this->belongsTo(User::class)->where('is_teacher', true);
     }
+
+    public function logs()
+    {
+        return $this->hasMany(TeacherAttendanceRecordLog::class);
+    }
 }
