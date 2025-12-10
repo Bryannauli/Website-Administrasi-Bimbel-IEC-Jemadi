@@ -7,6 +7,7 @@ use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\AssessmentFormController;
 
 
+
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
@@ -97,7 +98,7 @@ Route::get('/admin/classes', [ClassController::class, 'index'])->name('admin.cla
  Route::post('/admin/classes/store', [ClassController::class, 'store'])->name('admin.classes.store');
 Route::put('/admin/classes/{id}', [ClassController::class, 'update'])->name('admin.classes.update');
 //  Route::get('/admin/classes/{id}', [ClassController::class, 'show'])->name('admin.class.show');
-Route::get('/admin/classes/detail/{id}', [ClassController::class, 'detailClass'])->name('admin.class.detailclass');
+Route::get('/admin/classes/detail/{id}', [ClassController::class, 'detailClass'])->name('admin.classes.detailclass');
    Route::get('/admin/classes//{id}', [ClassController::class, 'class'])->name('admin.classes.class');
   Route::get('/admin/classes/{id}/students', [ClassController::class, 'students'])->name('admin.classes.students');
 
