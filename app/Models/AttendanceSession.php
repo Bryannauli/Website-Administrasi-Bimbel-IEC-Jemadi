@@ -28,4 +28,9 @@ class AttendanceSession extends Model
     {
         return $this->hasMany(TeacherAttendanceRecord::class);
     }
+
+    public function logs()
+    {
+        return $this->hasMany(AttendanceRecordLog::class);
+    }
 }

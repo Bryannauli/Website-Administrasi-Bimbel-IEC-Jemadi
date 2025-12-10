@@ -36,4 +36,9 @@ class Student extends Model
     {
         return $this->hasMany(AssessmentForm::class);
     }
+
+    public function logs()
+    {
+        return $this->hasMany(StudentLog::class);
+    }
 }

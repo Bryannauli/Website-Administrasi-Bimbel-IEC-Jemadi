@@ -26,4 +26,9 @@ class AssessmentSession extends Model
     {
         return $this->hasMany(AssessmentForm::class);
     }
+    
+    public function logs()
+    {
+        return $this->hasMany(AssessmentSessionLog::class);
+    }
 }
