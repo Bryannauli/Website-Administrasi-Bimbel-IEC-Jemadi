@@ -86,4 +86,9 @@ class AssessmentForm extends Model
 
         return (int) round(array_sum($validScores) / count($validScores));
     }
+
+    public function logs()
+    {
+        return $this->hasMany(AssessmentFormLog::class);
+    }
 }

@@ -3,6 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\StudentLog;
+use App\Models\AssessmentSessionLog;
+use App\Models\AssessmentFormLog;
+use App\Models\AttendanceSessionLog;
+use App\Models\AttendanceRecordLog;
+use App\Models\TeacherAttendanceRecordLog;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -24,7 +30,27 @@ class DashboardController extends Controller
         $employees = ($summary['employees']->total ?? 0) - 1;
         $classes = $summary['classes']->total ?? 0;
 
-        return view('admin.dashboard', compact('boys', 'girls', 'students', 'teachers', 'employees', 'classes'));
+        // Ambil 5 log terbaru dari setiap tabel
+        $logs_student = StudentLog::with(['user', 'student'])->latest()->limit(5)->get();
+        $logs_session = AssessmentSessionLog::with(['user', 'assessmentSession'])->latest()->limit(5)->get();
+        $logs_form = AssessmentFormLog::with(['user', 'assessmentForm.student'])->latest()->limit(5)->get();
+        
+        $logs_att_session = AttendanceSessionLog::with(['user', 'attendanceSession.classModel'])->latest()->limit(5)->get();
+        $logs_att_record = AttendanceRecordLog::with(['user', 'attendanceRecord.student'])->latest()->limit(5)->get();
+        $logs_att_teacher = TeacherAttendanceRecordLog::with(['user', 'teacherAttendanceRecord.teacher'])->latest()->limit(5)->get();
+
+        // Gabungkan SEMUA koleksi log dan urutkan
+        $all_logs = $logs_student
+            ->concat($logs_session)
+            ->concat($logs_form)
+            ->concat($logs_att_session)
+            ->concat($logs_att_record)
+            ->concat($logs_att_teacher)
+            ->sortByDesc('created_at')
+            ->take(10); // Ambil 10 log terbaru untuk dashboard
+
+        // return view dengan 'all_logs'
+        return view('admin.dashboard', compact('boys', 'girls', 'students', 'teachers', 'employees', 'classes', 'all_logs'));
     }
 
     public function attendanceSummary(Request $request)
