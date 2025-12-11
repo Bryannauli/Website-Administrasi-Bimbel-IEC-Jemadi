@@ -109,7 +109,7 @@ Route::get('/admin/classes/detail/{id}', [ClassController::class, 'detailClass']
   Route::get('/admin/classes/{id}/students', [ClassController::class, 'students'])->name('admin.classes.students');
 
 // Teacher Routes
-Route::prefix('teacher')->name('teacher.')->middleware(['auth', 'role:teacher'])->group(function () {
+Route::prefix('teacher')->name('teacher.')->middleware(['auth'])->group(function () {
     
     // Dashboard
     Route::get('/dashboard', [DashboardTeacherController::class, 'index'])->name('dashboard');
