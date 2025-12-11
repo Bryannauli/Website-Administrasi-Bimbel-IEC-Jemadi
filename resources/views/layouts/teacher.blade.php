@@ -47,7 +47,7 @@
                 </div>
 
                 <!-- Students Dropdown -->
-                <div x-data="{ open: false }">
+                <!-- <div x-data="{ open: false }">
                     <button @click="open = !open" class="w-full flex items-center justify-between px-4 py-3 text-gray-700 hover:bg-white/50 rounded-lg transition">
                         <div class="flex items-center space-x-3">
                             <i class="fas fa-user-graduate"></i>
@@ -63,26 +63,18 @@
                             Attendance
                         </a>
                     </div>
-                </div>
+                </div> -->
 
                 <!-- Class Schedule -->
-                <div x-data="{ open: false }">
-                    <button @click="open = !open" class="w-full flex items-center justify-between px-4 py-3 text-gray-700 hover:bg-white/50 rounded-lg transition">
-                        <div class="flex items-center space-x-3">
-                            <i class="fas fa-calendar-alt"></i>
-                            <span>Class Schedule</span>
-                        </div>
-                        <i class="fas fa-chevron-down text-xs" :class="{ 'rotate-180': open }"></i>
-                    </button>
-                    <div x-show="open" class="ml-4 mt-1 space-y-1">
-                        <a href="{{ route('teacher.schedule.my') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-white/50 rounded-lg">
-                            My Schedule
-                        </a>
-                    </div>
-                </div>
+                <a href="{{ route('teacher.classes.index') }}" 
+                class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition
+                {{ request()->routeIs('teacher.classes.*') ? 'bg-white text-gray-700 shadow-sm' : 'text-gray-700 hover:bg-white/50' }}">
+                    <i class="fas fa-calendar-alt w-5 text-center"></i> 
+                    <span>Class Schedule</span>
+                </a>
 
                 <!-- Teachers Dropdown -->
-                <div x-data="{ open: {{ request()->routeIs('teacher.classes.*') || request()->routeIs('teacher.teachers.*') ? 'true' : 'false' }} }">
+                <!-- <div x-data="{ open: {{ request()->routeIs('teacher.classes.*') || request()->routeIs('teacher.teachers.*') ? 'true' : 'false' }} }">
                     <button @click="open = !open" class="w-full flex items-center justify-between px-4 py-3 text-gray-700 hover:bg-white/50 rounded-lg transition {{ request()->routeIs('teacher.classes.*') || request()->routeIs('teacher.teachers.*') ? 'bg-blue-100' : '' }}">
                         <div class="flex items-center space-x-3">
                             <i class="fas fa-chalkboard-teacher"></i>
@@ -98,7 +90,7 @@
                             Attendance
                         </a>
                     </div>
-                </div>
+                </div> -->
 
                 <!-- Authentication -->
                 <div x-data="{ open: false }">

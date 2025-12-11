@@ -13,7 +13,6 @@
 
 @section('content')
 <div class="max-w-7xl mx-auto">
-    <!-- Page Header -->
     <div class="mb-6 flex items-center justify-between">
         <div>
             <h1 class="text-3xl font-bold bg-gradient-to-r from-red-500 to-purple-600 bg-clip-text text-transparent">
@@ -25,7 +24,6 @@
         </button>
     </div>
 
-    <!-- Search and Filter -->
     <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="relative">
@@ -40,14 +38,13 @@
         </div>
     </div>
 
-    <!-- Classes Table -->
     <div class="bg-white rounded-xl shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">No</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Class_id</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Class ID</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Classname</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Schedule</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Room</th>
@@ -56,55 +53,77 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
+                    @forelse($classes as $index => $class)
                     <tr class="hover:bg-gray-50 transition">
-                        <td class="px-6 py-4 text-sm text-gray-800">1</td>
-                        <td class="px-6 py-4 text-sm text-gray-800">E123</td>
-                        <td class="px-6 py-4 text-sm text-gray-800">Vocabulary</td>
+                        {{-- No Urut --}}
+                        <td class="px-6 py-4 text-sm text-gray-800">
+                            {{ ($classes->currentPage() - 1) * $classes->perPage() + $index + 1 }}
+                        </td>
+                        
+                        {{-- Class ID (Format C-001) --}}
+                        <td class="px-6 py-4 text-sm text-gray-800 font-mono">
+                            C-{{ str_pad($class->id, 3, '0', STR_PAD_LEFT) }}
+                        </td>
+
+                        {{-- Classname & Category --}}
+                        <td class="px-6 py-4 text-sm text-gray-800">
+                            <div class="font-medium">{{ $class->name }}</div>
+                            <div class="text-xs text-gray-500 mt-0.5">{{ ucfirst(str_replace('_', ' ', $class->category)) }}</div>
+                        </td>
+
+                        {{-- Schedule: Gabungan Hari & Jam --}}
                         <td class="px-6 py-4 text-sm text-gray-600">
-                            <div>Monday & Tuesday</div>
-                            <div class="text-xs text-gray-500">16.00 - 17.30</div>
+                            <div class="font-medium text-gray-900">
+                                @if($class->schedules->count() > 0)
+                                    {{ $class->schedules->pluck('day_of_week')->implode(', ') }}
+                                @else
+                                    <span class="text-gray-400 italic">No days set</span>
+                                @endif
+                            </div>
+                            <div class="text-xs text-gray-500 mt-1">
+                                {{ \Carbon\Carbon::parse($class->start_time)->format('H:i') }} - 
+                                {{ \Carbon\Carbon::parse($class->end_time)->format('H:i') }}
+                            </div>
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-800">E-101</td>
-                        <td class="px-6 py-4">
-                            <span class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-medium">Active</span>
+
+                        {{-- Room --}}
+                        <td class="px-6 py-4 text-sm text-gray-800">
+                            {{ $class->classroom }}
                         </td>
+
+                        {{-- Status --}}
                         <td class="px-6 py-4">
-                            <a href="{{ route('teacher.classes.detail', 1) }}" class="text-gray-600 hover:text-blue-600">
+                            @if($class->is_active)
+                                <span class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-medium">Active</span>
+                            @else
+                                <span class="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-medium">Inactive</span>
+                            @endif
+                        </td>
+
+                        {{-- Action --}}
+                        <td class="px-6 py-4">
+                            {{-- Gunakan route dengan ID class --}}
+                            <a href="{{ route('teacher.classes.detail', $class->id) }}" class="text-gray-600 hover:text-blue-600 transition" title="View Detail">
                                 <i class="fas fa-eye"></i>
                             </a>
                         </td>
                     </tr>
-                    <tr class="hover:bg-gray-50 transition">
-                        <td class="px-6 py-4 text-sm text-gray-800">2</td>
-                        <td class="px-6 py-4 text-sm text-gray-800">E456</td>
-                        <td class="px-6 py-4 text-sm text-gray-800">Speaking</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">
-                            <div>Wednesday</div>
-                            <div class="text-xs text-gray-500">14.00 - 15.30</div>
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-800">E-102</td>
-                        <td class="px-6 py-4">
-                            <span class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-medium">Active</span>
-                        </td>
-                        <td class="px-6 py-4">
-                            <a href="{{ route('teacher.classes.detail', 2) }}" class="text-gray-600 hover:text-blue-600">
-                                <i class="fas fa-eye"></i>
-                            </a>
+                    @empty
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                            <div class="flex flex-col items-center justify-center">
+                                <i class="fas fa-folder-open text-4xl mb-3 text-gray-300"></i>
+                                <p>You have no classes assigned yet.</p>
+                            </div>
                         </td>
                     </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
 
-        <!-- Pagination -->
-        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-            <button class="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
-                Previous
-            </button>
-            <span class="text-sm text-gray-600">Page 1 of 1</span>
-            <button class="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
-                Next
-            </button>
+        <div class="px-6 py-4 border-t border-gray-200">
+            {{ $classes->links() }}
         </div>
     </div>
 </div>
