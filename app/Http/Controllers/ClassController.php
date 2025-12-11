@@ -17,24 +17,73 @@ class ClassController extends Controller
         // 1. Load Data Kelas beserta relasinya (Guru & Jadwal)
         $query = ClassModel::with(['formTeacher', 'localTeacher', 'schedules']);
 
-        // 2. Logika Search (Berdasarkan Nama Kelas atau Ruangan)
+        // 2. Logika Search 
         if ($request->has('search') && $request->search != '') {
             $searchTerm = $request->search;
             $query->where(function($q) use ($searchTerm) {
                 $q->where('name', 'LIKE', "%{$searchTerm}%")
-                  ->orWhere('classroom', 'LIKE', "%{$searchTerm}%");
+                    ->orWhere('classroom', 'LIKE', "%{$searchTerm}%");
             });
         }
+        
+        // --- LOGIKA FILTER BARU ---
+        // 3. Filter Academic Year
+        if ($request->filled('academic_year')) {
+            $query->where('academic_year', $request->academic_year);
+        }
 
-        // 3. Pagination (10 data per halaman)
-        $classes = $query->orderBy('created_at', 'desc')->paginate(10);
+        // 4. Filter Category
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
+        }
+        
+        // 5. Filter Status (BARU)
+        if ($request->filled('status')) {
+            if ($request->status === 'active') {
+                $query->where('is_active', true);
+            } elseif ($request->status === 'inactive') {
+                $query->where('is_active', false);
+            }
+        }
+        
+        // --- LOGIKA SORT ---
+        $sort = $request->query('sort', 'newest'); 
+        switch ($sort) {
+            case 'oldest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'name_asc':
+                $query->orderBy('name', 'asc');
+                break;
+            case 'name_desc':
+                $query->orderBy('name', 'desc');
+                break;
+            case 'newest':
+            default:
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+
+        // Ambil daftar kategori unik yang ada di database
+        $categories = ['pre_level', 'level', 'step', 'private'];
+
+        // Ambil daftar tahun akademik unik yang ada di database
+        $years = ClassModel::select('academic_year')->distinct()->pluck('academic_year')->sortDesc();
+
+        // 6. Pagination
+        $classes = $query->paginate(10);
         $classes->appends($request->all());
 
-        // 4. Ambil List Guru untuk Dropdown (Hanya user yang is_teacher = true)
+        // 7. Ambil List Guru untuk Dropdown
         $teachers = User::where('is_teacher', true)->orderBy('name', 'asc')->get();
 
-        // 5. Kirim data kelas dan guru ke View
-        return view('admin.classes.index', compact('classes', 'teachers'));
+        // 8. Kirim data ke View
+        return view('admin.classes.class', compact(
+            'classes', 
+            'teachers', 
+            'years', 
+            'categories'
+        ));
     }
 
     /**
@@ -86,7 +135,7 @@ class ClassController extends Controller
             ]);
         }
 
-        return redirect()->route('admin.classes.index')->with('success', 'Class created successfully!');
+        return redirect()->route('admin.classes.class')->with('success', 'Class created successfully!');
     }
 
     /**
@@ -135,7 +184,7 @@ class ClassController extends Controller
             }
         }
 
-        return redirect()->route('admin.classes.index')->with('success', 'Class updated successfully!');
+        return redirect()->route('admin.classes.class')->with('success', 'Class updated successfully!');
     }
     
 public function detailClass($id)
@@ -154,11 +203,11 @@ public function detailClass($id)
     $class->progress_percent = $class->total_sessions ? round(($class->completed_sessions / $class->total_sessions) * 100) : 0;
 
     // Pastikan nama view sesuai file blade kamu
-    return view('admin.classes.detailclass', compact('class', 'schedules'));
+    return view('admin.classes.detail-class', compact('class', 'schedules'));
 }
 
 
     // --- Method Placeholder untuk View Detail ---
-    public function class($id) { return view('admin.classes.class'); }
-    public function students($id) { return view('admin.classes.students'); }
+    // public function class($id) { return view('admin.classes.class2'); }
+    // public function students($id) { return view('admin.classes.students'); }
 }

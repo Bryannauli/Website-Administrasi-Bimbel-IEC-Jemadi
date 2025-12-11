@@ -48,7 +48,7 @@
     }">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
-            {{-- 1. BREADCRUMB --}}
+            {{-- 1. BREADCRUMB (CONSISTENT STYLE) --}}
             <nav class="flex mb-5" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-3">
                     <li class="inline-flex items-center">
@@ -69,22 +69,23 @@
             {{-- Title --}}
             <div class="mb-8">
                 <h1 class="text-3xl font-bold bg-gradient-to-b from-blue-500 to-red-500 bg-clip-text text-transparent">
-                    Classes Data
+                    Classes Management
                 </h1>
             </div>
 
             {{-- 2. TABLE SECTION --}}
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
 
-                {{-- Header Actions --}}
+                {{-- Header Actions: Search & Filter --}}
                 <div class="p-4 sm:p-6 border-b border-gray-200 flex flex-col gap-4">
                     
                     {{-- SEARCH BAR --}}
                     <div class="w-full">
                         <form action="{{ route('admin.classes.index') }}" method="GET" class="relative w-full">
-                            @foreach(['academic_year', 'category', 'sort', 'status'] as $key)
-                                @if(request($key)) <input type="hidden" name="{{ $key }}" value="{{ request($key) }}"> @endif
-                            @endforeach
+                            @if(request('academic_year')) <input type="hidden" name="academic_year" value="{{ request('academic_year') }}"> @endif
+                            @if(request('category')) <input type="hidden" name="category" value="{{ request('category') }}"> @endif
+                            @if(request('sort')) <input type="hidden" name="sort" value="{{ request('sort') }}"> @endif
+                            @if(request('status')) <input type="hidden" name="status" value="{{ request('status') }}"> @endif
                             
                             <input type="text" name="search" value="{{ request('search') }}" 
                                    placeholder="Search class name or classroom..." 
@@ -98,7 +99,7 @@
                         </form>
                     </div>
                     
-                    {{-- FILTERS --}}
+                    {{-- FILTERS & BUTTONS --}}
                     <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
 
                         <form action="{{ route('admin.classes.index') }}" method="GET" class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
@@ -147,7 +148,7 @@
                                 </select>
                             </div>
 
-                            {{-- Reset --}}
+                            {{-- Reset Button --}}
                             @if(request('academic_year') || request('category') || request('sort') || request('search') || request('status'))
                                 <a href="{{ route('admin.classes.index') }}" class="h-10 w-10 flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg transition-colors flex-shrink-0" title="Reset Filters">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -158,7 +159,7 @@
                         {{-- ADD BUTTON --}}
                         <div class="w-full lg:w-auto">
                             <button @click="showAddModal = true"
-                               class="inline-flex w-full lg:w-auto items-center justify-center gap-2 px-5 h-10 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors font-medium text-sm shadow-sm whitespace-nowrap">
+                                class="inline-flex w-full lg:w-auto items-center justify-center gap-2 px-5 h-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm whitespace-nowrap">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                                 Add New Class
                             </button>
@@ -169,7 +170,7 @@
                 {{-- 3. TABLE CONTENT --}}
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse min-w-max">
-                        <thead class="bg-gray-50 text-xs text-gray-500 font-bold uppercase border-b border-gray-100 tracking-wider">
+                        <thead class="bg-gray-50 text-xs text-gray-500 font-bold uppercase border-b border-gray-200">
                             <tr>
                                 <th class="px-6 py-4 w-16 whitespace-nowrap text-center">No</th>
                                 <th class="px-6 py-4 whitespace-nowrap">Category</th>
@@ -181,28 +182,22 @@
                                 <th class="px-6 py-4 whitespace-nowrap text-center">Action</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-50 text-sm text-gray-700">
+                        <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
                             @forelse($classes as $index => $class)
                                 <tr class="hover:bg-gray-50 transition-colors group">
-                                    {{-- No --}}
-                                    <td class="px-6 py-5 text-center text-gray-500 font-medium">{{ $classes->firstItem() + $index }}</td>
+                                    <td class="px-6 py-4 text-center text-gray-500 font-medium">{{ $classes->firstItem() + $index }}</td>
                                     
-                                    {{-- Category --}}
-                                    <td class="px-6 py-5 text-gray-600 capitalize">
-                                        {{ str_replace('_', ' ', $class->category ?? '-') }}
+                                    <td class="px-6 py-4 capitalize text-gray-600 font-semibold">
+                                        <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs border border-blue-100">{{ str_replace('_', ' ', $class->category ?? '-') }}</span>
                                     </td>
                                     
-                                    {{-- Class Name (Bold Hitam) --}}
-                                    <td class="px-6 py-5 font-medium text-gray-900 text-base">
-                                        {{ $class->name }}
-                                    </td>
+                                    <td class="px-6 py-4 font-bold text-gray-900">{{ $class->name }}</td>
                                     
-                                    {{-- Classroom --}}
-                                    <td class="px-6 py-5 text-gray-500 font-medium whitespace-nowrap">{{ $class->classroom }}</td>
+                                    <td class="px-6 py-4 text-gray-600">{{ $class->classroom }}</td>
                                     
-                                    {{-- Schedule (Format: Hari Teks, Jam Badge Biru) --}}
-                                    <td class="px-6 py-5">
-                                        <div class="flex flex-col gap-1.5">
+                                    {{-- Schedule --}}
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-col gap-1">
                                             <span class="font-medium text-gray-800 text-xs">
                                                 @if($class->schedules->isNotEmpty())
                                                     {{ $class->schedules->pluck('day_of_week')->implode(', ') }}
@@ -210,49 +205,49 @@
                                                     <span class="text-gray-400 italic">-</span>
                                                 @endif
                                             </span>
-                                            <span class="inline-block bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-md text-[10px] font-bold w-fit">
+                                            <span class="text-[10px] text-gray-500 font-mono">
                                                 {{ \Carbon\Carbon::parse($class->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($class->end_time)->format('H:i') }}
                                             </span>
                                         </div>
                                     </td>
 
-                                    {{-- Teacher (Format: FORM: Local:) --}}
-                                    <td class="px-6 py-5 text-xs whitespace-nowrap">
-                                        <div class="flex flex-col gap-1">
-                                            <div class="flex items-center gap-1.5">
-                                                <span class="text-gray-400 font-bold uppercase text-[10px] w-10">FORM:</span>
-                                                <span class="text-gray-900 font-medium">{{ $class->formTeacher->name ?? '-' }}</span>
-                                            </div>
-                                            <div class="flex items-center gap-1.5">
-                                                <span class="text-gray-400 font-bold uppercase text-[10px] w-10">LOCAL:</span>
-                                                <span class="text-gray-700">{{ $class->localTeacher->name ?? '-' }}</span>
-                                            </div>
-                                        </div>
+                                    {{-- Teacher --}}
+                                    <td class="px-6 py-4 text-xs">
+                                        @if($class->formTeacher)
+                                            <div class="text-gray-800 font-semibold mb-0.5">{{ $class->formTeacher->name }} <span class="text-gray-400 font-normal">(Form)</span></div>
+                                        @endif
+                                        @if($class->localTeacher)
+                                            <div class="text-gray-600">{{ $class->localTeacher->name }} <span class="text-gray-400">(Local)</span></div>
+                                        @endif
+                                        @if(!$class->formTeacher && !$class->localTeacher)
+                                            <span class="text-gray-400 italic">Unassigned</span>
+                                        @endif
                                     </td>
 
-                                    {{-- Status (Format: Clean Badge Tanpa Dot) --}}
-                                    <td class="px-6 py-5 text-center">
+                                    {{-- Status (Clean Badge) --}}
+                                    <td class="px-6 py-4 text-center">
                                         @if($class->is_active)
-                                            <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200">Active</span>
+                                            <span class="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-bold">Active</span>
                                         @else
-                                            <span class="px-3 py-1 bg-gray-100 text-gray-500 rounded-full text-xs font-bold border border-gray-200">Inactive</span>
+                                            <span class="px-3 py-1 bg-gray-100 text-gray-500 rounded-lg text-xs font-bold">Inactive</span>
                                         @endif
                                     </td>
 
                                     {{-- Action Buttons --}}
-                                    <td class="px-6 py-5 text-center">
+                                    <td class="px-6 py-4 text-center">
                                         <div class="flex items-center justify-center gap-3">
                                             <a href="{{ route('admin.classes.detailclass', $class->id) }}" 
-                                                class="text-gray-400 hover:text-blue-600 transition-colors" title="View Details">
+                                                class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View Details">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                             </a>
                                             
                                             <button type="button" @click='openEditModal(@json($class))' 
-                                                    class="text-gray-400 hover:text-green-600 transition-colors" title="Edit">
+                                                    class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Edit">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                             </button>
                                             
-                                            <button class="text-gray-400 hover:text-red-600 transition-colors" title="Delete">
+                                            {{-- Delete Button (Placeholder Logic) --}}
+                                            <button class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                             </button>
                                         </div>
@@ -301,7 +296,9 @@
                         <div class="p-6">
                             <form action="{{ route('admin.classes.store') }}" method="POST">
                                 @csrf
+                                {{-- Gunakan Grid Layout yang Rapi --}}
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+                                    {{-- Kolom Kiri --}}
                                     <div class="space-y-4">
                                         <div>
                                             <label class="block text-sm font-bold text-gray-700 mb-1">Class Name <span class="text-red-500">*</span></label>
@@ -323,6 +320,7 @@
                                         </div>
                                     </div>
                                     
+                                    {{-- Kolom Kanan --}}
                                     <div class="space-y-4">
                                         <div>
                                             <label class="block text-sm font-bold text-gray-700 mb-1">Classroom <span class="text-red-500">*</span></label>
@@ -337,6 +335,7 @@
                                         </div>
                                     </div>
 
+                                    {{-- Full Width: Teachers --}}
                                     <div class="md:col-span-2 grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
                                         <div>
                                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Form Teacher</label>
@@ -354,6 +353,7 @@
                                         </div>
                                     </div>
 
+                                    {{-- Full Width: Schedule --}}
                                     <div class="md:col-span-2">
                                         <label class="block text-sm font-bold text-gray-700 mb-2">Schedule Days</label>
                                         <div class="flex flex-wrap gap-3">
@@ -378,7 +378,7 @@
                                 
                                 <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
                                     <button type="button" @click="showAddModal = false" class="px-5 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition">Cancel</button>
-                                    <button type="submit" class="px-5 py-2.5 bg-blue-700 text-white font-medium rounded-lg hover:bg-blue-800 shadow-sm transition">Create Class</button>
+                                    <button type="submit" class="px-5 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 shadow-sm transition">Create Class</button>
                                 </div>
                             </form>
                         </div>
@@ -386,7 +386,7 @@
                 </div>
             </div>
 
-            {{-- MODAL EDIT --}}
+            {{-- MODAL EDIT (Layout Sama dengan Add) --}}
             <div x-show="showEditModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
                 <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
                     <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showEditModal = false"></div>
@@ -476,7 +476,7 @@
                                 </div>
                                 <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
                                     <button type="button" @click="showEditModal = false" class="px-5 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition">Cancel</button>
-                                    <button type="submit" class="px-5 py-2.5 bg-blue-700 text-white font-medium rounded-lg hover:bg-blue-800 shadow-sm transition">Update Class</button>
+                                    <button type="submit" class="px-5 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 shadow-sm transition">Update Class</button>
                                 </div>
                             </form>
                         </div>
