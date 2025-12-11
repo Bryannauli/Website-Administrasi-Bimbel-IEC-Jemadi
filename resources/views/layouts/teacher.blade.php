@@ -20,8 +20,8 @@
             <!-- Logo -->
             <div class="p-6">
                 <div class="flex items-center space-x-3">
-                    <img src="/images/aims-logo.png" alt="AIMS" class="h-10">
-                    <img src="/images/iec-logo.png" alt="IEC" class="h-10">
+                    <img src="/images/aims.png" alt="AIMS" class="h-10">
+                    <img src="/images/IEC.png" alt="IEC" class="h-10">
                 </div>
             </div>
 
