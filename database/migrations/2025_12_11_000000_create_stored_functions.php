@@ -11,7 +11,7 @@ return new class extends Migration
         // Dosen minta wajib ada fungsi, kita buat kerangkanya dulu.
         DB::unprepared('
             DROP FUNCTION IF EXISTS f_GetGrade;
-            CREATE FUNCTION sf_GetGrade(score INT) RETURNS VARCHAR(2)
+            CREATE FUNCTION f_GetGrade(score INT) RETURNS VARCHAR(2)
             DETERMINISTIC
             BEGIN
                 -- Nanti logika nilai (A/B/C) ditaruh sini

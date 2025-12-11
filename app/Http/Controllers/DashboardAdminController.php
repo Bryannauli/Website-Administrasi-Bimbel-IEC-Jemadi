@@ -79,13 +79,20 @@ class DashboardAdminController extends Controller
      */
     public function getAttendanceStats(Request $request)
     {
-        $type = $request->query('type', 'today');
+        $type = $request->query('type', 'month'); // Default ganti jadi 'month'
         
         $query = AttendanceRecord::query();
 
+        // Filter Waktu
         if ($type == 'today') {
             $query->whereHas('session', function($q) {
                 $q->whereDate('date', Carbon::today());
+            });
+        } elseif ($type == 'month') {
+            // FILTER BARU: Ambil bulan & tahun ini
+            $query->whereHas('session', function($q) {
+                $q->whereMonth('date', Carbon::now()->month)
+                  ->whereYear('date', Carbon::now()->year);
             });
         }
 
