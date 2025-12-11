@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\AttendanceRecord;
 use Carbon\Carbon;
@@ -16,24 +17,20 @@ class DashboardAdminController extends Controller
     {
         // Panggil Stored Procedure: p_GetDashboardStats
         // @variable adalah cara MySQL menyimpan output sementara
-        $result = DB::select('CALL p_GetDashboardStats(@s, @t, @c, @b, @g)');
+        $result = DB::select('CALL p_GetDashboardStats(@s, @t, @c)');
         
         // Ambil hasil output variable tersebut
-        $stats = DB::select('SELECT @s as students, @t as teachers, @c as classes, @b as boys, @g as girls')[0];
+        $stats = DB::select('SELECT @s as students, @t as teachers, @c as classes')[0];
 
         // Mapping ke variabel view
         $students = $stats->students;
         $teachers = $stats->teachers;
         $classes  = $stats->classes;
-        $boys     = $stats->boys;
-        $girls    = $stats->girls;
 
         return view('admin.dashboard', compact(
             'students', 
             'teachers', 
-            'classes', 
-            'boys', 
-            'girls'
+            'classes',
         ));
     }
 
@@ -120,5 +117,14 @@ class DashboardAdminController extends Controller
             'sick'       => (int)($stats->total_sick ?? $stats->sick ?? 0),
             'absent'     => (int)($stats->total_absent ?? $stats->absent ?? 0),
         ]);
+    }
+
+    public function getTodaySchedule()
+    {
+        // View v_today_schedule sudah otomatis terfilter berdasarkan hari ini
+        $schedule = DB::table('v_today_schedule')
+                        ->get();
+
+        return response()->json($schedule);
     }
 }

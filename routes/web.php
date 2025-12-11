@@ -5,7 +5,7 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\AssessmentFormController;
-use App\Http\Controllers\DashboardAdminController;
+use App\Http\Controllers\Admin\DashboardAdminController;
 use App\Http\Controllers\Teacher\DashboardTeacherController;
 use App\Http\Controllers\Teacher\ClassTeacherController;
 use App\Http\Controllers\Teacher\StudentTeacherController;
@@ -50,9 +50,10 @@ Route::get('/dashboard', function () {
 
 // --- Rute Admin ---
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardAdminController::class, 'index'])->name('dashboard');
     Route::get('/attendance-stats', [DashboardAdminController::class, 'getAttendanceStats']);
     Route::get('/weekly-absence', [DashboardAdminController::class, 'getWeeklyAbsenceReport']);
+    Route::get('/today-schedule', [DashboardAdminController::class, 'getTodaySchedule']);
 
     Route::get('/profile', [ProfileController::class, 'editAdmin'])->name('profile');
 

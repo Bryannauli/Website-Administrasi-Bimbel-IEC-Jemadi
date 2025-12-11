@@ -1,9 +1,3 @@
-@php
-    $total = $boys + $girls;
-    $boysPercent = $total > 0 ? round($boys / $total * 100) : 0;
-    $girlsPercent = $total > 0 ? round($girls / $total * 100) : 0;
-@endphp
-
 <x-app-layout>
     <x-slot name="header"></x-slot>
 
@@ -38,21 +32,21 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    
+                <div class="grid grid-cols-1 gap-6">
                     {{-- A. STATS CARDS --}}
-                    <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {{-- Diubah dari lg:col-span-2 menjadi w-full, dan menghilangkan grid container yang memisahkan --}}
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         
                         {{-- Students --}}
-                        <div class="bg-yellow-50 p-4 rounded-xl shadow-sm border border-yellow-100 flex flex-col justify-between hover:shadow-md transition-shadow">
+                        <a href="{{ route('admin.student.index') }}" class="bg-yellow-50 p-4 rounded-xl shadow-sm border border-yellow-100 flex flex-col justify-between hover:shadow-md transition-shadow cursor-pointer">
                             <div class="flex items-center gap-3 mb-2">
                                 <span class="p-2 bg-yellow-100 rounded-lg text-yellow-600">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                                 </span>
-                                <h4 class="text-xs font-bold text-yellow-700 uppercase tracking-wide">Students</h4>
+                                <h4 class="text-xs font-bold text-yellow-700 uppercase tracking-wide">Active Students</h4>
                             </div>
                             <p class="text-3xl font-bold text-yellow-800 text-right">{{ $students }}</p>
-                        </div>
+                        </a>
                         
                         {{-- Teachers --}}
                         <div class="bg-purple-50 p-4 rounded-xl shadow-sm border border-purple-100 flex flex-col justify-between hover:shadow-md transition-shadow">
@@ -60,7 +54,7 @@
                                 <span class="p-2 bg-purple-100 rounded-lg text-purple-600">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path></svg>
                                 </span>
-                                <h4 class="text-xs font-bold text-purple-700 uppercase tracking-wide">Teachers</h4>
+                                <h4 class="text-xs font-bold text-purple-700 uppercase tracking-wide">Active Teachers</h4>
                             </div>
                             <p class="text-3xl font-bold text-purple-800 text-right">{{ $teachers }}</p>
                         </div>
@@ -71,53 +65,17 @@
                                 <span class="p-2 bg-red-100 rounded-lg text-red-600">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                 </span>
-                                <h4 class="text-xs font-bold text-red-700 uppercase tracking-wide">Classes</h4>
+                                <h4 class="text-xs font-bold text-red-700 uppercase tracking-wide">Active Classes</h4>
                             </div>
                             <p class="text-3xl font-bold text-red-800 text-right">{{ $classes }}</p>
                         </div>
                     </div>
-
-                    {{-- B. GENDER CHARTS --}}
-                    <div class="lg:col-span-1 bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-around">
-                        {{-- Boys --}}
-                        <div class="flex flex-col items-center">
-                            <div class="relative w-24 h-24">
-                                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                                    <circle class="text-gray-100" stroke-width="8" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50" />
-                                    <circle class="text-blue-500 transition-all duration-1000 ease-out" stroke-width="8" stroke-linecap="round" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50"
-                                        stroke-dasharray="251.2"
-                                        stroke-dashoffset="calc(251.2 - (251.2 * {{ $boysPercent }}) / 100)" />
-                                </svg>
-                                <div class="absolute inset-0 flex flex-col items-center justify-center">
-                                    <span class="text-lg font-bold text-gray-800">{{ $boysPercent }}%</span>
-                                </div>
-                            </div>
-                            <span class="mt-2 text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-full">Boys</span>
-                        </div>
-
-                        {{-- Girls --}}
-                        <div class="flex flex-col items-center">
-                            <div class="relative w-24 h-24">
-                                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                                    <circle class="text-gray-100" stroke-width="8" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50" />
-                                    <circle class="text-pink-500 transition-all duration-1000 ease-out" stroke-width="8" stroke-linecap="round" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50"
-                                        stroke-dasharray="251.2"
-                                        stroke-dashoffset="calc(251.2 - (251.2 * {{ $girlsPercent }}) / 100)" />
-                                </svg>
-                                <div class="absolute inset-0 flex flex-col items-center justify-center">
-                                    <span class="text-lg font-bold text-gray-800">{{ $girlsPercent }}%</span>
-                                </div>
-                            </div>
-                            <span class="mt-2 text-xs font-bold text-pink-600 bg-pink-50 px-2 py-1 rounded-full">Girls</span>
-                        </div>
-                    </div>
-
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6"> 
 
                     {{-- C. TOTAL ATTENDANCE (Donut Chart) --}}
-                    <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <div class="lg:col-span-1 xl:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                         <div class="flex justify-between items-center mb-6">
                             <h3 class="text-lg font-bold text-gray-800">Attendance</h3>
                             
@@ -165,7 +123,7 @@
                     </div>
 
                     {{-- D. WEEKLY ABSENCE REPORT (Bar Chart) --}}
-                    <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                    <div class="lg:col-span-2 xl:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
                         <div class="flex flex-col">
                             <h3 class="text-lg font-bold text-gray-800">Weekly Absence Report</h3>
                             <span class="text-xs text-gray-400 font-normal">(Includes Sick, Permission, & Absent)</span>
@@ -176,6 +134,14 @@
                             {{-- Bars will be injected by JS here --}}
                         </div>
                         <p class="text-center text-xs text-gray-400 mt-4">Total absence count per day (Last 7 days)</p>
+                    </div>
+                    
+                    {{-- E. TODAY'S SCHEDULE --}}
+                    <div class="lg:col-span-1 xl:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Today's Schedule</h3>
+                        <div class="flex-1 space-y-4 overflow-y-auto max-h-96" id="todayScheduleList">
+                            <p class="text-gray-400 text-sm text-center">Loading schedule...</p>
+                        </div>
                     </div>
 
                 </div>
@@ -201,7 +167,6 @@
                 
                 if(centerValue) {
                     centerValue.innerText = "NO DATA";
-                    // Kecilkan font biar muat
                     centerValue.classList.remove("text-4xl", "text-gray-800");
                     centerValue.classList.add("text-sm", "text-gray-400", "font-bold");
                 }
@@ -222,7 +187,6 @@
             
             if(centerValue) {
                 centerValue.innerText = attendanceRate + "%";
-                // Balikkan font jadi besar
                 centerValue.classList.add("text-4xl", "text-gray-800");
                 centerValue.classList.remove("text-sm", "text-gray-400");
             }
@@ -255,10 +219,8 @@
             fetch(`/admin/attendance-stats?type=${type}`)
                 .then(res => res.json())
                 .then(data => updateAttendanceChart(data))
-                .catch(err => console.error("Error:", err));
+                .catch(err => console.error("Error loading attendance stats:", err));
         }
-
-        // ... (Kode Button Listener dan Weekly Chart Tetap Sama) ...
         
         // Toggle Buttons Logic
         const btnToday = document.getElementById("btnToday");
@@ -284,17 +246,17 @@
         loadStats("month");
 
         // --- 2. WEEKLY BAR CHART ---
-        // (Biarkan kode weekly chart tetap sama seperti sebelumnya)
         function loadWeeklyAbsence() {
             fetch("/admin/weekly-absence")
                 .then(res => res.json())
                 .then(data => renderWeeklyChart(data))
-                .catch(err => console.error(err));
+                .catch(err => console.error("Error loading weekly absence:", err));
         }
 
         function renderWeeklyChart(data) {
             const container = document.getElementById("weeklyChart");
             container.innerHTML = "";
+            
             const maxVal = Math.max(...data.map(i => i.total), 1); 
 
             data.forEach(item => {
@@ -314,6 +276,48 @@
             });
         }
         loadWeeklyAbsence();
+
+
+        // --- 3. TODAY'S SCHEDULE LIST ---
+        function loadTodaySchedule() {
+            fetch("/admin/today-schedule")
+                .then(res => res.json())
+                .then(data => renderTodaySchedule(data))
+                .catch(err => console.error("Error loading today's schedule:", err));
+        }
+
+        function renderTodaySchedule(data) {
+            const container = document.getElementById("todayScheduleList");
+            container.innerHTML = "";
+            
+            const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+
+            if (data.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10">
+                        <p class="text-gray-500 font-medium">No classes scheduled for today (${today}).</p>
+                    </div>
+                `;
+                return;
+            }
+
+            data.forEach(item => {
+                const itemHtml = `
+                    <div class="flex items-start p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        <div class="text-sm font-bold text-gray-800 mr-4 mt-1 flex-shrink-0">
+                            ${item.start_time.substring(0, 5)} - ${item.end_time.substring(0, 5)}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold text-base text-blue-700 truncate">${item.class_name}</p>
+                            <p class="text-xs text-gray-600">Room: ${item.classroom}</p>
+                            <p class="text-xs text-gray-400">Form Teacher: ${item.form_teacher_name || 'N/A'}</p>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += itemHtml;
+            });
+        }
+        loadTodaySchedule();
 
     });
     </script>

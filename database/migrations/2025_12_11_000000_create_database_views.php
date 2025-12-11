@@ -7,11 +7,10 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     * Membuat atau mengganti kedua views (v_weekly_absence & v_attendance_summary).
      */
     public function up(): void
     {
-        // 1. View: v_weekly_absence (Logika yang sudah ada, menggunakan DB::unprepared)
+        // 1. View: v_weekly_absence (Laporan Absen Mingguan)
         DB::unprepared("
             CREATE OR REPLACE VIEW v_weekly_absence AS
             SELECT 
@@ -23,9 +22,9 @@ return new class extends Migration
             GROUP BY DATE(attendance_sessions.date);
         ");
 
-        // 2. View: v_attendance_summary (Logika tambahan, nama diubah dan menggunakan DB::unprepared)
+        // 2. View: v_attendance_summary (Statistik Absensi Bulanan/Harian)
         DB::unprepared("
-            CREATE VIEW v_attendance_summary AS
+            CREATE OR REPLACE VIEW v_attendance_summary AS
             SELECT
                 t2.date,
                 SUM(CASE WHEN t1.status = 'present' THEN 1 ELSE 0 END) AS total_present,
@@ -38,17 +37,39 @@ return new class extends Migration
             JOIN attendance_sessions t2 ON t1.attendance_session_id = t2.id
             GROUP BY t2.date
         ");
+
+        // 3. View: v_today_schedule (Jadwal Kelas Hari Ini)
+        // Memfilter berdasarkan DAYNAME(NOW()) yang mengacu pada kolom schedules.day_of_week
+        DB::unprepared("
+            CREATE OR REPLACE VIEW v_today_schedule AS
+            SELECT
+                s.id AS schedule_id,
+                c.id AS class_id,
+                c.name AS class_name,
+                c.classroom,
+                c.start_time,
+                c.end_time,
+                s.day_of_week,
+                ft.name AS form_teacher_name,
+                lt.name AS local_teacher_name
+            FROM schedules s
+            JOIN classes c ON s.class_id = c.id
+            LEFT JOIN users ft ON c.form_teacher_id = ft.id
+            LEFT JOIN users lt ON c.local_teacher_id = lt.id
+            WHERE s.day_of_week = DAYNAME(NOW())
+                AND c.is_active = TRUE
+            ORDER BY c.start_time;
+        ");
     }
 
     /**
-     * Reverse the migrations (Menghapus kedua Views jika dilakukan rollback).
+     * Reverse the migrations (Menghapus Views jika dilakukan rollback).
      */
     public function down(): void
     {
-        // Hapus v_attendance_summary (Nama yang sudah diubah)
+        // Hapus semua views yang dibuat
+        DB::unprepared("DROP VIEW IF EXISTS v_today_schedule");
         DB::unprepared("DROP VIEW IF EXISTS v_attendance_summary"); 
-        
-        // Hapus v_weekly_absence
         DB::unprepared("DROP VIEW IF EXISTS v_weekly_absence");
     }
 };

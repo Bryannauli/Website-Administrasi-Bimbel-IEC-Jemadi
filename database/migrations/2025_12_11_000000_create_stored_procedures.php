@@ -7,26 +7,24 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // 1. PROCEDURE UTAMA: Dashboard Stats
+        // 1. PROCEDURE UTAMA: Dashboard Stats (DIREVISI: Menghapus boys dan girls)
         DB::unprepared('
             DROP PROCEDURE IF EXISTS p_GetDashboardStats;
             CREATE PROCEDURE p_GetDashboardStats(
                 OUT total_students INT,
                 OUT total_teachers INT,
-                OUT total_classes INT,
-                OUT total_boys INT,
-                OUT total_girls INT
+                OUT total_classes INT
+                -- total_boys dan total_girls DIHAPUS
             )
             BEGIN
                 SELECT COUNT(*) INTO total_students FROM students WHERE is_active = 1 AND deleted_at IS NULL;
                 SELECT COUNT(*) INTO total_teachers FROM users WHERE is_teacher = 1 AND is_active = 1 AND deleted_at IS NULL;
                 SELECT COUNT(*) INTO total_classes FROM classes WHERE is_active = 1 AND deleted_at IS NULL;
-                SELECT COUNT(*) INTO total_boys FROM students WHERE gender = "male" AND is_active = 1 AND deleted_at IS NULL;
-                SELECT COUNT(*) INTO total_girls FROM students WHERE gender = "female" AND is_active = 1 AND deleted_at IS NULL;
+                -- Query boys dan girls DIHAPUS
             END
         ');
 
-        // 2. PROCEDURE TAMBAHAN: Attendance Stats
+        // 2. PROCEDURE TAMBAHAN: Attendance Stats (Tidak Diubah)
         DB::unprepared("
             DROP PROCEDURE IF EXISTS p_GetAttendanceStats;
             CREATE PROCEDURE p_GetAttendanceStats(IN date_filter DATE)
@@ -40,7 +38,6 @@ return new class extends Migration
                 FROM attendance_records ar
                 INNER JOIN attendance_sessions s ON ar.attendance_session_id = s.id
                 WHERE (date_filter IS NULL OR s.date = date_filter);
-                -- Baris 'AND ar.deleted_at IS NULL' SUDAH DIHAPUS
             END
         ");
     }
