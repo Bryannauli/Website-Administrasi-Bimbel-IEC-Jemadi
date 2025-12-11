@@ -58,7 +58,7 @@ return new class extends Migration
             LEFT JOIN users lt ON c.local_teacher_id = lt.id
             WHERE s.day_of_week = DAYNAME(NOW())
                 AND c.is_active = TRUE
-            ORDER BY c.start_time;
+            ORDER BY c.start_time, c.name;
         ");
     }
 

@@ -14,13 +14,11 @@ return new class extends Migration
                 OUT total_students INT,
                 OUT total_teachers INT,
                 OUT total_classes INT
-                -- total_boys dan total_girls DIHAPUS
             )
             BEGIN
                 SELECT COUNT(*) INTO total_students FROM students WHERE is_active = 1 AND deleted_at IS NULL;
                 SELECT COUNT(*) INTO total_teachers FROM users WHERE is_teacher = 1 AND is_active = 1 AND deleted_at IS NULL;
                 SELECT COUNT(*) INTO total_classes FROM classes WHERE is_active = 1 AND deleted_at IS NULL;
-                -- Query boys dan girls DIHAPUS
             END
         ');
 

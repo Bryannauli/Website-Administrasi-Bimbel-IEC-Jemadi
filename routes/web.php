@@ -61,25 +61,35 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::prefix('student')->name('student.')->group(function () {
         // Menampilkan daftar siswa
         Route::get('/', [StudentController::class, 'index'])->name('index');
+        // Menampilkan detail siswa
+        Route::get('/detail/{id}', [StudentController::class, 'detail'])->name('detail');
         // Menampilkan form tambah siswa
         Route::get('/add', [StudentController::class, 'add'])->name('add');
-        
-        // Proses simpan data
         Route::post('/', [StudentController::class, 'store'])->name('store');
-
         // Menampilkan form edit siswa
         Route::get('/edit/{id}', [StudentController::class, 'edit'])->name('edit');
         Route::put('/update/{id}', [StudentController::class, 'update'])->name('update');
+        // Proses toggle status aktif/non-aktif siswa
         Route::patch('/{id}/toggle-status', [StudentController::class, 'toggleStatus'])->name('toggleStatus');
-        
         // Proses hapus siswa
         Route::delete('/{id}', [StudentController::class, 'delete'])->name('delete');
-        
-        // Menampilkan detail siswa
-        Route::get('/detail/{id}', [StudentController::class, 'detail'])->name('detail');
-
     });
 
+    // Grouping Route untuk Class (BARU & RAPI)
+    Route::prefix('classes')->name('classes.')->group(function () {
+        // Menampilkan daftar kelas
+        Route::get('/', [ClassController::class, 'index'])->name('index'); 
+        // Menampilkan detail kelas
+        Route::get('/detail/{id}', [ClassController::class, 'detailClass'])->name('detailclass'); 
+        // Proses simpan data baru
+        Route::post('/store', [ClassController::class, 'store'])->name('store');
+        // Update data
+        Route::put('/{id}', [ClassController::class, 'update'])->name('update'); 
+        
+        // Route yang tampaknya salah/redundant, dipertahankan tapi dinilai perlu dihapus:
+        // Route::get('/{id}', [ClassController::class, 'class'])->name('class'); 
+        // Route::get('/{id}/students', [ClassController::class, 'students'])->name('students'); 
+    });
 });
 
 // --- Rute Teacher  ---
@@ -97,16 +107,6 @@ Route::middleware('auth')->group(function () {
  Route::get('/admin/assessment', [AssessmentController::class, 'index'])->name('admin.assessment.index');
  Route::get('/admin/assessment/show', [AssessmentController::class, 'show'])->name('admin.assessment.show');
     Route::post('/admin/assessment/create', [AssessmentController::class, 'create'])->name('admin.assessment.create');
-
-
-// Rute Class
-Route::get('/admin/classes', [ClassController::class, 'index'])->name('admin.classes.index');
- Route::post('/admin/classes/store', [ClassController::class, 'store'])->name('admin.classes.store');
-Route::put('/admin/classes/{id}', [ClassController::class, 'update'])->name('admin.classes.update');
-//  Route::get('/admin/classes/{id}', [ClassController::class, 'show'])->name('admin.class.show');
-Route::get('/admin/classes/detail/{id}', [ClassController::class, 'detailClass'])->name('admin.classes.detailclass');
-   Route::get('/admin/classes//{id}', [ClassController::class, 'class'])->name('admin.classes.class');
-  Route::get('/admin/classes/{id}/students', [ClassController::class, 'students'])->name('admin.classes.students');
 
 // Teacher Routes
 Route::prefix('teacher')->name('teacher.')->middleware(['auth'])->group(function () {
