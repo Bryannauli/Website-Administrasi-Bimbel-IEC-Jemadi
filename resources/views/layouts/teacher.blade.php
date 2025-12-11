@@ -14,10 +14,22 @@
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-purple-50">
-    <div class="flex min-h-screen">
-        <!-- Sidebar -->
-        <aside class="w-64 gradient-pink-purple shadow-lg fixed h-full overflow-y-auto">
-            <!-- Logo -->
+    <div class="flex min-h-screen" x-data="{ sidebarOpen: true }">        
+    <!-- Sidebar -->
+    <aside x-show="sidebarOpen" 
+       x-transition:enter="transition ease-out duration-300"
+       x-transition:enter-start="-translate-x-full"
+       x-transition:enter-end="translate-x-0"
+       x-transition:leave="transition ease-in duration-300"
+       x-transition:leave-start="translate-x-0"
+       x-transition:leave-end="-translate-x-full"
+       class="w-64 bg-gradient-to-br from-red-100 to-blue-100 shadow-lg fixed h-full overflow-y-auto z-20">
+
+        {{-- TAMBAHKAN TOMBOL X (CLOSE) DISINI --}}
+        <button @click="sidebarOpen = false" class="absolute top-4 right-4 text-gray-500 hover:text-red-500 transition focus:outline-none z-50">
+            <i class="fas fa-times text-lg"></i>
+        </button>           
+         <!-- Logo -->
             <div class="p-6">
                 <div class="flex items-center space-x-3">
                     <img src="/images/aims.png" alt="AIMS" class="h-10">
@@ -40,9 +52,9 @@
                         <a href="{{ route('teacher.dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-white/50 rounded-lg {{ request()->routeIs('teacher.dashboard') ? 'bg-white text-blue-600' : '' }}">
                             Dashboard
                         </a>
-                        <a href="{{ route('teacher.analytics') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-white/50 rounded-lg {{ request()->routeIs('teacher.analytics') ? 'bg-white text-blue-600' : '' }}">
+                        <!-- <a href="{{ route('teacher.analytics') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-white/50 rounded-lg {{ request()->routeIs('teacher.analytics') ? 'bg-white text-blue-600' : '' }}">
                             Analytics
-                        </a>
+                        </a> -->
                     </div>
                 </div>
 
@@ -91,78 +103,68 @@
                         </a>
                     </div>
                 </div> -->
-
-                <!-- Authentication -->
-                <div x-data="{ open: false }">
-                    <button @click="open = !open" class="w-full flex items-center justify-between px-4 py-3 text-gray-700 hover:bg-white/50 rounded-lg transition">
-                        <div class="flex items-center space-x-3">
-                            <i class="fas fa-shield-alt"></i>
-                            <span>Authentication</span>
-                        </div>
-                        <i class="fas fa-chevron-down text-xs" :class="{ 'rotate-180': open }"></i>
-                    </button>
-                </div>
             </nav>
 
-            <!-- User Profile at Bottom -->
-            <div class="absolute bottom-0 left-0 right-0 p-4">
-                <div class="bg-blue-600 rounded-lg p-4 text-white">
-                    <div class="flex items-center space-x-3">
-                        <img src="https://ui-avatars.com/api/?name={{ Auth::user()->name ?? 'Teacher' }}&background=8B5CF6&color=fff" class="w-10 h-10 rounded-full">
-                        <div class="flex-1">
-                            <p class="font-semibold text-sm">{{ Auth::user()->name ?? 'Raa' }}</p>
-                            <p class="text-xs opacity-90">{{ Auth::user()->email ?? 'slaysgirl.gmail.com' }}</p>
-                        </div>
-                        <button class="text-white">
-                            <i class="fas fa-ellipsis-v"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Logout Button -->
-            <div class="px-4 pb-24">
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit" class="w-full flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-white/50 rounded-lg transition">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span>Log Out</span>
-                    </button>
-                </form>
-            </div>
         </aside>
 
-        <!-- Main Content -->
-        <main class="flex-1 ml-64">
-            <!-- Header -->
-            <header class="bg-white shadow-sm sticky top-0 z-10">
+        <!-- Main Content -->   
+            <main class="flex-1 transition-all duration-300" :class="sidebarOpen ? 'ml-64' : 'ml-0'">
+                <header class="bg-white shadow-sm sticky top-0 z-30">
                 <div class="px-6 py-4 flex items-center justify-between">
                     <div class="flex items-center space-x-4">
-                        <!-- Breadcrumb -->
+                        {{-- TAMBAHKAN TOMBOL HAMBURGER DISINI (Muncul saat sidebar tertutup) --}}
+                        <button x-show="!sidebarOpen" @click="sidebarOpen = true" class="text-gray-500 hover:text-blue-600 focus:outline-none transition mr-2">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                        
                         @yield('breadcrumb')
                     </div>
 
                     <div class="flex items-center space-x-6">
-                        <!-- Notification -->
                         <button class="relative">
                             <i class="fas fa-bell text-gray-600 text-xl"></i>
                             <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">3</span>
                         </button>
 
-                        <!-- User Profile -->
-                        <div class="flex items-center space-x-3">
-                            <img src="https://ui-avatars.com/api/?name={{ Auth::user()->name ?? 'Teacher' }}&background=8B5CF6&color=fff" class="w-10 h-10 rounded-full">
-                            <div>
-                                <p class="font-semibold text-sm">{{ Auth::user()->name ?? 'Geonwoo' }}</p>
-                                <p class="text-xs text-gray-500">Teacher</p>
+                        <div class="relative" x-data="{ open: false }">
+                            <button @click="open = !open" @click.outside="open = false" class="flex items-center space-x-3 focus:outline-none hover:bg-gray-50 p-2 rounded-lg transition">
+                                <img src="https://ui-avatars.com/api/?name={{ Auth::user()->name ?? 'Teacher' }}&background=8B5CF6&color=fff" class="w-10 h-10 rounded-full object-cover">
+                                <div class="hidden md:block text-left">
+                                    <p class="font-semibold text-sm text-gray-800">{{ Auth::user()->name ?? 'Geonwoo' }}</p>
+                                    <p class="text-xs text-gray-500">{{ ucfirst(Auth::user()->role ?? 'Teacher') }}</p>
+                                </div>
+                                <i class="fas fa-chevron-down text-xs text-gray-400 transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
+                            </button>
+
+                            <div x-show="open" 
+                                 x-transition:enter="transition ease-out duration-200"
+                                 x-transition:enter-start="transform opacity-0 scale-95"
+                                 x-transition:enter-end="transform opacity-100 scale-100"
+                                 x-transition:leave="transition ease-in duration-75"
+                                 x-transition:leave-start="transform opacity-100 scale-100"
+                                 x-transition:leave-end="transform opacity-0 scale-95"
+                                 class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 focus:outline-none" 
+                                 style="display: none;">
+                                
+                                <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    {{ __('Profile') }}
+                                </a>
+
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+                                    <a href="{{ route('logout') }}" 
+                                       onclick="event.preventDefault(); this.closest('form').submit();" 
+                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-red-600">
+                                        {{ __('Log Out') }}
+                                    </a>
+                                </form>
                             </div>
-                            <i class="fas fa-chevron-down text-xs text-gray-400"></i>
                         </div>
-                    </div>
+                        </div>
                 </div>
             </header>
 
-            <!-- Page Content -->
             <div class="p-6">
                 @yield('content')
             </div>
