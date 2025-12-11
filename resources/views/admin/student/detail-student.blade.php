@@ -4,7 +4,7 @@
     <div class="py-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-            {{-- BREADCRUMB (CONSISTENT STYLE: Dashboard > Students > Details) --}}
+            {{-- BREADCRUMB (DYNAMIC CONTEXT AWARE) --}}
             <nav class="flex mb-5" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-3">
                     
@@ -16,19 +16,36 @@
                         </a>
                     </li>
 
-                    {{-- 2. Students List --}}
-                    <li>
-                        <div class="flex items-center">
-                            <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                            <a href="{{ route('admin.student.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Students</a>
-                        </div>
-                    </li>
+                    {{-- LOGIKA CABANG BREADCRUMB --}}
+                    @if(request('ref') == 'class' && $student->classModel)
+                        {{-- JIKA DARI KELAS: Dashboard > Classes > Nama Kelas > Detail Siswa --}}
+                        <li>
+                            <div class="flex items-center">
+                                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                                <a href="{{ route('admin.classes.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Classes</a>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="flex items-center">
+                                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                                <a href="{{ route('admin.classes.detailclass', $student->classModel->id) }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">{{ $student->classModel->name }}</a>
+                            </div>
+                        </li>
+                    @else
+                        {{-- JIKA NORMAL: Dashboard > Students > Detail Siswa --}}
+                        <li>
+                            <div class="flex items-center">
+                                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                                <a href="{{ route('admin.student.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Students</a>
+                            </div>
+                        </li>
+                    @endif
 
-                    {{-- 3. Student Details (Active) --}}
+                    {{-- Nama Siswa (Current Page) --}}
                     <li aria-current="page">
                         <div class="flex items-center">
                             <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                            <span class="ml-1 text-sm font-medium text-gray-900 md:ml-2">Student Details</span>
+                            <span class="ml-1 text-sm font-medium text-gray-900 md:ml-2">{{ $student->name }}</span>
                         </div>
                     </li>
                 </ol>
@@ -37,8 +54,14 @@
             {{-- HEADER: Title & Edit Button --}}
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold text-gray-800">Student Profile</h2>
-                {{-- Tombol Edit dengan ref=detail untuk breadcrumb dinamis di halaman edit --}}
-                <a href="{{ route('admin.student.edit', ['id' => $student->id, 'ref' => 'detail']) }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors shadow-sm">
+                
+                {{-- FIX: Tombol Edit sekarang mewariskan 'ref' dan 'class_id' dari URL saat ini --}}
+                <a href="{{ route('admin.student.edit', [
+                        'id' => $student->id, 
+                        'ref' => request('ref') == 'class' ? 'class' : 'detail', 
+                        'class_id' => request('class_id')
+                    ]) }}" 
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors shadow-sm">
                     Edit Student
                 </a>
             </div>
@@ -57,9 +80,13 @@
                             <p class="text-gray-500 font-medium">ID: {{ $student->student_number }}</p>
                             
                             <div class="flex items-center gap-2 mt-2">
-                                <span class="px-3 py-1 {{ $student->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600' }} rounded-full text-xs font-bold uppercase tracking-wider">
-                                    {{ $student->is_active ? 'Active' : 'Inactive' }}
-                                </span>
+                                {{-- Status Badge (Updated Style) --}}
+                                @if($student->is_active)
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">Active</span>
+                                @else
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-500 border border-gray-200">Inactive</span>
+                                @endif
+
                                 @if($student->classModel)
                                     <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider border border-blue-100">
                                         {{ $student->classModel->name }}
@@ -115,7 +142,7 @@
                         </div>
                     </div>
 
-                    {{-- A. KOTAK STATISTIK (PASTEL) --}}
+                    {{-- A. KOTAK STATISTIK --}}
                     <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                         <div class="p-4 rounded-xl bg-blue-50 border border-blue-100 text-center">
                             <p class="text-xs text-blue-600 font-bold uppercase mb-1">Present</p>
@@ -143,31 +170,32 @@
                     <div class="flex-1 flex items-center justify-center py-4">
                         @php
                             $total = $totalDays > 0 ? $totalDays : 1;
-                            $stop1 = ($summary['present'] / $total) * 100;
-                            $stop2 = $stop1 + (($summary['late'] / $total) * 100);
-                            $stop3 = $stop2 + (($summary['permission'] / $total) * 100);
-                            $stop4 = $stop3 + (($summary['sick'] / $total) * 100);
-                            $rate = $totalDays > 0 ? round((($summary['present'] + $summary['late']) / $totalDays) * 100) : 0;
+                            $pPresent    = ($summary['present'] / $total) * 100;
+                            $pLate       = ($summary['late'] / $total) * 100;
+                            $pPermission = ($summary['permission'] / $total) * 100;
+                            $pSick       = ($summary['sick'] / $total) * 100;
+                            
+                            $stop1 = $pPresent;
+                            $stop2 = $stop1 + $pLate;
+                            $stop3 = $stop2 + $pPermission;
+                            $stop4 = $stop3 + $pSick;
+                            
+                            $attendanceRate = $totalDays > 0 ? round((($summary['present'] + $summary['late']) / $totalDays) * 100) : 0;
 
-                            // 1. Buat string gradientnya dulu
-                            $gradientValue = "conic-gradient(
-                                #2563eb 0% {$stop1}%,
-                                #eab308 {$stop1}% {$stop2}%,
-                                #10b981 {$stop2}% {$stop3}%,
-                                #9333ea {$stop3}% {$stop4}%,
-                                #dc2626 {$stop4}% 100%
-                            )";
-
-                            // 2. TRICK: Masukkan seluruh atribut 'style="..."' ke dalam variabel PHP
-                            // VS Code tidak akan memvalidasi string di dalam PHP, jadi tidak akan merah.
-                            $chartAttribute = 'style="background: ' . $gradientValue . ';"';
+                            $chartAttribute = 'style="background: conic-gradient(
+                                #2563eb 0% ' . $stop1 . '%,
+                                #eab308 ' . $stop1 . '% ' . $stop2 . '%,
+                                #10b981 ' . $stop2 . '% ' . $stop3 . '%,
+                                #9333ea ' . $stop3 . '% ' . $stop4 . '%,
+                                #dc2626 ' . $stop4 . '% 100%
+                            );"';
                         @endphp
 
                         <div class="flex flex-col items-center">
                             <div class="relative w-48 h-48 rounded-full shadow-inner" {!! $chartAttribute !!}>
                                 <div class="absolute inset-0 m-5 bg-white rounded-full flex flex-col items-center justify-center shadow-sm">
                                     <span class="text-gray-400 text-xs font-semibold uppercase">Rate</span>
-                                    <span class="text-4xl font-extrabold text-gray-800">{{ $rate }}%</span>
+                                    <span class="text-4xl font-extrabold text-gray-800">{{ $attendanceRate }}%</span>
                                 </div>
                             </div>
                             
@@ -184,7 +212,7 @@
                 </div>
             </div>
 
-            {{-- 3. RIWAYAT ABSENSI (TIMELINE) --}}
+            {{-- 3. RIWAYAT ABSENSI --}}
             <div class="mb-10">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-bold text-gray-800">Attendance History</h3>

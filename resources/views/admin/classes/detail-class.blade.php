@@ -3,13 +3,34 @@
 
     <div class="p-4 md:p-6 bg-[#EEF2FF] min-h-screen font-sans">
 
-        {{-- Breadcrumb --}}
-        <nav class="text-sm font-medium text-gray-400 mb-6 flex items-center gap-2 overflow-x-auto whitespace-nowrap">
-            <a href="{{ route('dashboard') }}" class="hover:text-blue-600 transition">Dashboard</a>
-            <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-            <a href="{{ route('admin.classes.index') }}" class="hover:text-blue-600 transition">Classes</a>
-            <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-            <span class="text-gray-600 font-semibold">{{ $class->name }}</span>
+        {{-- BREADCRUMB (CONSISTENT STYLE WITH STUDENT PAGE) --}}
+        <nav class="flex mb-6" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                
+                {{-- 1. Dashboard --}}
+                <li class="inline-flex items-center">
+                    <a href="{{ route('dashboard') }}" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
+                        Dashboard
+                    </a>
+                </li>
+
+                {{-- 2. Classes List --}}
+                <li>
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                        <a href="{{ route('admin.classes.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Classes</a>
+                    </div>
+                </li>
+
+                {{-- 3. Current Class Name --}}
+                <li aria-current="page">
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                        <span class="ml-1 text-sm font-medium text-gray-900 md:ml-2">{{ $class->name }}</span>
+                    </div>
+                </li>
+            </ol>
         </nav>
 
         <div class="space-y-8">
@@ -178,12 +199,16 @@
                                     <td class="px-4 py-3 font-mono text-xs text-gray-500">{{ $student->student_number }}</td>
                                     <td class="px-4 py-3 font-medium text-gray-900 group-hover:text-blue-600 transition-colors">{{ $student->name }}</td>
                                     <td class="px-4 py-3">
-                                        {{-- STATUS BARU TANPA DOT --}}
-                                        <span class="px-3 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold">Active</span>
+                                        {{-- STATUS (Standard Pill) --}}
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">
+                                            Active
+                                        </span>
                                     </td>
                                     <td class="px-4 py-3">
-                                        <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <a href="{{ route('admin.student.detail', $student->id) }}" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="View Profile">
+                                        {{-- ACTION BUTTONS (HAPUS 'opacity-0' AGAR SELALU MUNCUL) --}}
+                                        <div class="flex items-center justify-center gap-2">
+                                            <a href="{{ route('admin.student.detail', ['id' => $student->id, 'ref' => 'class', 'class_id' => $class->id]) }}" 
+                                            class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="View Profile">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                             </a>
                                             <button class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="Remove from Class">
