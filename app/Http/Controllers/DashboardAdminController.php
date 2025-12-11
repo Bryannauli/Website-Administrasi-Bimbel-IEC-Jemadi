@@ -47,7 +47,7 @@ class DashboardAdminController extends Controller
         $endDate   = Carbon::now()->format('Y-m-d');
 
         // Mengambil data dari VIEW 'v_weekly_absence'
-        // Ini menggantikan query join/group by yang rumit sebelumnya
+        // View ini tidak berubah, tetap 'v_weekly_absence'
         $data = DB::table('v_weekly_absence')
                     ->whereBetween('date', [$startDate, $endDate])
                     ->get()
@@ -75,38 +75,50 @@ class DashboardAdminController extends Controller
     }
 
     /**
-     * API JSON: Statistik Absensi (Tetap Eloquent / Query Builder)
+     * API JSON: Statistik Absensi
      */
     public function getAttendanceStats(Request $request)
     {
-        $type = $request->query('type', 'month'); // Default ganti jadi 'month'
+        $type = $request->query('type', 'month'); // Default: month
         
-        $query = AttendanceRecord::query();
+        // PERUBAHAN DI SINI: Ganti 'attendance_summary_v' menjadi 'v_attendance_summary'
+        $query = DB::table('v_attendance_summary'); 
+        $stats = null;
 
-        // Filter Waktu
         if ($type == 'today') {
-            $query->whereHas('session', function($q) {
-                $q->whereDate('date', Carbon::today());
-            });
+            // Filter TODAY: Cari 1 baris data di view
+            $stats = $query->whereDate('date', Carbon::today())->first();
+
         } elseif ($type == 'month') {
-            // FILTER BARU: Ambil bulan & tahun ini
-            $query->whereHas('session', function($q) {
-                $q->whereMonth('date', Carbon::now()->month)
-                  ->whereYear('date', Carbon::now()->year);
-            });
+            // Filter MONTH: Lakukan SUM dari semua baris view di bulan ini
+            $stats = $query->whereMonth('date', Carbon::now()->month)
+                            ->whereYear('date', Carbon::now()->year)
+                            ->select(
+                                DB::raw('SUM(total_present) as total_present'),
+                                DB::raw('SUM(total_late) as total_late'),
+                                DB::raw('SUM(total_permission) as total_permission'),
+                                DB::raw('SUM(total_sick) as total_sick'),
+                                DB::raw('SUM(total_absent) as total_absent')
+                            )
+                            ->first();
         }
 
-        $stats = $query->select('status', DB::raw('count(*) as total'))
-                        ->groupBy('status')
-                        ->pluck('total', 'status')
-                        ->toArray();
+        // Jika tidak ada data di view (null), kembalikan array 0
+        if (is_null($stats) || empty((array)$stats)) {
+            return response()->json([
+                'present' => 0, 'late' => 0, 'permission' => 0, 'sick' => 0, 'absent' => 0
+            ]);
+        }
 
+        // Rename/Map kolom ke format yang diharapkan JS (present, late, etc.)
+        // Kolom di view: total_present, total_late, dll.
+        // Kolom di JS: present, late, dll.
         return response()->json([
-            'present'    => $stats['present'] ?? 0,
-            'late'       => $stats['late'] ?? 0,
-            'permission' => $stats['permission'] ?? 0,
-            'sick'       => $stats['sick'] ?? 0,
-            'absent'     => $stats['absent'] ?? 0,
+            'present'    => (int)($stats->total_present ?? $stats->present ?? 0),
+            'late'       => (int)($stats->total_late ?? $stats->late ?? 0),
+            'permission' => (int)($stats->total_permission ?? $stats->permission ?? 0),
+            'sick'       => (int)($stats->total_sick ?? $stats->sick ?? 0),
+            'absent'     => (int)($stats->total_absent ?? $stats->absent ?? 0),
         ]);
     }
 }
