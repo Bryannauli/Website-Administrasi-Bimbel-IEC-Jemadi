@@ -1,489 +1,232 @@
 <x-app-layout>
     <x-slot name="header"></x-slot>
 
-    {{-- x-data UTAMA UNTUK MODAL EDIT --}}
-    <div class="py-6" x-data="{ 
-        showAddModal: false, 
-        showEditModal: false,
-        
-        editForm: {
-            id: null,
-            category: '',
-            name: '',
-            classroom: '',
-            start_month: '',
-            end_month: '',
-            academic_year: '',
-            form_teacher_id: '',  
-            local_teacher_id: '', 
-            days: [],
-            time_start: '',
-            time_end: '',
-            status: 'active'
-        },
+    <div class="p-4 md:p-6 bg-[#EEF2FF] min-h-screen font-sans">
 
-        updateUrl: '{{ route('admin.classes.update', ':id') }}',
-        
-        getUpdateUrl() {
-            return this.editForm.id ? this.updateUrl.replace(':id', this.editForm.id) : '#';
-        },
+        {{-- Breadcrumb --}}
+        <nav class="text-sm font-medium text-gray-400 mb-6 flex items-center gap-2 overflow-x-auto whitespace-nowrap">
+            <a href="{{ route('dashboard') }}" class="hover:text-blue-600 transition">Dashboard</a>
+            <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            <a href="{{ route('admin.classes.index') }}" class="hover:text-blue-600 transition">Classes</a>
+            <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            <span class="text-gray-600 font-semibold">{{ $class->name }}</span>
+        </nav>
 
-        openEditModal(data) {
-            this.editForm.id = data.id;
-            this.editForm.category = data.category;
-            this.editForm.name = data.name;
-            this.editForm.classroom = data.classroom || ''; 
-            this.editForm.start_month = data.start_month; 
-            this.editForm.end_month = data.end_month;     
-            this.editForm.academic_year = data.academic_year;
-            this.editForm.form_teacher_id = data.form_teacher_id || ''; 
-            this.editForm.local_teacher_id = data.local_teacher_id || ''; 
-            this.editForm.days = data.schedules ? data.schedules.map(item => item.day_of_week) : [];
-            this.editForm.time_start = data.start_time; 
-            this.editForm.time_end = data.end_time; 
-            this.editForm.status = data.is_active ? 'active' : 'inactive'; 
-            
-            this.showEditModal = true;
-        }
-    }">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            
-            {{-- 1. BREADCRUMB (CONSISTENT STYLE) --}}
-            <nav class="flex mb-5" aria-label="Breadcrumb">
-                <ol class="inline-flex items-center space-x-1 md:space-x-3">
-                    <li class="inline-flex items-center">
-                        <a href="{{ route('dashboard') }}" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600">
-                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
-                            Dashboard
-                        </a>
-                    </li>
-                    <li aria-current="page">
-                        <div class="flex items-center">
-                            <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                            <span class="ml-1 text-sm font-medium text-gray-900 md:ml-2">Classes</span>
+        <div class="space-y-8">
+
+            {{-- 1. INFO KELAS (TOP CARD) --}}
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden z-0">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -mr-8 -mt-8"></div>
+                <div class="flex flex-col md:flex-row items-center justify-between relative gap-6">
+                    <div class="flex items-center gap-5">
+                        <img src="https://ui-avatars.com/api/?name={{ urlencode($class->name) }}&background=2563EB&color=fff&size=128&bold=true&length=2"
+                            alt="{{ $class->name }}" 
+                            class="w-16 h-16 md:w-20 md:h-20 rounded-2xl shadow-md border-4 border-white bg-blue-600">
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900">{{ $class->name }}</h1>
+                            <div class="flex flex-col gap-1 mt-1 mb-2">
+                                <div class="flex items-center gap-2 text-sm text-gray-600">
+                                    <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <span class="font-semibold text-gray-800">
+                                        {{ \Carbon\Carbon::parse($class->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($class->end_time)->format('H:i') }}
+                                    </span>
+                                    <span class="text-gray-300">|</span>
+                                    <span>{{ $class->schedules->pluck('day_of_week')->implode(', ') }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-sm text-gray-500">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                    <span>{{ $class->classroom ?? 'No Classroom' }}</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="px-2.5 py-0.5 {{ $class->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600' }} rounded text-xs font-bold uppercase tracking-wider">
+                                    {{ $class->is_active ? 'Active' : 'Inactive' }}
+                                </span>
+                                <span class="px-2.5 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-bold uppercase tracking-wider border border-blue-100">
+                                    {{ ucwords(str_replace('_', ' ', $class->category)) }}
+                                </span>
+                            </div>
                         </div>
-                    </li>
-                </ol>
-            </nav>
-            
-            {{-- Title --}}
-            <div class="mb-8">
-                <h1 class="text-3xl font-bold bg-gradient-to-b from-blue-500 to-red-500 bg-clip-text text-transparent">
-                    Classes Management
-                </h1>
+                    </div>
+                    <div class="text-center md:text-right hidden md:block">
+                        <p class="text-xs text-gray-400 uppercase font-bold tracking-wide mb-1">Academic Year</p>
+                        <p class="text-2xl font-bold text-gray-800">{{ $class->academic_year }}</p>
+                        <p class="text-sm text-gray-500 font-medium bg-gray-50 px-2 py-1 rounded inline-block mt-1">
+                            {{ $class->start_month }} - {{ $class->end_month }}
+                        </p>
+                    </div>
+                </div>
             </div>
 
-            {{-- 2. TABLE SECTION --}}
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-
-                {{-- Header Actions: Search & Filter --}}
-                <div class="p-4 sm:p-6 border-b border-gray-200 flex flex-col gap-4">
-                    
-                    {{-- SEARCH BAR --}}
-                    <div class="w-full">
-                        <form action="{{ route('admin.classes.index') }}" method="GET" class="relative w-full">
-                            @if(request('academic_year')) <input type="hidden" name="academic_year" value="{{ request('academic_year') }}"> @endif
-                            @if(request('category')) <input type="hidden" name="category" value="{{ request('category') }}"> @endif
-                            @if(request('sort')) <input type="hidden" name="sort" value="{{ request('sort') }}"> @endif
-                            @if(request('status')) <input type="hidden" name="status" value="{{ request('status') }}"> @endif
-                            
-                            <input type="text" name="search" value="{{ request('search') }}" 
-                                   placeholder="Search class name or classroom..." 
-                                   class="w-full h-11 pl-12 pr-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm shadow-sm transition-all">
-
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </form>
-                    </div>
-                    
-                    {{-- FILTERS & BUTTONS --}}
-                    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-
-                        <form action="{{ route('admin.classes.index') }}" method="GET" class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-                            @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
-                            
-                            {{-- Academic Year --}}
-                            <div class="relative flex-grow sm:flex-grow-0">
-                                <select name="academic_year" onchange="this.form.submit()" 
-                                        class="appearance-none h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 bg-gray-50 focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                                    <option value="">All Years</option>
-                                    @foreach($years as $year)
-                                        <option value="{{ $year }}" {{ request('academic_year') == $year ? 'selected' : '' }}>{{ $year }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            {{-- Category --}}
-                            <div class="relative flex-grow sm:flex-grow-0">
-                                <select name="category" onchange="this.form.submit()" 
-                                        class="appearance-none h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                                    <option value="">Category</option>
-                                    @foreach($categories as $cat)
-                                        <option value="{{ $cat }}" {{ request('category') == $cat ? 'selected' : '' }}>{{ ucwords(str_replace('_', ' ', $cat)) }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            
-                            {{-- Status --}}
-                            <div class="relative flex-grow sm:flex-grow-0">
-                                <select name="status" onchange="this.form.submit()" 
-                                        class="appearance-none h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                                    <option value="">Status</option>
-                                    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
-                                    <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
-                                </select>
-                            </div>
-
-                            {{-- Sort --}}
-                            <div class="relative flex-grow sm:flex-grow-0">
-                                <select name="sort" onchange="this.form.submit()" 
-                                        class="appearance-none h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                                    <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Newest</option>
-                                    <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest</option>
-                                    <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>A-Z</option>
-                                    <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Z-A</option>
-                                </select>
-                            </div>
-
-                            {{-- Reset Button --}}
-                            @if(request('academic_year') || request('category') || request('sort') || request('search') || request('status'))
-                                <a href="{{ route('admin.classes.index') }}" class="h-10 w-10 flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg transition-colors flex-shrink-0" title="Reset Filters">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                </a>
-                            @endif
-                        </form>
-
-                        {{-- ADD BUTTON --}}
-                        <div class="w-full lg:w-auto">
-                            <button @click="showAddModal = true"
-                                class="inline-flex w-full lg:w-auto items-center justify-center gap-2 px-5 h-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm whitespace-nowrap">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                                Add New Class
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- 3. TABLE CONTENT --}}
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse min-w-max">
-                        <thead class="bg-gray-50 text-xs text-gray-500 font-bold uppercase border-b border-gray-200">
-                            <tr>
-                                <th class="px-6 py-4 w-16 whitespace-nowrap text-center">No</th>
-                                <th class="px-6 py-4 whitespace-nowrap">Category</th>
-                                <th class="px-6 py-4 whitespace-nowrap">Class Name</th>
-                                <th class="px-6 py-4 whitespace-nowrap">Classroom</th>
-                                <th class="px-6 py-4 whitespace-nowrap">Schedule</th>
-                                <th class="px-6 py-4 whitespace-nowrap">Teacher</th>
-                                <th class="px-6 py-4 whitespace-nowrap text-center">Status</th>
-                                <th class="px-6 py-4 whitespace-nowrap text-center">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
-                            @forelse($classes as $index => $class)
-                                <tr class="hover:bg-gray-50 transition-colors group">
-                                    <td class="px-6 py-4 text-center text-gray-500 font-medium">{{ $classes->firstItem() + $index }}</td>
-                                    
-                                    <td class="px-6 py-4 capitalize text-gray-600 font-semibold">
-                                        <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs border border-blue-100">{{ str_replace('_', ' ', $class->category ?? '-') }}</span>
-                                    </td>
-                                    
-                                    <td class="px-6 py-4 font-bold text-gray-900">{{ $class->name }}</td>
-                                    
-                                    <td class="px-6 py-4 text-gray-600">{{ $class->classroom }}</td>
-                                    
-                                    {{-- Schedule --}}
-                                    <td class="px-6 py-4">
-                                        <div class="flex flex-col gap-1">
-                                            <span class="font-medium text-gray-800 text-xs">
-                                                @if($class->schedules->isNotEmpty())
-                                                    {{ $class->schedules->pluck('day_of_week')->implode(', ') }}
-                                                @else
-                                                    <span class="text-gray-400 italic">-</span>
-                                                @endif
-                                            </span>
-                                            <span class="text-[10px] text-gray-500 font-mono">
-                                                {{ \Carbon\Carbon::parse($class->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($class->end_time)->format('H:i') }}
-                                            </span>
-                                        </div>
-                                    </td>
-
-                                    {{-- Teacher --}}
-                                    <td class="px-6 py-4 text-xs">
-                                        @if($class->formTeacher)
-                                            <div class="text-gray-800 font-semibold mb-0.5">{{ $class->formTeacher->name }} <span class="text-gray-400 font-normal">(Form)</span></div>
-                                        @endif
-                                        @if($class->localTeacher)
-                                            <div class="text-gray-600">{{ $class->localTeacher->name }} <span class="text-gray-400">(Local)</span></div>
-                                        @endif
-                                        @if(!$class->formTeacher && !$class->localTeacher)
-                                            <span class="text-gray-400 italic">Unassigned</span>
-                                        @endif
-                                    </td>
-
-                                    {{-- Status (Clean Badge) --}}
-                                    <td class="px-6 py-4 text-center">
-                                        @if($class->is_active)
-                                            <span class="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-bold">Active</span>
-                                        @else
-                                            <span class="px-3 py-1 bg-gray-100 text-gray-500 rounded-lg text-xs font-bold">Inactive</span>
-                                        @endif
-                                    </td>
-
-                                    {{-- Action Buttons --}}
-                                    <td class="px-6 py-4 text-center">
-                                        <div class="flex items-center justify-center gap-3">
-                                            <a href="{{ route('admin.classes.detailclass', $class->id) }}" 
-                                                class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View Details">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                                            </a>
-                                            
-                                            <button type="button" @click='openEditModal(@json($class))' 
-                                                    class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Edit">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                            </button>
-                                            
-                                            {{-- Delete Button (Placeholder Logic) --}}
-                                            <button class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="8" class="px-6 py-10 text-center text-gray-500">
-                                        <div class="flex flex-col items-center justify-center">
-                                            <svg class="w-12 h-12 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                                            <p class="text-base font-medium">No classes found.</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+            {{-- 2. SECTION GURU (Row 1) --}}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
-                {{-- Pagination --}}
-                <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white">
-                    @if ($classes->onFirstPage())
-                        <button class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-400 bg-white cursor-not-allowed" disabled>Previous</button>
-                    @else
-                        <a href="{{ $classes->previousPageUrl() }}" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 hover:text-gray-800 transition-colors">Previous</a>
-                    @endif
-                    <span class="text-sm text-gray-500 font-medium">Page {{ $classes->currentPage() }} of {{ $classes->lastPage() }}</span>
-                    @if ($classes->hasMorePages())
-                        <a href="{{ $classes->nextPageUrl() }}" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 hover:text-gray-800 transition-colors">Next</a>
-                    @else
-                        <button class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-400 bg-white cursor-not-allowed" disabled>Next</button>
-                    @endif
-                </div>
-            </div>
+                {{-- A. LIST TEACHER --}}
+                <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path></svg>
+                            Teachers Assigned
+                        </h3>
+                        <span class="text-xs text-gray-400">(Max 2 Slots)</span>
+                    </div>
 
-            {{-- 3. MODALS (Add & Edit - Disimpan di file yang sama agar ringkas) --}}
-            {{-- MODAL ADD --}}
-            <div x-show="showAddModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
-                <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-                    <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showAddModal = false"></div>
-                    <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl w-full border border-gray-100">
-                        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                            <h3 class="text-lg font-bold text-gray-900">Add New Class</h3>
-                            <button @click="showAddModal = false" class="text-gray-400 hover:text-gray-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-                        </div>
-                        <div class="p-6">
-                            <form action="{{ route('admin.classes.store') }}" method="POST">
-                                @csrf
-                                {{-- Gunakan Grid Layout yang Rapi --}}
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-                                    {{-- Kolom Kiri --}}
-                                    <div class="space-y-4">
-                                        <div>
-                                            <label class="block text-sm font-bold text-gray-700 mb-1">Class Name <span class="text-red-500">*</span></label>
-                                            <input type="text" name="name" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500" required placeholder="e.g. Level 1A">
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-bold text-gray-700 mb-1">Category <span class="text-red-500">*</span></label>
-                                            <select name="category" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
-                                                <option value="">Select Category</option>
-                                                @foreach($categories as $cat) <option value="{{ $cat }}">{{ ucwords(str_replace('_', ' ', $cat)) }}</option> @endforeach
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-bold text-gray-700 mb-1">Academic Year</label>
-                                            <select name="academic_year" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                                <option value="2025">2025</option>
-                                                <option value="2026">2026</option>
-                                            </select>
-                                        </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {{-- Slot 1: Form Teacher --}}
+                        @if($class->formTeacher)
+                            <div class="p-3 rounded-xl border border-blue-100 bg-blue-50/20 flex items-center justify-between group hover:border-blue-300 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm shadow-sm">
+                                        {{ substr($class->formTeacher->name, 0, 1) }}
                                     </div>
-                                    
-                                    {{-- Kolom Kanan --}}
-                                    <div class="space-y-4">
-                                        <div>
-                                            <label class="block text-sm font-bold text-gray-700 mb-1">Classroom <span class="text-red-500">*</span></label>
-                                            <input type="text" name="classroom" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500" required placeholder="e.g. Room 101">
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-bold text-gray-700 mb-1">Period (Start - End)</label>
-                                            <div class="flex gap-2">
-                                                <select name="start_month" class="w-1/2 border-gray-300 rounded-lg shadow-sm text-sm">@foreach(['January','February','March','April','May','June','July','August','September','October','November','December'] as $m)<option value="{{$m}}">{{$m}}</option>@endforeach</select>
-                                                <select name="end_month" class="w-1/2 border-gray-300 rounded-lg shadow-sm text-sm">@foreach(['January','February','March','April','May','June','July','August','September','October','November','December'] as $m)<option value="{{$m}}">{{$m}}</option>@endforeach</select>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {{-- Full Width: Teachers --}}
-                                    <div class="md:col-span-2 grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
-                                        <div>
-                                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Form Teacher</label>
-                                            <select name="form_teacher_id" class="w-full border-gray-300 rounded-lg shadow-sm text-sm">
-                                                <option value="">Select Teacher (Optional)</option>
-                                                @foreach($teachers as $teacher) <option value="{{ $teacher->id }}">{{ $teacher->name }}</option> @endforeach
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Local Teacher</label>
-                                            <select name="local_teacher_id" class="w-full border-gray-300 rounded-lg shadow-sm text-sm">
-                                                <option value="">Select Teacher (Optional)</option>
-                                                @foreach($teachers as $teacher) <option value="{{ $teacher->id }}">{{ $teacher->name }}</option> @endforeach
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    {{-- Full Width: Schedule --}}
-                                    <div class="md:col-span-2">
-                                        <label class="block text-sm font-bold text-gray-700 mb-2">Schedule Days</label>
-                                        <div class="flex flex-wrap gap-3">
-                                            @foreach(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as $day)
-                                                <label class="inline-flex items-center cursor-pointer bg-white border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition">
-                                                    <input type="checkbox" name="days[]" value="{{ $day }}" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                                                    <span class="ml-2 text-gray-700 text-sm font-medium">{{ $day }}</span>
-                                                </label>
-                                            @endforeach
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="md:col-span-2">
-                                        <label class="block text-sm font-bold text-gray-700 mb-1">Class Time</label>
-                                        <div class="flex items-center gap-2">
-                                            <input type="time" name="start_time" class="border-gray-300 rounded-lg shadow-sm" required>
-                                            <span class="text-gray-400 font-bold">-</span>
-                                            <input type="time" name="end_time" class="border-gray-300 rounded-lg shadow-sm" required>
-                                        </div>
+                                    <div>
+                                        <h4 class="font-bold text-gray-800 text-sm">{{ $class->formTeacher->name }}</h4>
+                                        <p class="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Form Teacher</p>
                                     </div>
                                 </div>
-                                
-                                <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
-                                    <button type="button" @click="showAddModal = false" class="px-5 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition">Cancel</button>
-                                    <button type="submit" class="px-5 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 shadow-sm transition">Create Class</button>
+                                <div class="flex gap-1">
+                                    <button class="p-1.5 text-gray-400 hover:text-blue-600 bg-white rounded shadow-sm border border-gray-100" title="Edit"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
+                                    <button class="p-1.5 text-gray-400 hover:text-red-600 bg-white rounded shadow-sm border border-gray-100" title="Unassign"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
                                 </div>
-                            </form>
-                        </div>
+                            </div>
+                        @else
+                            <button class="w-full p-3 h-[66px] rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center gap-2 text-gray-400 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                <span class="text-xs font-bold">Assign Form Teacher</span>
+                            </button>
+                        @endif
+
+                        {{-- Slot 2: Local Teacher --}}
+                        @if($class->localTeacher)
+                            <div class="p-3 rounded-xl border border-purple-100 bg-purple-50/20 flex items-center justify-between group hover:border-purple-300 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-sm shadow-sm">
+                                        {{ substr($class->localTeacher->name, 0, 1) }}
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-gray-800 text-sm">{{ $class->localTeacher->name }}</h4>
+                                        <p class="text-[10px] text-purple-600 font-bold uppercase tracking-wider">Local Teacher</p>
+                                    </div>
+                                </div>
+                                <div class="flex gap-1">
+                                    <button class="p-1.5 text-gray-400 hover:text-purple-600 bg-white rounded shadow-sm border border-gray-100" title="Edit"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
+                                    <button class="p-1.5 text-gray-400 hover:text-red-600 bg-white rounded shadow-sm border border-gray-100" title="Unassign"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                                </div>
+                            </div>
+                        @else
+                            <button class="w-full p-3 h-[66px] rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center gap-2 text-gray-400 hover:border-purple-400 hover:text-purple-600 hover:bg-purple-50 transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                <span class="text-xs font-bold">Assign Local Teacher</span>
+                            </button>
+                        @endif
                     </div>
                 </div>
+
+                {{-- B. ATTENDANCE TEACHER --}}
+                <div class="lg:col-span-1 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg shadow-blue-200 p-6 text-white flex flex-col justify-between">
+                    <div>
+                        <h4 class="text-blue-100 text-xs font-bold uppercase tracking-widest mb-2">Attendance</h4>
+                        <h3 class="text-xl font-bold">Teacher Report</h3>
+                        <p class="text-blue-100 text-xs mt-2 opacity-80 leading-relaxed">
+                            Monitor teaching logs, materials taught, and teacher presence for this class.
+                        </p>
+                    </div>
+                    <button class="mt-4 w-full py-2.5 bg-white text-blue-700 rounded-lg text-sm font-bold hover:bg-blue-50 transition shadow-sm flex items-center justify-center gap-2">
+                        View Report <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    </button>
+                </div>
+
             </div>
 
-            {{-- MODAL EDIT (Layout Sama dengan Add) --}}
-            <div x-show="showEditModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
-                <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-                    <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showEditModal = false"></div>
-                    <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl w-full border border-gray-100">
-                        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                            <h3 class="text-lg font-bold text-gray-900">Edit Class</h3>
-                            <button @click="showEditModal = false" class="text-gray-400 hover:text-gray-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-                        </div>
-                        <div class="p-6">
-                            <form :action="getUpdateUrl()" method="POST"> 
-                                @csrf
-                                @method('PUT')
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-                                    {{-- Sama dengan ADD, hanya ada x-model --}}
-                                    <div class="space-y-4">
-                                        <div><label class="block text-sm font-bold text-gray-700 mb-1">Class Name</label><input type="text" name="name" x-model="editForm.name" class="w-full border-gray-300 rounded-lg shadow-sm"></div>
-                                        <div>
-                                            <label class="block text-sm font-bold text-gray-700 mb-1">Category</label>
-                                            <select name="category" x-model="editForm.category" class="w-full border-gray-300 rounded-lg shadow-sm">
-                                                @foreach($categories as $cat) <option value="{{ $cat }}">{{ ucwords(str_replace('_', ' ', $cat)) }}</option> @endforeach
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-bold text-gray-700 mb-1">Academic Year</label>
-                                            <select name="academic_year" x-model="editForm.academic_year" class="w-full border-gray-300 rounded-lg shadow-sm">
-                                                <option value="2025">2025</option><option value="2026">2026</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="space-y-4">
-                                        <div><label class="block text-sm font-bold text-gray-700 mb-1">Classroom</label><input type="text" name="classroom" x-model="editForm.classroom" class="w-full border-gray-300 rounded-lg shadow-sm"></div>
-                                        <div>
-                                            <label class="block text-sm font-bold text-gray-700 mb-1">Period</label>
-                                            <div class="flex gap-2">
-                                                <select name="start_month" x-model="editForm.start_month" class="w-1/2 border-gray-300 rounded-lg text-sm">@foreach(['January','February','March','April','May','June','July','August','September','October','November','December'] as $m)<option value="{{$m}}">{{$m}}</option>@endforeach</select>
-                                                <select name="end_month" x-model="editForm.end_month" class="w-1/2 border-gray-300 rounded-lg text-sm">@foreach(['January','February','March','April','May','June','July','August','September','October','November','December'] as $m)<option value="{{$m}}">{{$m}}</option>@endforeach</select>
-                                            </div>
-                                        </div>
-                                    </div>
+            {{-- 3. SECTION SISWA (Row 2) --}}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {{-- C. LIST STUDENTS --}}
+                <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col min-h-[400px]">
+                    
+                    {{-- Header --}}
+                    <div class="flex justify-between items-center mb-5">
+                        <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                            Enrolled Students
+                            <span class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-0.5 rounded-full ml-2">
+                                {{ $class->students_count ?? 0 }}
+                            </span>
+                        </h3>
+                        <button class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-2 px-3 rounded-lg transition shadow-sm shadow-green-200">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            Add Student
+                        </button>
+                    </div>
 
-                                    <div class="md:col-span-2 grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
-                                        <div>
-                                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Form Teacher</label>
-                                            <select name="form_teacher_id" x-model="editForm.form_teacher_id" class="w-full border-gray-300 rounded-lg shadow-sm text-sm">
-                                                <option value="">Select (Optional)</option>
-                                                @foreach($teachers as $teacher) <option value="{{ $teacher->id }}">{{ $teacher->name }}</option> @endforeach
-                                            </select>
+                    {{-- Table --}}
+                    <div class="overflow-x-auto flex-1 custom-scrollbar">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-gray-50 text-gray-400 text-xs font-medium border-b border-gray-100 sticky top-0 z-10">
+                                <tr>
+                                    <th class="px-4 py-3 font-normal w-12">No</th>
+                                    <th class="px-4 py-3 font-normal">Student ID</th>
+                                    <th class="px-4 py-3 font-normal">Name</th>
+                                    <th class="px-4 py-3 font-normal">Status</th>
+                                    <th class="px-4 py-3 font-normal text-center w-24">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 text-sm text-gray-800">
+                                @forelse($class->students ?? [] as $index => $student)
+                                <tr class="hover:bg-gray-50 transition group">
+                                    <td class="px-4 py-3 text-gray-400 text-xs">{{ $index + 1 }}</td>
+                                    <td class="px-4 py-3 font-mono text-xs text-gray-500">{{ $student->student_number }}</td>
+                                    <td class="px-4 py-3 font-medium text-gray-900 group-hover:text-blue-600 transition-colors">{{ $student->name }}</td>
+                                    <td class="px-4 py-3">
+                                        {{-- STATUS BARU TANPA DOT --}}
+                                        <span class="px-3 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold">Active</span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <a href="{{ route('admin.student.detail', $student->id) }}" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="View Profile">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                            </a>
+                                            <button class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="Remove from Class">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                            </button>
                                         </div>
-                                        <div>
-                                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Local Teacher</label>
-                                            <select name="local_teacher_id" x-model="editForm.local_teacher_id" class="w-full border-gray-300 rounded-lg shadow-sm text-sm">
-                                                <option value="">Select (Optional)</option>
-                                                @foreach($teachers as $teacher) <option value="{{ $teacher->id }}">{{ $teacher->name }}</option> @endforeach
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div class="md:col-span-2">
-                                        <label class="block text-sm font-bold text-gray-700 mb-2">Schedule Days</label>
-                                        <div class="flex flex-wrap gap-3">
-                                            @foreach(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as $day)
-                                                <label class="inline-flex items-center cursor-pointer bg-white border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition">
-                                                    <input type="checkbox" name="days[]" value="{{ $day }}" x-model="editForm.days" class="w-4 h-4 text-blue-600 rounded border-gray-300">
-                                                    <span class="ml-2 text-gray-700 text-sm font-medium">{{ $day }}</span>
-                                                </label>
-                                            @endforeach
-                                        </div>
-                                    </div>
-
-                                    <div class="md:col-span-2 flex justify-between items-end">
-                                        <div>
-                                            <label class="block text-sm font-bold text-gray-700 mb-1">Class Time</label>
-                                            <div class="flex items-center gap-2">
-                                                <input type="time" name="start_time" x-model="editForm.time_start" class="border-gray-300 rounded-lg shadow-sm">
-                                                <span class="text-gray-400 font-bold">-</span>
-                                                <input type="time" name="end_time" x-model="editForm.time_end" class="border-gray-300 rounded-lg shadow-sm">
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Status</label>
-                                            <div class="flex gap-4">
-                                                <label class="inline-flex items-center"><input type="radio" name="status" value="active" x-model="editForm.status" class="text-green-600"><span class="ml-2 text-sm">Active</span></label>
-                                                <label class="inline-flex items-center"><input type="radio" name="status" value="inactive" x-model="editForm.status" class="text-gray-600"><span class="ml-2 text-sm">Inactive</span></label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
-                                    <button type="button" @click="showEditModal = false" class="px-5 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition">Cancel</button>
-                                    <button type="submit" class="px-5 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 shadow-sm transition">Update Class</button>
-                                </div>
-                            </form>
-                        </div>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="5" class="px-4 py-12 text-center text-gray-400 italic bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                                        No students enrolled in this class yet.
+                                    </td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-            </div>
 
+                {{-- D. ATTENDANCE STUDENT --}}
+                <div class="lg:col-span-1 bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col">
+                    <div class="mb-4">
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Attendance</h4>
+                        <h3 class="text-xl font-bold text-gray-800">Student Stats</h3>
+                    </div>
+
+                    {{-- Placeholder Chart/Info --}}
+                    <div class="flex-1 flex flex-col items-center justify-center text-center p-6 bg-gray-50 rounded-xl border border-dashed border-gray-200 mb-4">
+                        <div class="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center mb-3">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        </div>
+                        <p class="text-sm text-gray-600 font-medium">Track daily presence & absence.</p>
+                        <p class="text-xs text-gray-400 mt-1">Detailed report available.</p>
+                    </div>
+
+                    <button class="w-full py-2.5 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 transition shadow-sm shadow-green-200 flex items-center justify-center gap-2">
+                        View Report <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                    </button>
+                </div>
+
+            </div>
+            
         </div>
     </div>
 </x-app-layout>
