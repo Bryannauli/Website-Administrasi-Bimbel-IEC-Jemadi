@@ -39,7 +39,7 @@
                 <p class="text-gray-600 text-sm">Welcome back! Here is your schedule for today.</p>
             </div>
             <div class="hidden lg:block">
-                <img src="{{ asset('images/teacher-illustration.png') }}" alt="Teacher" class="w-32 opacity-90">
+                <img src="{{ asset('images/teacher.png') }}" alt="Teacher" class="w-32 opacity-90">
             </div>
         </div>
     </div>

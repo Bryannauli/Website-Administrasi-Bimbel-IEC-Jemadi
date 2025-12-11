@@ -19,10 +19,10 @@
         <div class="flex items-start justify-between">
             <div class="w-full">
                 <div class="flex justify-between items-start">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-4">Vocabulary Class</h2>
+                    <h2 class="text-3xl font-bold text-gray-800 mb-4">{{ $class->name }}</h2>
                     
-                    <span class="bg-blue-100 text-blue-600 px-4 py-1 rounded-full text-sm font-medium">
-                        Pre-Level
+                    <span class="bg-blue-100 text-blue-600 px-4 py-1 rounded-full text-sm font-medium uppercase">
+                        {{ str_replace('_', ' ', $class->category) }}
                     </span>
                 </div>
 
@@ -33,7 +33,13 @@
                         </div>
                         <div>
                             <p class="text-xs text-gray-400">Schedule Days</p>
-                            <p class="font-medium text-gray-800">Monday & Wednesday</p>
+                            <p class="font-medium text-gray-800">
+                                @if($class->schedules->count() > 0)
+                                    {{ $class->schedules->pluck('day_of_week')->implode(' & ') }}
+                                @else
+                                    -
+                                @endif
+                            </p>
                         </div>
                     </div>
 
@@ -43,7 +49,10 @@
                         </div>
                         <div>
                             <p class="text-xs text-gray-400">Time</p>
-                            <p class="font-medium text-gray-800">08.00 - 09.00 AM</p>
+                            <p class="font-medium text-gray-800">
+                                {{ \Carbon\Carbon::parse($class->start_time)->format('H:i') }} - 
+                                {{ \Carbon\Carbon::parse($class->end_time)->format('H:i') }}
+                            </p>
                         </div>
                     </div>
 
@@ -53,7 +62,7 @@
                         </div>
                         <div>
                             <p class="text-xs text-gray-400">Room</p>
-                            <p class="font-medium text-gray-800">E-101</p>
+                            <p class="font-medium text-gray-800">{{ $class->classroom }}</p>
                         </div>
                     </div>
                 </div>
@@ -65,15 +74,15 @@
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <h3 class="text-xl font-bold text-gray-800">Student List</h3>
             
-            <div class="flex items-center space-x-2">
+            <form method="GET" action="{{ url()->current() }}" class="flex items-center space-x-2">
                 <span class="text-sm text-gray-600">Show</span>
-                <select onchange="window.location.href=this.value" class="px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                    <option value="?per_page=5" {{ request('per_page') == 5 ? 'selected' : '' }}>5</option>
-                    <option value="?per_page=10" {{ request('per_page') == 10 ? 'selected' : '' }}>10</option>
-                    <option value="?per_page=25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
+                <select name="per_page" onchange="this.form.submit()" class="px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    <option value="5" {{ request('per_page') == 5 ? 'selected' : '' }}>5</option>
+                    <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10</option>
+                    <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
                 </select>
                 <span class="text-sm text-gray-600">entries</span>
-            </div>
+            </form>
         </div>
 
         <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
@@ -89,22 +98,26 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
-                        @for($i = 1; $i <= 5; $i++)
+                        @forelse($students as $student)
                         <tr class="hover:bg-gray-50 transition">
-                            <td class="px-6 py-4 text-sm text-gray-600">{{ $i }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-600">
+                                {{ $loop->iteration + $students->firstItem() - 1 }}
+                            </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center">
                                     <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs mr-3">
-                                        JD
+                                        {{ substr($student->name, 0, 2) }}
                                     </div>
-                                    <div class="text-sm font-medium text-gray-900">John Doe {{ $i }}</div>
+                                    <div class="text-sm font-medium text-gray-900">{{ $student->name }}</div>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 text-sm text-gray-600">STD-202500{{ $i }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-600">{{ $student->student_number }}</td>
                             <td class="px-6 py-4">
-                                <span class="px-2 py-1 text-xs font-semibold leading-5 text-green-800 bg-green-100 rounded-full">
-                                    Active
-                                </span>
+                                @if($student->is_active)
+                                    <span class="px-2 py-1 text-xs font-semibold leading-5 text-green-800 bg-green-100 rounded-full">Active</span>
+                                @else
+                                    <span class="px-2 py-1 text-xs font-semibold leading-5 text-red-800 bg-red-100 rounded-full">Inactive</span>
+                                @endif
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <button class="text-gray-400 hover:text-blue-600 transition">
@@ -112,23 +125,17 @@
                                 </button>
                             </td>
                         </tr>
-                        @endfor
+                        @empty
+                        <tr>
+                            <td colspan="5" class="px-6 py-4 text-center text-gray-500">No students found in this class.</td>
+                        </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
 
-            <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50">
-                <div class="text-sm text-gray-500">
-                    Showing <span class="font-medium">1</span> to <span class="font-medium">5</span> of <span class="font-medium">20</span> results
-                </div>
-                <div class="flex items-center space-x-2">
-                    <button disabled class="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-400 cursor-not-allowed bg-gray-100">
-                        Previous
-                    </button>
-                    <button class="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-600 hover:bg-white hover:border-blue-500 hover:text-blue-600 transition">
-                        Next
-                    </button>
-                </div>
+            <div class="px-6 py-4 border-t border-gray-200">
+                {{ $students->links() }}
             </div>
         </div>
     </div>
@@ -137,7 +144,7 @@
 
     <div class="space-y-4">
         <div class="flex items-center justify-between">
-            <h3 class="text-xl font-bold text-gray-800">Attendance</h3>
+            <h3 class="text-xl font-bold text-gray-800">Attendance History</h3>
             
             <button @click="openModal = true" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center space-x-2 text-sm shadow-sm shadow-blue-200">
                 <i class="fas fa-plus"></i>
@@ -153,61 +160,43 @@
                             <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-16">No</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Time</th>
-                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
+                        @forelse($attendanceSessions as $session)
                         <tr class="hover:bg-gray-50 transition">
-                            <td class="px-6 py-4 text-sm text-gray-600">1</td>
+                            <td class="px-6 py-4 text-sm text-gray-600">
+                                {{ $loop->iteration + $attendanceSessions->firstItem() - 1 }}
+                            </td>
                             <td class="px-6 py-4 text-sm font-medium text-gray-900">
-                                20 Oct 2025
+                                {{ \Carbon\Carbon::parse($session->date)->format('d M Y') }}
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-600">
-                                08:00 - 09:00
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-md">Completed</span>
+                                {{ \Carbon\Carbon::parse($class->start_time)->format('H:i') }} - 
+                                {{ \Carbon\Carbon::parse($class->end_time)->format('H:i') }}
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center space-x-3">
-                                    <a href="{{ route('teacher.classes.session.detail', [1, 1]) }}" class="text-gray-500 hover:text-blue-600 transition" title="View Details">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    </div>
-                            </td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition">
-                            <td class="px-6 py-4 text-sm text-gray-600">2</td>
-                            <td class="px-6 py-4 text-sm font-medium text-gray-900">
-                                18 Oct 2025
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-600">
-                                08:00 - 09:00
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-md">Completed</span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center space-x-3">
-                                    <a href="#" class="text-gray-500 hover:text-blue-600 transition" title="View Details">
+                                    <a href="{{ route('teacher.classes.session.detail', [$class->id, $session->id]) }}" class="text-gray-500 hover:text-blue-600 transition" title="View Details">
                                         <i class="fas fa-eye"></i>
                                     </a>
                                 </div>
                             </td>
                         </tr>
+                        @empty
+                        <tr>
+                            <td colspan="4" class="px-6 py-8 text-center text-gray-500">
+                                No attendance sessions recorded yet.
+                            </td>
+                        </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
 
-            <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50">
-                <button class="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-600 hover:bg-white hover:border-blue-500 transition">
-                    Previous
-                </button>
-                <span class="text-sm text-gray-600">Page 1 of 5</span>
-                <button class="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-600 hover:bg-white hover:border-blue-500 transition">
-                    Next
-                </button>
+            <div class="px-6 py-4 border-t border-gray-200">
+                {{ $attendanceSessions->links() }}
             </div>
         </div>
     </div>
@@ -226,23 +215,25 @@
                     </button>
                 </div>
 
-                <form>
+                <form action="{{ route('teacher.classes.session.store', $class->id) }}" method="POST">
+                    @csrf
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                            <input type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="date" name="date" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ date('Y-m-d') }}">
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                                <input type="time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <input type="time" name="start_time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ \Carbon\Carbon::parse($class->start_time)->format('H:i') }}">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                                <input type="time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <input type="time" name="end_time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ \Carbon\Carbon::parse($class->end_time)->format('H:i') }}">
                             </div>
                         </div>
+                        <p class="text-xs text-gray-500 italic">*Times are preset based on class schedule but can be adjusted.</p>
                     </div>
 
                     <div class="mt-6 flex justify-end space-x-3">
