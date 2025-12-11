@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\Teacher;
 
-use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth; // Penting: untuk Auth::id()
+use App\Models\AttendanceRecord;
+use App\Http\Controllers\Controller;
+use App\Models\Student; // Model untuk siswa
 use App\Models\ClassModel; // Penting: panggil Model
 use App\Models\AttendanceSession; // Model untuk sesi absen
-use App\Models\Student; // Model untuk siswa
+use Illuminate\Support\Facades\Auth; // Penting: untuk Auth::id()
 
 class ClassTeacherController extends Controller
 {
@@ -32,8 +33,7 @@ class ClassTeacherController extends Controller
 
         // --- Logic Pagination Siswa ---
         // Default 5, atau ambil dari dropdown 'per_page'
-        $perPage = $request->input('per_page', 5);
-        
+        $perPage = $request->input('per_page', 5);     
         $students = Student::where('class_id', $id)
             ->where('is_active', true)
             ->paginate($perPage, ['*'], 'student_page') // 'student_page' = nama parameter page khusus siswa
@@ -75,17 +75,51 @@ class ClassTeacherController extends Controller
 
     public function sessionDetail($classId, $sessionId)
     {
-        // Ambil data kelas sekaligus jadwal / sesi (bisa dari relasi)
-        $class = ClassModel::with('schedules')->findOrFail($classId);
+        $class = ClassModel::findOrFail($classId);
+        
+        // Ambil Session beserta record absensinya (jika sudah pernah diisi)
+        $session = AttendanceSession::with('records')->findOrFail($sessionId);
 
-        // Ambil session spesifik, jika kamu punya tabel sesi
-        $session = $class->schedules->where('id', $sessionId)->first();
+        // Ambil Siswa Aktif di Kelas Tersebut
+        $students = Student::where('class_id', $classId)
+            ->where('is_active', true)
+            ->orderBy('name', 'asc')
+            ->get();
 
-        if (!$session) {
-            abort(404, 'Session not found');
+        // Map status kehadiran existing ke setiap siswa (untuk logic 'checked' di radio button)
+        // Jika belum ada record, defaultnya null (atau bisa kita set 'present')
+        foreach($students as $student) {
+            $existingRecord = $session->records->where('student_id', $student->id)->first();
+            $student->current_status = $existingRecord ? $existingRecord->status : null; 
         }
 
-        return view('teacher.classes.session-attandance', compact('class', 'session'));
+        return view('teacher.classes.session-attandance', compact('class', 'session', 'students'));
+    }
+
+    public function updateSession(Request $request, $classId, $sessionId)
+    {
+        // Validasi input array
+        $request->validate([
+            'attendance' => 'required|array',
+            'attendance.*' => 'in:present,absent,permitted,sick,late',
+        ]);
+
+        // Looping setiap data yang dikirim (key = student_id, value = status)
+        foreach ($request->attendance as $studentId => $status) {
+            AttendanceRecord::updateOrCreate(
+                [
+                    'attendance_session_id' => $sessionId,
+                    'student_id' => $studentId,
+                ],
+                [
+                    'status' => $status
+                ]
+            );
+        }
+
+        // Redirect kembali ke detail kelas dengan pesan sukses
+        return redirect()->route('teacher.classes.detail', $classId)
+                         ->with('success', 'Attendance recorded successfully!');
     }
 
 }

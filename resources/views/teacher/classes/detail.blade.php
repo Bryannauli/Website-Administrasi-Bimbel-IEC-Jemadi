@@ -76,7 +76,7 @@
             
             <form method="GET" action="{{ url()->current() }}" class="flex items-center space-x-2">
                 <span class="text-sm text-gray-600">Show</span>
-                <select name="per_page" onchange="this.form.submit()" class="px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                <select name="per_page" onchange="this.form.submit()" class="px-7 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                     <option value="5" {{ request('per_page') == 5 ? 'selected' : '' }}>5</option>
                     <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10</option>
                     <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
@@ -94,7 +94,6 @@
                             <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Student Name</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID Number</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
@@ -118,11 +117,6 @@
                                 @else
                                     <span class="px-2 py-1 text-xs font-semibold leading-5 text-red-800 bg-red-100 rounded-full">Inactive</span>
                                 @endif
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <button class="text-gray-400 hover:text-blue-600 transition">
-                                    <i class="fas fa-eye"></i>
-                                </button>
                             </td>
                         </tr>
                         @empty
