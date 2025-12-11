@@ -40,7 +40,7 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     
-                    {{-- A. STATS CARDS (Updated: 3 Kolom - Staff Removed) --}}
+                    {{-- A. STATS CARDS --}}
                     <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
                         
                         {{-- Students --}}
@@ -77,7 +77,7 @@
                         </div>
                     </div>
 
-                    {{-- B. GENDER CHARTS (Col Span 1) --}}
+                    {{-- B. GENDER CHARTS --}}
                     <div class="lg:col-span-1 bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-around">
                         {{-- Boys --}}
                         <div class="flex flex-col items-center">
@@ -120,9 +120,11 @@
                     <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                         <div class="flex justify-between items-center mb-6">
                             <h3 class="text-lg font-bold text-gray-800">Attendance</h3>
+                            
+                            {{-- BUTTON TOGGLE (Updated: Today vs Month) --}}
                             <div class="flex bg-gray-100 p-1 rounded-lg">
-                                <button id="btnToday" class="px-3 py-1 text-xs font-bold rounded-md bg-white text-blue-600 shadow-sm transition-all">Today</button>
-                                <button id="btnAll" class="px-3 py-1 text-xs font-bold rounded-md text-gray-500 hover:text-gray-700 transition-all">All</button>
+                                <button id="btnToday" class="px-3 py-1 text-xs font-bold rounded-md text-gray-500 hover:text-gray-700 transition-all">Today</button>
+                                <button id="btnMonth" class="px-3 py-1 text-xs font-bold rounded-md bg-white text-blue-600 shadow-sm transition-all">Month</button>
                             </div>
                         </div>
 
@@ -132,7 +134,7 @@
                                     <div class="absolute inset-4 rounded-full bg-white shadow-inner"></div>
                                 </div>
                                 <div class="absolute inset-0 flex items-center justify-center">
-                                    <span class="text-gray-400 text-xs font-semibold uppercase tracking-widest">Rate</span>
+                                    <span id="centerValue" class="text-4xl font-extrabold text-gray-800">0%</span>
                                 </div>
                             </div>
                             
@@ -164,8 +166,9 @@
 
                     {{-- D. WEEKLY ABSENCE REPORT (Bar Chart) --}}
                     <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
-                        <div class="flex justify-between items-center mb-6">
+                        <div class="flex flex-col">
                             <h3 class="text-lg font-bold text-gray-800">Weekly Absence Report</h3>
+                            <span class="text-xs text-gray-400 font-normal">(Includes Sick, Permission, & Absent)</span>
                         </div>
                         
                         {{-- Chart Area --}}
@@ -185,26 +188,53 @@
     <script>
     document.addEventListener("DOMContentLoaded", function () {
 
-        // --- 1. ATTENDANCE DONUT CHART ---
+        // --- 1. ATTENDANCE DONUT CHART (SMARTER VERSION) ---
         function updateAttendanceChart(data) {
-            let total = data.present + data.permission + data.sick + data.late + data.absent;
-            if (total === 0) total = 1;
+            let realTotal = data.present + data.permission + data.sick + data.late + data.absent;
+            
+            const chart = document.getElementById("attendanceChart");
+            const centerValue = document.getElementById("centerValue");
 
+            // KONDISI 1: BELUM ADA DATA (NO DATA)
+            if (realTotal === 0) {
+                chart.style.background = `conic-gradient(#f3f4f6 0% 100%)`; // Abu-abu
+                
+                if(centerValue) {
+                    centerValue.innerText = "NO DATA";
+                    // Kecilkan font biar muat
+                    centerValue.classList.remove("text-4xl", "text-gray-800");
+                    centerValue.classList.add("text-sm", "text-gray-400", "font-bold");
+                }
+                
+                setLegendToZero();
+                return; 
+            }
+
+            // KONDISI 2: ADA DATA (SHOW PERCENTAGE)
+            let total = realTotal;
             const p  = (data.present / total) * 100;
             const pm = (data.permission / total) * 100;
             const s  = (data.sick / total) * 100;
             const l  = (data.late / total) * 100;
             const a  = (data.absent / total) * 100;
 
-            // Update Text
+            const attendanceRate = Math.round(((data.present + data.late) / total) * 100);
+            
+            if(centerValue) {
+                centerValue.innerText = attendanceRate + "%";
+                // Balikkan font jadi besar
+                centerValue.classList.add("text-4xl", "text-gray-800");
+                centerValue.classList.remove("text-sm", "text-gray-400");
+            }
+
+            // Update Text Legend
             document.getElementById("presentVal").innerText = p.toFixed(1) + "%";
             document.getElementById("permissionVal").innerText = pm.toFixed(1) + "%";
             document.getElementById("sickVal").innerText = s.toFixed(1) + "%";
             document.getElementById("lateVal").innerText = l.toFixed(1) + "%";
             document.getElementById("absentVal").innerText = a.toFixed(1) + "%";
 
-            // Update CSS Gradient
-            const chart = document.getElementById("attendanceChart");
+            // Update Warna Chart
             chart.style.background = `
                 conic-gradient(
                     rgb(59, 130, 246) 0% ${p}%,
@@ -216,6 +246,11 @@
             `;
         }
 
+        function setLegendToZero() {
+            const ids = ["presentVal", "permissionVal", "sickVal", "lateVal", "absentVal"];
+            ids.forEach(id => document.getElementById(id).innerText = "0%");
+        }
+
         function loadStats(type) {
             fetch(`/admin/attendance-stats?type=${type}`)
                 .then(res => res.json())
@@ -223,35 +258,33 @@
                 .catch(err => console.error("Error:", err));
         }
 
+        // ... (Kode Button Listener dan Weekly Chart Tetap Sama) ...
+        
         // Toggle Buttons Logic
         const btnToday = document.getElementById("btnToday");
-        const btnAll = document.getElementById("btnAll");
+        const btnMonth = document.getElementById("btnMonth");
 
         btnToday.addEventListener("click", function () {
             this.classList.add("bg-white", "text-blue-600", "shadow-sm");
             this.classList.remove("text-gray-500");
-            
-            btnAll.classList.remove("bg-white", "text-blue-600", "shadow-sm");
-            btnAll.classList.add("text-gray-500");
-            
+            btnMonth.classList.remove("bg-white", "text-blue-600", "shadow-sm");
+            btnMonth.classList.add("text-gray-500");
             loadStats("today");
         });
 
-        btnAll.addEventListener("click", function () {
+        btnMonth.addEventListener("click", function () {
             this.classList.add("bg-white", "text-blue-600", "shadow-sm");
             this.classList.remove("text-gray-500");
-            
             btnToday.classList.remove("bg-white", "text-blue-600", "shadow-sm");
             btnToday.classList.add("text-gray-500");
-            
-            loadStats("all");
+            loadStats("month");
         });
 
         // Load Default
-        loadStats("today");
-
+        loadStats("month");
 
         // --- 2. WEEKLY BAR CHART ---
+        // (Biarkan kode weekly chart tetap sama seperti sebelumnya)
         function loadWeeklyAbsence() {
             fetch("/admin/weekly-absence")
                 .then(res => res.json())
@@ -262,15 +295,10 @@
         function renderWeeklyChart(data) {
             const container = document.getElementById("weeklyChart");
             container.innerHTML = "";
-
-            // Cari nilai max untuk skala tinggi bar
             const maxVal = Math.max(...data.map(i => i.total), 1); 
 
             data.forEach(item => {
-                // Hitung tinggi relatif (max height 150px misal)
                 const heightPercent = (item.total / maxVal) * 100;
-                
-                // Warna bar: Jika 0 (bagus) abu2, jika ada absen merah
                 const barColor = item.total > 0 ? 'bg-red-400' : 'bg-gray-200';
                 const labelColor = item.total > 0 ? 'text-red-600 font-bold' : 'text-gray-400';
 
@@ -285,9 +313,8 @@
                 container.innerHTML += column;
             });
         }
-
         loadWeeklyAbsence();
+
     });
     </script>
-
 </x-app-layout>
