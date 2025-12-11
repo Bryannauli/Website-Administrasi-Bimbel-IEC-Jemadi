@@ -37,4 +37,20 @@ class ClassTeacherController extends Controller
         // Redirect ke show atau gunakan view terpisah
         return view('teacher.classes.detail');
     }
+
+    public function sessionDetail($classId, $sessionId)
+    {
+        // Ambil data kelas sekaligus jadwal / sesi (bisa dari relasi)
+        $class = ClassModel::with('schedules')->findOrFail($classId);
+
+        // Ambil session spesifik, jika kamu punya tabel sesi
+        $session = $class->schedules->where('id', $sessionId)->first();
+
+        if (!$session) {
+            abort(404, 'Session not found');
+        }
+
+        return view('teacher.classes.session-attandance', compact('class', 'session'));
+    }
+
 }
