@@ -5,6 +5,12 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\AssessmentFormController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Teacher\DashboardTeacherController;
+use App\Http\Controllers\Teacher\ClassTeacherController;
+use App\Http\Controllers\Teacher\StudentTeacherController;
+use App\Http\Controllers\Teacher\AttendanceController;
+use App\Http\Controllers\Teacher\TeacherController;
 
 
 
@@ -101,6 +107,56 @@ Route::put('/admin/classes/{id}', [ClassController::class, 'update'])->name('adm
 Route::get('/admin/classes/detail/{id}', [ClassController::class, 'detailClass'])->name('admin.classes.detailclass');
    Route::get('/admin/classes//{id}', [ClassController::class, 'class'])->name('admin.classes.class');
   Route::get('/admin/classes/{id}/students', [ClassController::class, 'students'])->name('admin.classes.students');
+
+// Teacher Routes
+Route::prefix('teacher')->name('teacher.')->middleware(['auth', 'role:teacher'])->group(function () {
+    
+    // Dashboard
+    Route::get('/dashboard', [DashboardTeacherController::class, 'index'])->name('dashboard');
+    Route::get('/analytics', [DashboardTeacherController::class, 'analytics'])->name('analytics');
+    
+    // Classes
+    Route::prefix('classes')->name('classes.')->group(function () {
+        Route::get('/', [ClassTeacherController::class, 'index'])->name('index');
+        Route::get('/{id}', [ClassTeacherController::class, 'show'])->name('show');
+        Route::get('/{id}/detail', [ClassTeacherController::class, 'detail'])->name('detail');
+        Route::post('/store', [ClassTeacherController::class, 'store'])->name('store');
+        
+        // Session Management
+        Route::get('/{classId}/session/{sessionId}', [ClassTeacherController::class, 'sessionDetail'])->name('session.detail');
+        Route::post('/{classId}/session/store', [ClassTeacherController::class, 'storeSession'])->name('session.store');
+        Route::put('/{classId}/session/{sessionId}', [ClassTeacherController::class, 'updateSession'])->name('session.update');
+    });
+    
+    // Students
+    Route::prefix('students')->name('students.')->group(function () {
+        Route::get('/', [StudentTeacherController::class, 'index'])->name('index');
+        Route::get('/{id}', [StudentTeacherController::class, 'show'])->name('show');
+        Route::get('/marks', [StudentTeacherController::class, 'marks'])->name('marks');
+        Route::get('/attendance', [StudentTeacherController::class, 'attendance'])->name('attendance');
+        Route::post('/{id}/assessment', [StudentTeacherController::class, 'storeAssessment'])->name('assessment.store');
+    });
+    
+    // Teachers
+    Route::prefix('teachers')->name('teachers.')->group(function () {
+        Route::get('/', [TeacherController::class, 'index'])->name('index');
+        Route::get('/{id}', [TeacherController::class, 'show'])->name('show');
+        Route::get('/attendance', [TeacherController::class, 'attendance'])->name('attendance');
+        Route::get('/attendance/{classId}', [TeacherController::class, 'classAttendance'])->name('attendance.class');
+    });
+    
+    // Attendance
+    Route::prefix('attendance')->name('attendance.')->group(function () {
+        Route::post('/submit', [AttendanceController::class, 'submit'])->name('submit');
+        Route::put('/{id}/update', [AttendanceController::class, 'update'])->name('update');
+        Route::get('/export', [AttendanceController::class, 'export'])->name('export');
+    });
+    
+    // Schedule
+    Route::prefix('schedule')->name('schedule.')->group(function () {
+        Route::get('/my', [DashboardTeacherController::class, 'mySchedule'])->name('my');
+    });
+});
 
 
 require __DIR__.'/auth.php';
