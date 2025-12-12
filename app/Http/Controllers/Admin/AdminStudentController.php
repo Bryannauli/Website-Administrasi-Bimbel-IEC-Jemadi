@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -10,7 +11,7 @@ use App\Models\ClassModel;
 use App\Models\Student;
 use Illuminate\Validation\ValidationException;
 
-class StudentController extends Controller
+class AdminStudentController extends Controller
 {
     /**
      * Halaman List Siswa (Index)
@@ -112,6 +113,7 @@ class StudentController extends Controller
         // 1. Ambil History Absensi (View)
         $attendance = DB::table('v_student_attendance')
             ->where('student_id', $id)
+            ->where('class_id', $student->class_id) // <--- FILTER PENTING
             ->orderBy('session_date', 'DESC')
             ->get();
 
@@ -139,6 +141,7 @@ class StudentController extends Controller
             
             $record = DB::table('v_student_attendance')
                 ->where('student_id', $student->id)
+                ->where('class_id', $student->class_id)
                 ->where('session_date', $date)
                 ->select('status')
                 ->first();

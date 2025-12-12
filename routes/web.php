@@ -1,14 +1,14 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\StudentController;
-use App\Http\Controllers\ClassController;
 use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\AssessmentFormController;
 
 // Admin Controllers
-use App\Http\Controllers\Admin\DashboardAdminController;
-use App\Http\Controllers\Admin\TeacherAdminController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminStudentController;
+use App\Http\Controllers\Admin\AdminClassController;
+use App\Http\Controllers\Admin\AdminTeacherController;
 use App\Http\Controllers\TeacherAttendanceRecordController;
 
 // Teacher Controllers
@@ -53,46 +53,46 @@ Route::middleware(['auth', 'verified', 'admin'])
     ->group(function () {
 
         /* DASHBOARD */
-        Route::get('/dashboard', [DashboardAdminController::class, 'index'])->name('dashboard');
-        Route::get('/attendance-stats', [DashboardAdminController::class, 'getAttendanceStats']);
-        Route::get('/weekly-absence', [DashboardAdminController::class, 'getWeeklyAbsenceReport']);
-        Route::get('/today-schedule', [DashboardAdminController::class, 'getTodaySchedule']);
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/attendance-stats', [AdminDashboardController::class, 'getAttendanceStats']);
+        Route::get('/weekly-absence', [AdminDashboardController::class, 'getWeeklyAbsenceReport']);
+        Route::get('/today-schedule', [AdminDashboardController::class, 'getTodaySchedule']);
 
         /* ADMIN PROFILE */
         Route::get('/profile', [ProfileController::class, 'editAdmin'])->name('profile');
 
         /* STUDENT */
         Route::prefix('student')->name('student.')->group(function () {
-            Route::get('/', [StudentController::class, 'index'])->name('index');
-            Route::post('/', [StudentController::class, 'store'])->name('store');
-            Route::get('/edit/{id}', [StudentController::class, 'edit'])->name('edit');
-            Route::put('/update/{id}', [StudentController::class, 'update'])->name('update');
-            Route::patch('/{id}/toggle-status', [StudentController::class, 'toggleStatus'])->name('toggleStatus');
-            Route::delete('/{id}', [StudentController::class, 'delete'])->name('delete');
-            Route::get('/detail/{id}', [StudentController::class, 'detail'])->name('detail');
+            Route::get('/', [AdminStudentController::class, 'index'])->name('index');
+            Route::post('/', [AdminStudentController::class, 'store'])->name('store');
+            Route::get('/edit/{id}', [AdminStudentController::class, 'edit'])->name('edit');
+            Route::put('/update/{id}', [AdminStudentController::class, 'update'])->name('update');
+            Route::patch('/{id}/toggle-status', [AdminStudentController::class, 'toggleStatus'])->name('toggleStatus');
+            Route::delete('/{id}', [AdminStudentController::class, 'delete'])->name('delete');
+            Route::get('/detail/{id}', [AdminStudentController::class, 'detail'])->name('detail');
         });
 
         /* CLASS */
         Route::prefix('classes')->name('classes.')->group(function () {
-            Route::get('/', [ClassController::class, 'index'])->name('index');
-            Route::post('/store', [ClassController::class, 'store'])->name('store');
-            Route::put('/{id}', [ClassController::class, 'update'])->name('update');
-            Route::patch('/{id}/toggle-status', [ClassController::class, 'toggleStatus'])->name('toggleStatus');
-            Route::delete('/{id}', [ClassController::class, 'delete'])->name('delete');
-            Route::get('/detail/{id}', [ClassController::class, 'detailClass'])->name('detailclass');
-            Route::post('/{id}/assign-student', [ClassController::class, 'assignStudent'])->name('assignStudent');
-            Route::patch('/students/{studentId}/unassign', [ClassController::class, 'unassignStudent'])->name('unassignStudent');
+            Route::get('/', [AdminClassController::class, 'index'])->name('index');
+            Route::post('/store', [AdminClassController::class, 'store'])->name('store');
+            Route::put('/{id}', [AdminClassController::class, 'update'])->name('update');
+            Route::patch('/{id}/toggle-status', [AdminClassController::class, 'toggleStatus'])->name('toggleStatus');
+            Route::delete('/{id}', [AdminClassController::class, 'delete'])->name('delete');
+            Route::get('/detail/{id}', [AdminClassController::class, 'detailClass'])->name('detailclass');
+            Route::post('/{id}/assign-student', [AdminClassController::class, 'assignStudent'])->name('assignStudent');
+            Route::patch('/students/{studentId}/unassign', [AdminClassController::class, 'unassignStudent'])->name('unassignStudent');
         });
 
         /* TEACHER LIST */
-        Route::get('/teachers', [TeacherAdminController::class, 'index'])->name('teacher.index');
-        Route::get('/teachers/add', [TeacherAdminController::class, 'create'])->name('teacher.add');
-        Route::post('/teachers', [TeacherAdminController::class, 'store'])->name('teacher.store');
-        Route::get('/teachers/{id}', [TeacherAdminController::class, 'show'])->name('teacher.show');
-        Route::put('/teachers/{teacher}', [TeacherAdminController::class, 'update'])->name('teacher.update');
+        Route::get('/teachers', [AdminTeacherController::class, 'index'])->name('teacher.index');
+        Route::get('/teachers/add', [AdminTeacherController::class, 'create'])->name('teacher.add');
+        Route::post('/teachers', [AdminTeacherController::class, 'store'])->name('teacher.store');
+        Route::get('/teachers/{id}', [AdminTeacherController::class, 'show'])->name('teacher.show');
+        Route::put('/teachers/{teacher}', [AdminTeacherController::class, 'update'])->name('teacher.update');
 
         /* =====================================================================
-         | TEACHER ATTENDANCE RECORD
+        | TEACHER ATTENDANCE RECORD
          ===================================================================== */
         Route::get('/teacher-attendance', [TeacherAttendanceRecordController::class, 'index'])->name('teacher.attendance');
         Route::get('/teacher-attendance/{teacherId}', [TeacherAttendanceRecordController::class, 'detail'])->name('teacher.detail');

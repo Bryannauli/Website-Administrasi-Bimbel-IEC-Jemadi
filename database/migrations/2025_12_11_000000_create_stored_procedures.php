@@ -48,21 +48,24 @@ return new class extends Migration
         // ==========================================
         // 3. PROCEDURE: Student Attendance Summary
         // ==========================================
-        // Menghitung rekap detail kehadiran spesifik per siswa (Untuk Halaman Detail Siswa)
+        // Update: Hanya menghitung absensi yang sesuai dengan class_id siswa saat ini
         DB::unprepared("
             DROP PROCEDURE IF EXISTS p_get_attendance_summary;
-            CREATE PROCEDURE p_get_attendance_summary (IN studentId INT)
+            CREATE PROCEDURE p_get_attendance_summary (IN studentIdIn INT)
             BEGIN
                 SELECT
-                    COUNT(*) AS total_days,
-                    SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) AS present,
-                    SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) AS absent,
-                    SUM(CASE WHEN status = 'late' THEN 1 ELSE 0 END) AS late,
-                    SUM(CASE WHEN status = 'permission' THEN 1 ELSE 0 END) AS permission,
-                    SUM(CASE WHEN status = 'sick' THEN 1 ELSE 0 END) AS sick,
-                    (SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) / COUNT(*)) * 100 AS present_percent
-                FROM attendance_records
-                WHERE student_id = studentId;
+                    COUNT(ar.id) AS total_days,
+                    SUM(CASE WHEN ar.status = 'present' THEN 1 ELSE 0 END) AS present,
+                    SUM(CASE WHEN ar.status = 'absent' THEN 1 ELSE 0 END) AS absent,
+                    SUM(CASE WHEN ar.status = 'late' THEN 1 ELSE 0 END) AS late,
+                    SUM(CASE WHEN ar.status = 'permission' THEN 1 ELSE 0 END) AS permission,
+                    SUM(CASE WHEN ar.status = 'sick' THEN 1 ELSE 0 END) AS sick,
+                    IFNULL((SUM(CASE WHEN ar.status = 'present' THEN 1 ELSE 0 END) / COUNT(ar.id)) * 100, 0) AS present_percent
+                FROM attendance_records ar
+                JOIN attendance_sessions s ON ar.attendance_session_id = s.id
+                JOIN students stu ON ar.student_id = stu.id
+                WHERE ar.student_id = studentIdIn
+                    AND s.class_id = stu.class_id; -- FILTER KUNCI: Hanya sesi kelas saat ini
             END
         ");
     }

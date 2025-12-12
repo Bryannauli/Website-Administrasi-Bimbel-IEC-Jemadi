@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use App\Models\ClassModel; 
 use App\Models\Schedule; 
 use App\Models\User; // Import Model User untuk ambil data guru
@@ -10,7 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Log;
 
-class ClassController extends Controller
+class AdminClassController extends Controller
 {
     /**
      * Menampilkan daftar kelas dari Database
@@ -242,11 +243,9 @@ class ClassController extends Controller
         $availableStudents = $query->get();
 
         // 3. History Sesi (Columns)
-        // Ambil 15 sesi terakhir agar tabel tidak terlalu lebar (bisa disesuaikan)
         $teachingLogs = \App\Models\AttendanceSession::where('class_id', $id)
             ->with(['teacherRecords.teacher', 'records'])
             ->orderBy('date', 'desc')
-            ->limit(15) 
             ->get();
 
         $lastSession = $teachingLogs->first();
@@ -292,13 +291,20 @@ class ClassController extends Controller
         // Sortir berdasarkan persentase kehadiran terendah
         $studentStats = collect($studentStats)->sortBy('percentage')->values();
 
+        $categories = ['pre_level', 'level', 'step', 'private'];
+        $years = ClassModel::select('academic_year')->distinct()->pluck('academic_year')->sortDesc();
+        $teachers = User::where('is_teacher', true)->orderBy('name', 'asc')->get();
+
         return view('admin.classes.detail-class', compact(
             'class', 
             'availableStudents', 
             'teachingLogs', 
             'lastSession',
             'studentStats',
-            'attendanceMatrix' // Kirim matrix ke view
+            'attendanceMatrix', // Kirim matrix ke view
+            'categories', // DITAMBAHKAN
+            'years', // DITAMBAHKAN
+            'teachers' // DITAMBAHKAN
         ));
     }
 

@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 
-class TeacherAdminController extends Controller
+class AdminTeacherController extends Controller
 {
     /**
      * Menampilkan Daftar Semua Guru (Master Data)

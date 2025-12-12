@@ -1,14 +1,83 @@
 <x-app-layout>
     <x-slot name="header"></x-slot>
 
-    {{-- WRAPPER UTAMA --}}
+    {{-- WRAPPER UTAMA DENGAN ALPINE JS --}}
     <div class="bg-[#EEF2FF] min-h-screen font-sans" x-data="{ 
-        // State Modal
+        // 1. STATE MODAL
+        // Buka modal jika ada Error Validasi ATAU parameter edit_failed=true (dari controller)
+        showEditModal: {{ $errors->any() || session('edit_failed') ? 'true' : 'false' }},
         showAddStudentModal: {{ request('search_student') ? 'true' : 'false' }},
         showHistoryModal: false,
         showStudentStatsModal: false,
+
+        // 2. STATE FORM DATA (Pre-filled dengan data kelas saat ini)
+        editForm: {
+            name: '{{ addslashes($class->name) }}',
+            category: '{{ $class->category }}',
+            academic_year: '{{ $class->academic_year }}',
+            classroom: '{{ addslashes($class->classroom) }}',
+            start_month: '{{ $class->start_month }}',
+            end_month: '{{ $class->end_month }}',
+            form_teacher_id: '{{ $class->form_teacher_id ?? '' }}',
+            local_teacher_id: '{{ $class->local_teacher_id ?? '' }}',
+            time_start: '{{ \Carbon\Carbon::parse($class->start_time)->format('H:i') }}',
+            time_end: '{{ \Carbon\Carbon::parse($class->end_time)->format('H:i') }}',
+            // Schedule days array (diambil dari schedules relasi)
+            days: [
+                @foreach($class->schedules as $schedule)
+                    '{{ $schedule->day_of_week }}',
+                @endforeach
+            ],
+            // Status diisi 'active' atau 'inactive' untuk radio button
+            status: '{{ $class->is_active ? 'active' : 'inactive' }}',
+        },
+
+        // 3. URL & ID DEFINITION
+        classId: '{{ $class->id }}', // ID kelas saat ini
+        deleteUrl: '{{ route('admin.classes.delete', $class->id) }}',
+        // Menyimpan URL dasar, menghindari missing parameter saat compile
+        updateBaseUrl: '{{ route('admin.classes.update', ['id' => 'PLACEHOLDER']) }}'.replace('/PLACEHOLDER', ''),
         
-        // Fungsi Confirm Remove
+        // FUNCTION UNTUK MENGAMBIL URL UPDATE (Untuk form action)
+        getUpdateUrl() {
+            // Jika ada error validasi, gunakan ID lama (yang dikirim balik oleh controller)
+            const oldId = '{{ old('id') ?? '' }}';
+            
+            // Gunakan ID kelas saat ini sebagai fallback
+            const finalId = oldId || this.classId;
+            
+            // Mengembalikan URL dengan ID yang valid (menggunakan template literal JS)
+            return `${this.updateBaseUrl}/${finalId}`;
+        },
+
+        closeModal(modalVar) {
+            if ({{ $errors->any() || session('edit_failed') ? 'true' : 'false' }}) {
+                // Jika ada error, refresh halaman untuk membersihkan sesi error Laravel
+                window.location.href = window.location.href; 
+            } else {
+                // Jika tidak ada error, tutup modal via Alpine JS
+                this[modalVar] = false;
+            }
+        },
+        
+        // 4. FUNCTION CONFIRM DELETE
+        confirmDelete() {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: 'This class will be moved to trash (Soft Delete). You can restore it later.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#EF4444',
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: 'Yes, Delete'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = this.deleteUrl;
+                }
+            });
+        },
+        
+        // Fungsi Confirm Remove Siswa
         confirmRemove(studentName, formId) {
             Swal.fire({
                 title: 'Remove Student?',
@@ -26,25 +95,23 @@
         }
     }">
 
-        {{-- CONTAINER KONTEN (Menambahkan max-width & padding) --}}
+        {{-- CONTAINER KONTEN --}}
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
             {{-- BREADCRUMB --}}
             <nav class="flex mb-5" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-3">
-                    {{-- 1. Dashboard (dengan ikon Home) --}}
+                    {{-- 1. Dashboard --}}
                     <li class="inline-flex items-center">
                         <a href="{{ route('dashboard') }}" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600">
-                            {{-- Ikon Home --}}
                             <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
                             Dashboard
                         </a>
                     </li>
                     
-                    {{-- 2. Classes (Menggunakan pemisah yang konsisten) --}}
+                    {{-- 2. Classes --}}
                     <li>
                         <div class="flex items-center">
-                            {{-- Ikon Pemisah --}}
                             <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
                         <a href="{{ route('admin.classes.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Classes</a>
                         </div>
@@ -53,7 +120,6 @@
                     {{-- 3. Nama Kelas (Halaman Aktif) --}}
                     <li aria-current="page">
                         <div class="flex items-center">
-                            {{-- Ikon Pemisah --}}
                             <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
                             <span class="ml-1 text-sm font-medium text-gray-900 md:ml-2 truncate max-w-xs">{{ $class->name }}</span>
                         </div>
@@ -61,9 +127,16 @@
                 </ol>
             </nav>
 
-            {{-- HEADER TITLE (Judul Halaman: "Class Detail") --}}
+            {{-- HEADER TITLE & BUTTON --}}
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold text-gray-800">Class Detail</h2>
+                
+                {{-- TRIGGER EDIT MODAL --}}
+                <button @click="showEditModal = true" 
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    Edit Class
+                </button>
             </div>
         
             <div class="space-y-8">
@@ -347,237 +420,39 @@
                     </div>
                 </div>
             </div>
-        </div>
-        {{-- SELESAI: CONTAINER KONTEN --}}
+        </div> {{-- Penutup Container Konten --}}
 
-        {{-- MODAL 1: ADD STUDENT --}}
-        <div x-show="showAddStudentModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
-            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showAddStudentModal = false"></div>
-                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-                <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full" x-data="{ selectedStudents: [] }">
-                    {{-- Search Form --}}
-                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 border-b border-gray-100">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg leading-6 font-bold text-gray-900">Enroll Students</h3>
-                            <button @click="showAddStudentModal = false" class="text-gray-400 hover:text-gray-500"><svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
-                        </div>
-                        <form action="{{ route('admin.classes.detailclass', $class->id) }}" method="GET" class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></div>
-                            <input type="text" name="search_student" value="{{ request('search_student') }}" class="block w-full pl-10 pr-20 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Search Name/ID & Enter...">
-                            @if(request('search_student')) <a href="{{ route('admin.classes.detailclass', $class->id) }}" class="absolute inset-y-0 right-0 pr-3 flex items-center text-xs text-red-500 font-bold hover:underline">CLEAR</a> @endif
-                        </form>
-                    </div>
-                    {{-- Enroll Form --}}
-                    <form action="{{ route('admin.classes.assignStudent', $class->id) }}" method="POST">
-                        @csrf
-                        <div class="px-6 py-2 max-h-64 overflow-y-auto custom-scrollbar bg-gray-50">
-                            @if($availableStudents->isEmpty())
-                                <div class="py-8 text-center text-gray-500 flex flex-col items-center"><p class="text-sm">No available students found.</p></div>
-                            @else
-                                <ul class="divide-y divide-gray-100">
-                                    @foreach($availableStudents as $student)
-                                        <li class="py-3 flex items-center hover:bg-white -mx-2 px-2 rounded-lg transition cursor-pointer" @click="if(selectedStudents.includes('{{ $student->id }}')) selectedStudents = selectedStudents.filter(id => id !== '{{ $student->id }}'); else selectedStudents.push('{{ $student->id }}');">
-                                            <input type="checkbox" name="student_ids[]" value="{{ $student->id }}" x-model="selectedStudents" class="hidden">
-                                            <div class="flex-shrink-0 h-5 w-5 rounded border flex items-center justify-center transition-colors" :class="selectedStudents.includes('{{ $student->id }}') ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white'">
-                                                <svg x-show="selectedStudents.includes('{{ $student->id }}')" class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                                            </div>
-                                            <div class="ml-3"><p class="text-sm font-medium text-gray-900">{{ $student->name }}</p><p class="text-xs text-gray-500 font-mono">{{ $student->student_number }}</p></div>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            @endif
-                        </div>
-                        <div class="bg-white px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-100">
-                            <button type="submit" x-bind:disabled="selectedStudents.length === 0" :class="selectedStudents.length === 0 ? 'opacity-50 cursor-not-allowed' : ''" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm transition-all">Enroll Selected (<span x-text="selectedStudents.length"></span>)</button>
-                            <button type="button" @click="showAddStudentModal = false" class="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
 
-        {{-- MODAL 2: TEACHING HISTORY --}}
-        <div x-show="showHistoryModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
-            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showHistoryModal = false"></div>
-                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-                <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl w-full">
-                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 border-b border-gray-100 flex justify-between items-center">
-                        <div><h3 class="text-lg leading-6 font-bold text-gray-900">Teaching Logs</h3><p class="text-sm text-gray-500 mt-1">Activity history & attendance.</p></div>
-                        <button @click="showHistoryModal = false" class="text-gray-400 hover:text-gray-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-                    </div>
-                    <div class="max-h-[60vh] overflow-y-auto custom-scrollbar bg-gray-50 p-6">
-                        @if($teachingLogs->isEmpty())
-                            <div class="text-center py-10 text-gray-500">No logs found.</div>
-                        @else
-                            <div class="space-y-4">
-                                @foreach($teachingLogs as $log)
-                                    @php $mainTR = $log->teacherRecords->first(); @endphp
-                                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                                        <div class="flex justify-between items-start mb-2">
-                                            <div class="flex items-center gap-3">
-                                                <div class="bg-blue-50 text-blue-700 font-bold px-3 py-1.5 rounded-lg text-center"><span class="block text-xs uppercase">{{ \Carbon\Carbon::parse($log->date)->format('M') }}</span><span class="block text-xl leading-none">{{ \Carbon\Carbon::parse($log->date)->format('d') }}</span></div>
-                                                <div>
-                                                    <h4 class="font-bold text-gray-800 text-sm">{{ $mainTR->teacher->name ?? 'Unknown' }}</h4>
-                                                    <span class="text-xs text-gray-500">{{ \Carbon\Carbon::parse($log->date)->format('l') }}</span>
-                                                </div>
-                                            </div>
-                                            @php
-                                                $p = $log->records->where('status', 'present')->count();
-                                                $t = $log->records->count();
-                                                $pct = $t > 0 ? round(($p/$t)*100) : 0;
-                                            @endphp
-                                            <div class="text-right"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">{{ $pct }}% Present</span></div>
-                                        </div>
-                                        <div class="mt-3 pl-[72px]"><p class="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg italic border border-gray-100">"{{ $mainTR->comment ?? '-' }}"</p></div>
-                                    </div>
-                                @endforeach
-                            </div>
-                        @endif
-                    </div>
-                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-100"><button @click="showHistoryModal = false" class="w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">Close</button></div>
-                </div>
-            </div>
-        </div>
+        {{-- ====================================== --}}
+        {{-- INCLUDE MODALS (PARTIALS) --}}
+        {{-- ====================================== --}}
+        
+        {{-- Modal 1: Add/Assign Student --}}
+        @include('admin.classes.partials.assign-student-modal', [
+            'class' => $class, 
+            'availableStudents' => $availableStudents
+        ])
 
-        {{-- MODAL 3: STUDENT ATTENDANCE MATRIX (Daily Report) --}}
-        <div x-show="showStudentStatsModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
-            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                
-                <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showStudentStatsModal = false"></div>
-                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-                
-                {{-- Modal Lebar (max-w-6xl) agar muat banyak kolom tanggal --}}
-                <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl w-full">
-                    
-                    {{-- Header --}}
-                    <div class="bg-white px-6 py-4 border-b border-gray-100 flex justify-between items-center sticky top-0 z-50">
-                        <div>
-                            <h3 class="text-lg leading-6 font-bold text-gray-900">Attendance Matrix</h3>
-                            <p class="text-sm text-gray-500 mt-1">Showing last {{ $teachingLogs->count() }} sessions breakdown.</p>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            {{-- Legend Kecil --}}
-                            <div class="hidden lg:flex items-center gap-4 text-xs text-gray-600 font-medium">
-                                <span class="flex items-center gap-1.5">
-                                    <span class="w-3 h-3 rounded-full bg-blue-600 shadow-sm"></span> Present
-                                </span>
-                                <span class="flex items-center gap-1.5">
-                                    <span class="w-3 h-3 rounded-full bg-yellow-500 shadow-sm"></span> Late
-                                </span>
-                                <span class="flex items-center gap-1.5">
-                                    <span class="w-3 h-3 rounded-full bg-purple-600 shadow-sm"></span> Sick
-                                </span>
-                                <span class="flex items-center gap-1.5">
-                                    <span class="w-3 h-3 rounded-full bg-emerald-600 shadow-sm"></span> Permit
-                                </span>
-                                <span class="flex items-center gap-1.5">
-                                    <span class="w-3 h-3 rounded-full bg-red-600 shadow-sm"></span> Absent
-                                </span>
-                            </div>
-                            <button @click="showStudentStatsModal = false" class="text-gray-400 hover:text-gray-600">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
-                        </div>
-                    </div>
+        {{-- Modal 2: Teaching History Logs --}}
+        @include('admin.classes.partials.activity-history-modal', [
+            'teachingLogs' => $teachingLogs
+        ])
 
-                    {{-- Scrollable Container --}}
-                    <div class="max-h-[75vh] overflow-auto custom-scrollbar relative bg-white">
-                        <table class="w-full text-left border-collapse">
-                            <thead class="bg-gray-50 text-gray-500 text-xs font-bold uppercase border-b border-gray-200 sticky top-0 z-20 shadow-sm">
-                                <tr>
-                                    {{-- Kolom Nama (Sticky Kiri) --}}
-                                    <th class="px-4 py-3 bg-gray-50 sticky left-0 z-30 w-48 border-r border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                                        Student Name
-                                    </th>
-                                    {{-- Kolom Summary % --}}
-                                    <th class="px-2 py-3 text-center w-16 bg-gray-50 border-r border-gray-100">
-                                        Rate
-                                    </th>
-                                    {{-- Loop Header Tanggal --}}
-                                    @foreach($teachingLogs as $session)
-                                        <th class="px-2 py-3 text-center min-w-[60px] whitespace-nowrap bg-gray-50">
-                                            <div class="flex flex-col items-center">
-                                                <span class="text-[10px] text-gray-400">{{ \Carbon\Carbon::parse($session->date)->format('D') }}</span>
-                                                <span class="text-xs text-gray-700">{{ \Carbon\Carbon::parse($session->date)->format('d/m') }}</span>
-                                            </div>
-                                        </th>
-                                    @endforeach
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100 text-sm">
-                                @foreach($studentStats as $stat)
-                                    <tr class="hover:bg-gray-50 transition">
-                                        {{-- Nama Siswa (Sticky Kiri) --}}
-                                        <td class="px-4 py-3 bg-white sticky left-0 z-10 border-r border-gray-100 font-medium text-gray-900 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] group-hover:bg-gray-50">
-                                            <div class="truncate w-40" title="{{ $stat->name }}">{{ $stat->name }}</div>
-                                            <div class="text-[10px] text-gray-400 font-mono">{{ $stat->student_number }}</div>
-                                        </td>
+        {{-- Modal 3: Attendance Matrix (Report) --}}
+        @include('admin.classes.partials.attendance-modal', [
+            'studentStats' => $studentStats, 
+            'teachingLogs' => $teachingLogs, 
+            'attendanceMatrix' => $attendanceMatrix
+        ])
+    
+        {{-- Modal 4: Edit Class --}}
+        @include('admin.classes.partials.edit-class-modal', [
+            'teachers' => $teachers, 
+            'categories' => $categories, 
+            'years' => $years
+        ])
 
-                                        {{-- Rate % --}}
-                                        <td class="px-2 py-3 text-center border-r border-gray-100 bg-gray-50/30">
-                                            <span class="text-xs font-bold {{ $stat->percentage >= 80 ? 'text-green-600' : ($stat->percentage >= 50 ? 'text-yellow-600' : 'text-red-600') }}">
-                                                {{ $stat->percentage }}%
-                                            </span>
-                                        </td>
+    </div> {{-- Penutup Wrapper Utama x-data --}}
 
-                                        {{-- Loop Status Per Tanggal --}}
-                                        @foreach($teachingLogs as $session)
-                                            @php
-                                                $status = $attendanceMatrix[$stat->id][$session->id] ?? '-';
-                                                
-                                                // WARNA SOLID (Tegas & Kontras)
-                                                // - Present: Biru Solid
-                                                // - Late: Kuning Gelap/Oranye (biar teks putih terbaca)
-                                                // - Sick: Ungu Solid
-                                                // - Permission: Hijau Emerald Solid
-                                                // - Absent: Merah Solid
-                                                
-                                                $cellContent = match($status) {
-                                                    'present' => '<span class="inline-flex w-6 h-6 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm" title="Present">
-                                                                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                                                                </span>',
-                                                    
-                                                    'late' => '<span class="inline-flex w-6 h-6 items-center justify-center rounded-full bg-yellow-500 text-white font-bold text-[10px] shadow-sm" title="Late">L</span>',
-                                                    
-                                                    'sick' => '<span class="inline-flex w-6 h-6 items-center justify-center rounded-full bg-purple-600 text-white font-bold text-[10px] shadow-sm" title="Sick">S</span>',
-                                                    
-                                                    'permission' => '<span class="inline-flex w-6 h-6 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-[10px] shadow-sm" title="Permission">P</span>',
-                                                    
-                                                    'absent' => '<span class="inline-flex w-6 h-6 items-center justify-center rounded-full bg-red-600 text-white font-bold text-[10px] shadow-sm" title="Absent">A</span>',
-                                                    
-                                                    default => '<span class="text-gray-200 text-lg">&bull;</span>'
-                                                };
-                                            @endphp
-
-                                            <td class="px-2 py-3 text-center border-r border-gray-50 last:border-r-0">
-                                                {!! $cellContent !!}
-                                            </td>
-                                        @endforeach
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                        
-                        @if(count($studentStats) == 0)
-                            <div class="flex flex-col items-center justify-center py-12 text-gray-400">
-                                <svg class="w-12 h-12 mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                <p>No attendance data recorded yet.</p>
-                            </div>
-                        @endif
-                    </div>
-
-                    {{-- Footer --}}
-                    <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-end">
-                        <button @click="showStudentStatsModal = false" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition">
-                            Close Report
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </x-app-layout>

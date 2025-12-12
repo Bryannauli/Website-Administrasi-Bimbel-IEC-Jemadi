@@ -8,7 +8,7 @@ use App\Models\AttendanceRecord;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
-class DashboardAdminController extends Controller
+class AdminDashboardController extends Controller
 {
     /**
      * Menampilkan Halaman Dashboard Utama (PAKAI STORED PROCEDURE)

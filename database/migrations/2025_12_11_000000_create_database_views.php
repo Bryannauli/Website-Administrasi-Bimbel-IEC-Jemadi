@@ -69,7 +69,6 @@ return new class extends Migration
         // ==========================================
         // 4. View: v_student_attendance (FIXED)
         // ==========================================
-        // Perbaikan: Join ke table classes (c) untuk ambil c.name sebagai session_name
         DB::unprepared("
             CREATE OR REPLACE VIEW v_student_attendance AS
             SELECT 
@@ -78,6 +77,7 @@ return new class extends Migration
                 ar.created_at,
                 ar.updated_at,
                 s.date AS session_date,
+                s.class_id,  -- DITAMBAHKAN
                 c.name AS session_name 
             FROM attendance_records ar
             JOIN attendance_sessions s ON ar.attendance_session_id = s.id
