@@ -57,7 +57,7 @@ class AdminAssessmentController extends Controller
     /**
      * Menampilkan form input nilai dan Speaking Test untuk kelas tertentu.
      */
-    public function manageGrades(Request $request, $classId, $type)
+    public function detail(Request $request, $classId, $type)
     {
         if (!in_array($type, ['mid', 'final'])) {
             abort(404);
@@ -111,7 +111,7 @@ class AdminAssessmentController extends Controller
             ];
         });
         
-        return view('admin.assessment.manage-grades', compact('class', 'session', 'type', 'speakingTest', 'studentData', 'allTeachers', 'currentInterviewerId'));
+        return view('admin.assessment.assessment-detail', compact('class', 'session', 'type', 'speakingTest', 'studentData', 'allTeachers', 'currentInterviewerId'));
     }
 
     /**

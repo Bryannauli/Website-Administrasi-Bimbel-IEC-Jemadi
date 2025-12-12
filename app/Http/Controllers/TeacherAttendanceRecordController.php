@@ -8,6 +8,7 @@ use App\Models\TeacherAttendanceRecord; // <--- Pastikan Model ini di-import
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class TeacherAttendanceRecordController extends Controller
 {

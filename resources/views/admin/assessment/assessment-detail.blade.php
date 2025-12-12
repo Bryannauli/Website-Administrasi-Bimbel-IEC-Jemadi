@@ -8,7 +8,7 @@
 
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
-            {{-- 1. BREADCRUMB DINAMIS (SAMA) --}}
+            {{-- 1. BREADCRUMB DINAMIS (Berdasarkan parameter 'from') --}}
             <nav class="flex mb-5" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-3">
                     <li class="inline-flex items-center">
@@ -43,7 +43,7 @@
                     <li aria-current="page">
                         <div class="flex items-center">
                             <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                            <span class="ml-1 text-sm font-medium text-gray-900 md:ml-2">{{ ucfirst($type) }} Assessment</span>
+                            <span class="ml-1 text-sm font-medium text-gray-900 md:ml-2 uppercase">{{ $type }} Assessment</span>
                         </div>
                     </li>
                 </ol>
@@ -53,9 +53,9 @@
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                 <div>
                     <h2 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                        {{ ucfirst($type) }} Assessment
+                        Assessment Details: {{ ucfirst($type) }}
                     </h2>
-                    <p class="text-gray-500 text-sm mt-1">Manage grades for class <span class="font-bold text-gray-800">{{ $class->name }}</span></p>
+                    <p class="text-gray-500 text-sm mt-1">Class: <span class="font-bold text-gray-800">{{ $class->name }}</span></p>
                 </div>
                 
                 <div class="flex items-center gap-3">
@@ -68,17 +68,9 @@
                 </div>
             </div>
 
-            {{-- ALERT/MESSAGES (Success/Error) --}}
-            @if(session('success'))
-                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-5" role="alert">
-                    <strong class="font-bold">Success!</strong>
-                    <span class="block sm:inline">{{ session('success') }}</span>
-                </div>
-            @endif
-
             {{-- 3. FORM INPUT NILAI --}}
+            {{-- Form action dimatikan sementara agar tidak error --}}
             <form id="assessmentForm" method="POST" action="#">
-                {{-- Form action dimatikan sementara dengan # --}}
                 @csrf
                 
                 {{-- CONFIGURATION BOX (EDIT MODE) --}}
@@ -89,7 +81,7 @@
                             <div>
                                 <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Exam Date</label>
                                 <input type="date" name="written_date" value="{{ old('written_date', $session->date) }}"
-                                       class="block w-full rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:ring-blue-500 sm:text-sm transition-all">
+                                       class="block w-full rounded-xl border border-gray-300 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 sm:text-sm transition-all">
                             </div>
                         </div>
                         <div class="space-y-4 border-l-0 md:border-l md:pl-8 border-gray-100">
@@ -98,11 +90,11 @@
                                 <div>
                                     <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Test Date</label>
                                     <input type="date" name="speaking_date" value="{{ old('speaking_date', $speakingTest->date ?? now()->toDateString()) }}"
-                                           class="block w-full rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:ring-purple-500 sm:text-sm transition-all">
+                                           class="block w-full rounded-xl border border-gray-300 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-purple-500 sm:text-sm transition-all">
                                 </div>
                                 <div>
                                     <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Interviewer</label>
-                                    <select name="interviewer_id" class="block w-full rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:ring-purple-500 sm:text-sm transition-all">
+                                    <select name="interviewer_id" class="block w-full rounded-xl border border-gray-300 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-purple-500 sm:text-sm transition-all">
                                         @foreach($allTeachers as $teacher)
                                             <option value="{{ $teacher->id }}" {{ old('interviewer_id', $currentInterviewerId) == $teacher->id ? 'selected' : '' }}>{{ $teacher->name }}</option>
                                         @endforeach
@@ -112,15 +104,14 @@
                             <div>
                                 <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Speaking Topic</label>
                                 <input type="text" name="topic" value="{{ old('topic', $speakingTest->topic ?? '') }}" placeholder="e.g. Daily Activity"
-                                       class="block w-full rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:ring-purple-500 sm:text-sm transition-all">
+                                       class="block w-full rounded-xl border border-gray-300 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-purple-500 sm:text-sm transition-all">
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {{-- READ-ONLY SUMMARY (KEMBALI KE 2 BARIS DENGAN DETAIL SPEAKING) --}}
+                {{-- READ-ONLY SUMMARY (2 ROWS) --}}
                 <div x-show="!isEditing" class="space-y-4 mb-8" x-transition>
-                    {{-- Baris 1: Konteks Pengajar & Ujian Tulis --}}
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3">
                             <div class="p-2.5 bg-yellow-50 text-yellow-600 rounded-xl"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h-4v-6h-2v6H7v-6H5v6H3m14 0h-4v-6h-2v6H7v-6H5v6H3M12 4a4 4 0 11-8 0 4 4 0 018 0zm4 0a4 4 0 11-8 0 4 4 0 018 0z" /></svg></div>
@@ -132,7 +123,6 @@
                         </div>
                     </div>
 
-                    {{-- Baris 2: Detail Speaking Test --}}
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 border-l-4 border-l-purple-500">
                             <div class="p-2.5 bg-purple-50/80 text-purple-700 rounded-xl"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg></div>
@@ -161,7 +151,7 @@
                                     <th class="px-3 py-4 text-center">Grammar</th>
                                     <th class="px-3 py-4 text-center">Listening</th>
                                     <th class="px-3 py-4 text-center bg-purple-50 text-purple-600">S. Content</th>
-                                    <th class="px-3 py-4 text-center bg-purple-50 text-purple-600">S. Participation</th>
+                                    <th class="px-3 py-4 text-center bg-purple-50 text-purple-600">S. Partic.</th>
                                     <th class="px-4 py-4 text-center bg-purple-100 text-purple-800 border-x">Speaking</th>
                                     <th class="px-3 py-4 text-center">Reading</th>
                                     <th class="px-3 py-4 text-center">Spelling</th>
@@ -170,46 +160,41 @@
                             </thead>
                             <tbody class="divide-y divide-gray-100 text-sm text-gray-700 bg-white">
                                 @foreach($studentData as $index => $student)
-                                <tr class="hover:bg-gray-50 transition-colors">
+                                <tr class="hover:bg-gray-50 transition-colors group">
                                     <td class="px-6 py-4 text-center text-gray-500 font-medium">{{ $index + 1 }}</td>
                                     <td class="px-6 py-4 font-bold text-gray-900">{{ $student['name'] }}</td>
                                     
-                                    {{-- Written: Vocab, Grammar, Listening --}}
                                     @foreach(['vocabulary', 'grammar', 'listening'] as $skill)
                                     <td class="px-3 py-3 text-center border-l">
                                         <span x-show="!isEditing" class="font-medium text-gray-700">{{ $student['written'][$skill] ?? '-' }}</span>
                                         <input x-show="isEditing" type="number" min="0" max="100" name="grades[{{ $student['id'] }}][{{ $skill }}]"
                                                value="{{ $student['written'][$skill] ?? '' }}"
-                                               class="w-14 h-8 text-center border-gray-200 rounded-lg bg-gray-50 focus:bg-white focus:ring-blue-500 text-xs p-1">
+                                               class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1">
                                     </td>
                                     @endforeach
 
-                                    {{-- Speaking Results --}}
                                     @foreach(['content', 'participation'] as $speakingPart)
                                     <td class="px-3 py-3 text-center bg-purple-50/50">
                                         <span x-show="!isEditing" class="font-bold text-purple-700">{{ $student['speaking'][$speakingPart] ?? '-' }}</span>
                                         <input x-show="isEditing" type="number" min="0" max="50" name="grades[{{ $student['id'] }}][speaking_{{ $speakingPart }}]"
                                                value="{{ $student['speaking'][$speakingPart] ?? '' }}"
-                                               class="w-14 h-8 text-center border-purple-200 rounded-lg bg-white focus:ring-purple-500 text-xs p-1">
+                                               class="w-14 h-8 text-center border-purple-200 rounded-lg bg-white focus:ring-2 focus:ring-purple-500 text-xs p-1">
                                     </td>
                                     @endforeach
 
-                                    {{-- Speaking Total --}}
                                     <td class="px-4 py-3 text-center bg-purple-100/50 font-black text-purple-900 border-x">
                                         {{ $student['speaking']['total'] > 0 ? $student['speaking']['total'] : '-' }}
                                     </td>
 
-                                    {{-- Reading, Spelling --}}
                                     @foreach(['reading', 'spelling'] as $skill)
                                     <td class="px-3 py-3 text-center border-l">
                                         <span x-show="!isEditing" class="font-medium text-gray-700">{{ $student['written'][$skill] ?? '-' }}</span>
                                         <input x-show="isEditing" type="number" min="0" max="100" name="grades[{{ $student['id'] }}][{{ $skill }}]"
                                                value="{{ $student['written'][$skill] ?? '' }}"
-                                               class="w-14 h-8 text-center border-gray-200 rounded-lg bg-gray-50 focus:bg-white focus:ring-blue-500 text-xs p-1">
+                                               class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1">
                                     </td>
                                     @endforeach
 
-                                    {{-- Final Average --}}
                                     <td class="px-4 py-3 text-center bg-blue-50/30">
                                         <div class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white text-[11px] font-black shadow-md">
                                             {{ $student['avg_score'] ?? '-' }}

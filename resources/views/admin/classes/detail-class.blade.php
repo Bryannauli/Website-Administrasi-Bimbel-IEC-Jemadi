@@ -505,7 +505,7 @@
                         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden group hover:border-blue-300 hover:shadow-md transition-all">
                             <div class="flex items-center gap-3">
                                 {{-- Tombol View & Manage Grades --}}
-                                <a href="{{ route('admin.classes.assessment.manage', ['classId' => $class->id, 'type' => 'mid']) }}" 
+                                <a href="{{ route('admin.classes.assessment.detail', ['classId' => $class->id, 'type' => 'mid']) }}" 
                                 class="flex-1 inline-flex justify-center items-center px-4 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition shadow-blue-200 gap-2">
                                     {{-- Ikon Mata untuk kesan Memantau --}}
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
@@ -522,7 +522,7 @@
                         {{-- B. FINAL TERM EXAM CARD --}}
                         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden group hover:border-indigo-300 hover:shadow-md transition-all">
                             <div class="flex items-center gap-3">
-                                <a href="{{ route('admin.classes.assessment.manage', ['classId' => $class->id, 'type' => 'final']) }}" 
+                                <a href="{{ route('admin.classes.assessment.detail', ['classId' => $class->id, 'type' => 'final']) }}" 
                                 class="flex-1 inline-flex justify-center items-center px-4 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition shadow-indigo-200 gap-2">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                     View Grades

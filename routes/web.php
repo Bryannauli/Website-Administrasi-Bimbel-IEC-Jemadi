@@ -87,7 +87,7 @@ Route::middleware(['auth', 'verified', 'admin'])
             Route::patch('/students/{studentId}/unassign', [AdminClassController::class, 'unassignStudent'])->name('unassignStudent');
             
             // Assessment Routes (Management per Class)
-            Route::get('/{classId}/assessment/{type}', [AdminAssessmentController::class, 'manageGrades'])->name('assessment.manage');
+            Route::get('/{classId}/assessment/{type}', [AdminAssessmentController::class, 'detail'])->name('assessment.detail');
             Route::patch('/{sessionId}/store-grades', [AdminAssessmentController::class, 'storeOrUpdateGrades'])->name('assessment.storeOrUpdate');
         });
 
