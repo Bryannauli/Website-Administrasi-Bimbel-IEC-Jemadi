@@ -2,7 +2,7 @@
     <x-slot name="header"></x-slot>
 
     {{-- KONTEN UTAMA (Background Biru Muda - Sama persis dengan Student) --}}
-    <div class="py-6 bg-[#F3F4FF] min-h-screen font-sans">
+    <div x-data="{ isAddModalOpen: false }" class="py-6 bg-[#F3F4FF] min-h-screen font-sans">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
             {{-- 1. BREADCRUMB --}}
@@ -129,13 +129,14 @@
 
                         {{-- ADD BUTTON --}}
                         <div class="w-full lg:w-auto">
-                            <a href="{{ route('admin.teacher.add') }}" 
-                               class="inline-flex w-full lg:w-auto items-center justify-center gap-2 px-5 h-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm whitespace-nowrap">
+                            <button type="button" 
+                                @click="isAddModalOpen = true" 
+                                class="inline-flex w-full lg:w-auto items-center justify-center gap-2 px-5 h-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm whitespace-nowrap">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
                                 </svg>
                                 Add New Teacher
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -272,4 +273,63 @@
             </div>
         </div>
     </div>
+    <div x-show="isAddModalOpen" 
+    x-transition:enter="ease-out duration-300" 
+    x-transition:enter-start="opacity-0" 
+    x-transition:enter-end="opacity-100" 
+    x-transition:leave="ease-in duration-200" 
+    x-transition:leave-start="opacity-100" 
+    x-transition:leave-end="opacity-0"
+    class="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50"
+    style="display: none;"> 
+    
+    <div class="flex items-center justify-center min-h-screen p-4" @click.outside="isAddModalOpen = false">
+        
+        <div x-show="isAddModalOpen"
+            x-transition:enter="ease-out duration-300"
+            x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+            x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+            x-transition:leave="ease-in duration-200"
+            x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+            x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+            class="bg-white rounded-[20px] shadow-2xl w-full max-w-4xl p-8 transform transition-all mx-auto relative">
+            
+            <button type="button" @click="isAddModalOpen = false" 
+                    class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 focus:outline-none z-10">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Add New Teacher</h2>
+            
+            {{-- Form Konten dari file admin.teacher.add akan diletakkan di sini. --}}
+            {{-- Pastikan Anda MENGHAPUS elemen-elemen layout (breadcrumb, background, x-app-layout) dari form tersebut --}}
+            
+            <form action="{{ route('admin.teacher.store') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <h3 class="text-xl font-bold text-gray-800 mb-6 pb-4 border-b border-gray-100">Teacher Information</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="space-y-2">
+                        <label for="name" class="text-sm font-semibold text-gray-700">Full Name <span class="text-red-500">*</span></label>
+                        <input type="text" name="name" id="name" required placeholder="e.g. Richard Lim"
+                            class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200 transition duration-200 outline-none text-gray-700 placeholder-gray-400">
+                    </div>
+                    </div>
+                <div class="flex items-center justify-end gap-4 pt-6 border-t border-gray-100">
+                    <button type="button" @click="isAddModalOpen = false"
+                        class="px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition focus:outline-none focus:ring-2 focus:ring-gray-300">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        class="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition shadow-lg shadow-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        Save Teacher
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
 </x-app-layout>
