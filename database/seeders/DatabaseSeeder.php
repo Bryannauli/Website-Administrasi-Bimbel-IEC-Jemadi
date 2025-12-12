@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
@@ -15,6 +16,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        DB::statement('SET @DISABLE_TRIGGERS = 1');
+        
         // 1. User & Admin (Wajib pertama biar ada guru/admin)
         $this->call(MySQLUserSeeder::class); 
         $this->call(UserSeeder::class);

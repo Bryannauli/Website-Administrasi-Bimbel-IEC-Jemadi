@@ -25,8 +25,10 @@ return new class extends Migration
             AFTER INSERT ON students
             FOR EACH ROW
             BEGIN
-                INSERT INTO db_audit_logs (table_name, action, record_id)
-                VALUES ("students", "INSERT", NEW.id);
+                IF @DISABLE_TRIGGERS IS NULL OR @DISABLE_TRIGGERS = 0 THEN
+                    INSERT INTO db_audit_logs (table_name, action, record_id)
+                    VALUES ("students", "INSERT", NEW.id);
+                END IF;
             END
         ');
     }
