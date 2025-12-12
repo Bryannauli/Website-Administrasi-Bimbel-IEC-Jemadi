@@ -94,8 +94,9 @@ Route::middleware(['auth', 'verified', 'admin'])
         /* =====================================================================
         | TEACHER ATTENDANCE RECORD
          ===================================================================== */
-        Route::get('/teacher-attendance', [TeacherAttendanceRecordController::class, 'index'])->name('teacher.attendance');
+        Route::get('/teacher-attendance', [TeacherAttendanceRecordController::class, 'teacher'])->name('teacher.attendance');
         Route::get('/teacher-attendance/{teacherId}', [TeacherAttendanceRecordController::class, 'detail'])->name('teacher.detail');
+        Route::post('/teacher-attendance/store', [TeacherAttendanceRecordController::class, 'store'])->name('teacher.attendance.store');
 
 
         /* =====================================================================
