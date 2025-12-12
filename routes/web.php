@@ -100,6 +100,7 @@ Route::middleware(['auth', 'verified', 'admin'])
         Route::get('/teachers/add', [TeacherAdminController::class, 'create'])->name('teacher.add');
         Route::post('/teachers', [TeacherAdminController::class, 'store'])->name('teacher.store');
         Route::get('/teachers/{id}', [TeacherAdminController::class, 'show'])->name('teacher.show');
+        Route::put('/teachers/{teacher}', [TeacherAdminController::class, 'update'])->name('teacher.update');
 
 
         /* =====================================================================

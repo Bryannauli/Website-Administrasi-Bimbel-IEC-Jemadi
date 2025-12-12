@@ -9,6 +9,10 @@ use Illuminate\Http\Request;
 use App\Models\User;       // Model Guru
 use App\Models\ClassModel; // Model Kelas
 use App\Models\TeacherAttendanceRecord;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+
+use Illuminate\Validation\Rule;
 
 
 class TeacherAdminController extends Controller
@@ -242,5 +246,74 @@ return view('admin.teacher.show', compact(
             'absent', 
             'permission'
         ));
+    }
+
+public function update(Request $request, User $teacher)
+    {
+        // 1. DEFINISI DAN VALIDASI RULES
+        $rules = [
+            'name'      => 'required|string|max:255',
+            
+            // Unique check, kecuali untuk ID guru yang sedang diupdate
+            'username'  => ['required', 'string', 'max:255', Rule::unique('users', 'username')->ignore($teacher->id)],
+            'email'     => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($teacher->id)],
+            
+            'phone'     => 'required|string|max:20', 
+            'type'      => 'required|in:Form Teacher,Local Teacher',
+            'status'    => 'required|boolean', // Di mapping ke kolom is_active di DB
+            'address'   => 'nullable|string',
+            
+            // Password bersifat opsional, hanya divalidasi jika diisi
+            'password'  => 'nullable|string|min:8', 
+            
+            // Foto bersifat opsional
+            'photo'     => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', 
+        ];
+
+        // Custom validation message untuk keunikan agar lebih user-friendly
+        $messages = [
+            'username.unique' => 'Username ini sudah digunakan oleh guru lain.',
+            'email.unique'    => 'Alamat email ini sudah digunakan oleh guru lain.',
+        ];
+
+        $validatedData = $request->validate($rules, $messages);
+
+        // 2. SIAPKAN DATA UNTUK UPDATE
+        $dataToUpdate = [
+            'name'      => $validatedData['name'],
+            'username'  => $validatedData['username'],
+            'email'     => $validatedData['email'],
+            'phone'     => $validatedData['phone'],
+            'type'      => $validatedData['type'], 
+            'is_active' => $validatedData['status'], // Menggunakan 'is_active' karena itu kolom di DB yang diisi di fungsi store
+            'address'   => $validatedData['address'] ?? null,
+        ];
+
+        // 3. TANGANI PASSWORD (Opsional)
+        if (!empty($request->password)) {
+            // Password hanya di-hash jika diisi
+            $dataToUpdate['password'] = Hash::make($request->password);
+        }
+
+        // 4. TANGANI FOTO (Opsional)
+        if ($request->hasFile('photo')) {
+            $folderName = 'profile-photos'; // Konsisten dengan fungsi store Anda
+
+            // Hapus foto lama jika ada
+            if ($teacher->profile_photo_path && Storage::disk('public')->exists($teacher->profile_photo_path)) {
+                Storage::disk('public')->delete($teacher->profile_photo_path);
+            }
+
+            // Simpan foto baru ke public disk
+            $path = $request->file('photo')->store($folderName, 'public');
+            $dataToUpdate['profile_photo_path'] = $path;
+        }
+
+        // 5. UPDATE MODEL USER
+        $teacher->update($dataToUpdate);
+        
+        // 6. REDIRECT
+        return redirect()->route('admin.teacher.show', $teacher->id)
+                         ->with('success', 'Data guru berhasil diperbarui!');
     }
 }
