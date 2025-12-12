@@ -161,55 +161,64 @@ class StudentController extends Controller
     public function detail($id)
     {
         $student = Student::findOrFail($id);
-        
-        // Ambil semua attendance student ini
-        $attendance = AttendanceRecord::with('session')
-        ->where('student_id', $id)
-        ->orderBy('attendance_session_id', 'DESC')
-                        ->get();
 
-        // Summary Attendance
+        // 1. Mengambil data attendance menggunakan View
+        // View menggantikan join AttendanceRecord::with('session')
+        $attendance = DB::table('v_student_attendance')
+            ->where('student_id', $id)
+            ->orderBy('session_date', 'DESC') // Menggunakan kolom date dari view
+            ->get();
+
+        // 2. Mengambil Summary Attendance menggunakan Stored Procedure
+        // SP menggantikan semua logika kalkulasi summary
+        $rawSummary = DB::select("CALL sp_get_attendance_summary(?)", [$id]);
+
+        // DB::select mengembalikan array. Ambil hasil pertama (dan satu-satunya)
+        $summaryData = $rawSummary[0];
+
+        // Format ulang data summary dari SP
         $summary = [
-            'present'     => $attendance->where('status', 'present')->count(),
-            'absent'      => $attendance->where('status', 'absent')->count(),
-            'late'        => $attendance->where('status', 'late')->count(),
-            'permission'  => $attendance->where('status', 'permission')->count(),
-            'sick'        => $attendance->where('status', 'sick')->count(),
+            'present'      => $summaryData->present,
+            'absent'       => $summaryData->absent,
+            'late'         => $summaryData->late,
+            'permission'   => $summaryData->permission,
+            'sick'         => $summaryData->sick,
         ];
 
-        // Total Working Days
-        $totalDays = $attendance->count();
+        $totalDays = $summaryData->total_days;
+        $presentPercent = round($summaryData->present_percent); // Sudah dikalkulasi di SP
 
-        // Present Percentage
-        $presentPercent = $totalDays > 0
-            ? round(($summary['present'] / $totalDays) * 100)
-            : 0;
-
-        // Last 7 days attendance
+        // Catatan: Logika Last 7 Days (iterasi harian) paling baik tetap di PHP/Laravel
+        // karena menggunakan library Carbon dan looping tanggal, lebih fleksibel di sisi aplikasi.
+        
+        // ... (Logika Last 7 Days tetap sama seperti kode Anda) ...
         $last7Days = [];
         $today = Carbon::today();
 
+        // ... (Looping 7 hari dan query per hari masih menggunakan DB::table) ...
+        // Anda BISA menggunakan View v_student_attendance di sini untuk simplifikasi:
         for ($i = 6; $i >= 0; $i--) {
             $date = $today->copy()->subDays($i)->format('Y-m-d');
 
-            $record = DB::table('attendance_records')
-                ->join('attendance_sessions', 'attendance_records.attendance_session_id', '=', 'attendance_sessions.id')
-                ->where('attendance_records.student_id', $student->id)
-                ->where('attendance_sessions.date', $date)
-                ->select('attendance_records.status')
+            $record = DB::table('v_student_attendance') // Menggunakan View
+                ->where('student_id', $student->id)
+                ->where('session_date', $date)
+                ->select('status')
                 ->first();
 
-            $status = $record->status ?? 'none'; // jika tidak ada data
+            $status = $record->status ?? 'none';
 
             $last7Days[] = [
                 'date' => $date,
-                'day' => Carbon::parse($date)->format('D'), // M, T, W, T, F
+                'day' => Carbon::parse($date)->format('D'),
                 'status' => $status
             ];
+        }
+        
+        // Rentang tanggal
+        $rangeStart = $today->copy()->subDays(6)->format('d M Y');
+        $rangeEnd   = $today->format('d M Y');
 
-            // Rentang tanggal
-            $rangeStart = $today->copy()->subDays(6)->format('d M Y');
-            $rangeEnd   = $today->format('d M Y');
 
         return view('admin.student.detail-student', compact(
             'student',
@@ -221,8 +230,7 @@ class StudentController extends Controller
             'rangeStart',
             'rangeEnd',
         ));
-    }}
-
+    }
     // Halaman Edit Siswa
     public function edit($id)
     {

@@ -27,14 +27,16 @@ class TeacherAttendanceRecordController extends Controller
      */
     public function detail($teacherId)
     {
-        // 1. Cek Data Guru
+        // 1. Cek Data Guru (TETAP menggunakan Eloquent)
         $teacher = User::findOrFail($teacherId);
 
-        // 2. Ambil Data Absensi Menggunakan MODEL (Bukan Controller)
-        $attendance = TeacherAttendanceRecord::where('teacher_id', $teacherId)
-                        ->with('session')
-                        ->orderBy('id', 'desc')
-                        ->get();
+        // 2. Ambil Data Absensi menggunakan View
+        // View v_teacher_attendance sudah melakukan JOIN ke attendance_sessions
+        $attendance = DB::table('v_teacher_attendance')
+            ->where('teacher_id', $teacherId)
+            ->orderBy('record_id', 'desc')
+            ->get();
+            // Hasilnya adalah koleksi standar (stdClass) dari Query Builder
 
         return view('admin.attendance.detail', compact('teacher', 'attendance'));
     }
