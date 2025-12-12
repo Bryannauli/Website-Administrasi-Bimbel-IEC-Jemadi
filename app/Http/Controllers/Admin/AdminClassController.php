@@ -294,7 +294,9 @@ class AdminClassController extends Controller
 
         $categories = ['pre_level', 'level', 'step', 'private'];
         $years = ClassModel::select('academic_year')->distinct()->pluck('academic_year')->sortDesc();
-        $teachers = User::where('is_teacher', true)->orderBy('name', 'asc')->get();
+        $teachers = User::where('is_teacher', true)
+            ->where('is_active', true)
+            ->orderBy('name', 'asc')->get();
 
         return view('admin.classes.detail-class', compact(
             'class', 
@@ -344,20 +346,20 @@ class AdminClassController extends Controller
         }
 
     public function assignStudent(Request $request, $classId)
-{
-    // Validasi input berupa ARRAY student_ids
-    $request->validate([
-        'student_ids' => 'required|array',
-        'student_ids.*' => 'exists:students,id'
-    ]);
+    {
+        // Validasi input berupa ARRAY student_ids
+        $request->validate([
+            'student_ids' => 'required|array',
+            'student_ids.*' => 'exists:students,id'
+        ]);
 
-    // Lakukan update massal
-    // Kita update semua siswa yang ID-nya ada di dalam array yang dikirim
-    Student::whereIn('id', $request->student_ids)->update(['class_id' => $classId]);
+        // Lakukan update massal
+        // Kita update semua siswa yang ID-nya ada di dalam array yang dikirim
+        Student::whereIn('id', $request->student_ids)->update(['class_id' => $classId]);
 
-    $count = count($request->student_ids);
-    return back()->with('success', "Successfully enrolled {$count} students to this class.");
-}
+        $count = count($request->student_ids);
+        return back()->with('success', "Successfully enrolled {$count} students to this class.");
+    }
 
     // METHOD BARU: Keluarkan Murid dari Kelas
     public function unassignStudent($studentId)
@@ -368,5 +370,37 @@ class AdminClassController extends Controller
         $student->update(['class_id' => null]);
 
         return back()->with('success', 'Student removed from class (moved to unassigned).');
+    }
+
+    public function assignTeacher(Request $request, $id)
+    {
+        $request->validate([
+            'teacher_id' => 'required|exists:users,id',
+            'type' => 'required|in:form,local'
+        ]);
+
+        $class = ClassModel::findOrFail($id);
+        
+        // Tentukan kolom mana yang diupdate berdasarkan input 'type'
+        $column = ($request->type === 'form') ? 'form_teacher_id' : 'local_teacher_id';
+        
+        $class->update([
+            $column => $request->teacher_id
+        ]);
+
+        return back()->with('success', 'Teacher assigned successfully!');
+    }
+
+    public function unassignTeacher($classId, $type)
+    {
+        $class = ClassModel::findOrFail($classId);
+
+        if ($type === 'form') {
+            $class->update(['form_teacher_id' => null]);
+        } elseif ($type === 'local') {
+            $class->update(['local_teacher_id' => null]);
+        }
+
+        return back()->with('success', ucfirst($type) . ' Teacher has been unassigned.');
     }
 }

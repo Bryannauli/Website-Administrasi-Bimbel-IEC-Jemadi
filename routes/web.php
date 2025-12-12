@@ -80,6 +80,8 @@ Route::middleware(['auth', 'verified', 'admin'])
             Route::patch('/{id}/toggle-status', [AdminClassController::class, 'toggleStatus'])->name('toggleStatus');
             Route::delete('/{id}', [AdminClassController::class, 'delete'])->name('delete');
             Route::get('/detail/{id}', [AdminClassController::class, 'detailClass'])->name('detailclass');
+            Route::patch('/classes/{id}/assign-teacher', [AdminClassController::class, 'assignTeacher'])->name('assignTeacher');
+            Route::patch('/classes/{class}/unassign-teacher/{type}', [AdminClassController::class, 'unassignTeacher'])->name('unassignTeacher');
             Route::post('/{id}/assign-student', [AdminClassController::class, 'assignStudent'])->name('assignStudent');
             Route::patch('/students/{studentId}/unassign', [AdminClassController::class, 'unassignStudent'])->name('unassignStudent');
         });
