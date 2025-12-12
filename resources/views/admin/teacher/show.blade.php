@@ -106,7 +106,7 @@
                             <p class="text-xs text-gray-400 uppercase tracking-wide font-semibold">Assigned Class</p>
                             @if($teacher->formClasses->isNotEmpty())
                                 @foreach($teacher->formClasses as $fc)
-                                    <span class="inline-block mt-1 px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-xs font-bold border border-indigo-100">{{ $fc->name }} (Wali)</span>
+                                    <span class="inline-block mt-1 px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-xs font-bold border border-indigo-100">{{ $fc->name }}</span>
                                 @endforeach
                             @elseif($teacher->localClasses->isNotEmpty())
                                 @foreach($teacher->localClasses as $lc)
