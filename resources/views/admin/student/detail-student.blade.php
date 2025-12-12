@@ -102,9 +102,11 @@
 
             {{-- HEADER TITLE & BUTTON --}}
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">Student Profile</h2>
+                <h2 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent inline-block">
+                    Student Profile
+                </h2>
                 
-                {{-- TRIGGER EDIT MODAL --}}
+                {{-- TRIGGER EDIT MODAL (Tombol tetap) --}}
                 <button @click="showEditModal = true" 
                     class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>

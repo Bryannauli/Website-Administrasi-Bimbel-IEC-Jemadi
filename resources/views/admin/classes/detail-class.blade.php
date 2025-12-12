@@ -183,7 +183,9 @@
 
             {{-- HEADER TITLE & BUTTON --}}
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">Class Detail</h2>
+                <h2 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent inline-block">
+                    Class: {{ $class->name ?? 'Detail' }}
+                </h2>
                 
                 {{-- TRIGGER EDIT MODAL --}}
                 <button @click="showEditModal = true" 

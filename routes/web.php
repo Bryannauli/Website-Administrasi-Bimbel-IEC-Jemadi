@@ -111,9 +111,9 @@ Route::middleware(['auth', 'verified', 'admin'])
         ===================================================================== */
         Route::prefix('assessment')->name('assessment.')->group(function () {
              // Route ini akan menampilkan daftar semua sesi penilaian (Index Global)
-            Route::get('/', [AssessmentController::class, 'index'])->name('index');
-             // Route::get('/assessment/show', [AssessmentController::class, 'show'])->name('assessment.show'); // Diabaikan
-             // Route::post('/assessment/create', [AssessmentController::class, 'create'])->name('assessment.create'); // Diabaikan
+            Route::get('/', [AdminAssessmentController::class, 'index'])->name('index');
+             // Route::get('/assessment/show', [AdminAssessmentController::class, 'show'])->name('assessment.show'); // Diabaikan
+             // Route::post('/assessment/create', [AdminAssessmentController::class, 'create'])->name('assessment.create'); // Diabaikan
         });
     });
 
