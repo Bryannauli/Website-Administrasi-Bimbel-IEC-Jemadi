@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Teacher;
 
 use Illuminate\Http\Request;
+use App\Models\AssessmentForm;
 use App\Models\AttendanceRecord;
 use App\Http\Controllers\Controller;
 use App\Models\Student; // Model untuk siswa
 use App\Models\ClassModel; // Penting: panggil Model
 use App\Models\AttendanceSession; // Model untuk sesi absen
+use App\Models\AssessmentSession; // Model untuk sesi penilaian
 use Illuminate\Support\Facades\Auth; // Penting: untuk Auth::id()
 
 class ClassTeacherController extends Controller
@@ -28,23 +30,27 @@ class ClassTeacherController extends Controller
 
     public function detail(Request $request, $id)
     {
-        // Ambil data kelas
         $class = ClassModel::with('schedules')->findOrFail($id);
 
-        // --- Logic Pagination Siswa ---
-        // Default 5, atau ambil dari dropdown 'per_page'
+        // 1. Pagination Siswa (student_page)
         $perPage = $request->input('per_page', 5);     
         $students = Student::where('class_id', $id)
             ->where('is_active', true)
-            ->paginate($perPage, ['*'], 'student_page') // 'student_page' = nama parameter page khusus siswa
-            ->appends(request()->except('student_page')); // Agar filter per_page tidak hilang saat klik next
+            ->paginate($perPage, ['*'], 'student_page') 
+            ->appends(request()->except('student_page'));
 
-        // --- Logic Pagination Riwayat Absensi ---
+        // 2. Pagination Attendance (attendance_page)
         $attendanceSessions = AttendanceSession::where('class_id', $id)
             ->orderBy('date', 'desc')
             ->paginate(5, ['*'], 'attendance_page');
 
-        return view('teacher.classes.detail', compact('class', 'students', 'attendanceSessions'));
+        // 3. BARU: Pagination Assessment (assessment_page)
+        $assessments = AssessmentSession::where('class_id', $id)
+            ->orderBy('date', 'desc')
+            ->paginate(5, ['*'], 'assessment_page');
+
+        // Tambahkan $assessments ke compact
+        return view('teacher.classes.detail', compact('class', 'students', 'attendanceSessions', 'assessments'));
     }
 
     // public function detail($id)
@@ -96,30 +102,67 @@ class ClassTeacherController extends Controller
         return view('teacher.classes.session-attandance', compact('class', 'session', 'students'));
     }
 
-    public function updateSession(Request $request, $classId, $sessionId)
+    // 1. Menampilkan Halaman Input Nilai
+    public function assessmentDetail($classId, $assessmentId)
     {
-        // Validasi input array
+        $class = ClassModel::findOrFail($classId);
+        // Load assessment beserta form nilainya
+        $assessment = AssessmentSession::with('forms')->findOrFail($assessmentId);
+
+        // Ambil siswa aktif di kelas ini, urutkan nama
+        $students = Student::where('class_id', $classId)
+            ->where('is_active', true)
+            ->orderBy('name', 'asc')
+            ->get();
+
+        // Map nilai existing ke setiap siswa (agar input terisi jika sudah pernah disimpan)
+        foreach ($students as $student) {
+            // Cari form nilai milik siswa ini
+            $form = $assessment->forms->where('student_id', $student->id)->first();
+            
+            // Simpan objek form ke student sementara
+            $student->form = $form; 
+        }
+
+        return view('teacher.classes.assessment-marks', compact('class', 'assessment', 'students'));
+    }
+
+    // 2. Menyimpan Nilai (Per Skill)
+    public function updateAssessmentMarks(Request $request, $classId, $assessmentId)
+    {
+        // Validasi input (pastikan angka 0-100)
         $request->validate([
-            'attendance' => 'required|array',
-            'attendance.*' => 'in:present,absent,permitted,sick,late',
+            'marks' => 'array',
+            'marks.*.vocabulary' => 'nullable|numeric|min:0|max:100',
+            'marks.*.grammar'    => 'nullable|numeric|min:0|max:100',
+            'marks.*.listening'  => 'nullable|numeric|min:0|max:100',
+            'marks.*.speaking'   => 'nullable|numeric|min:0|max:100',
+            'marks.*.reading'    => 'nullable|numeric|min:0|max:100',
+            'marks.*.spelling'   => 'nullable|numeric|min:0|max:100',
         ]);
 
-        // Looping setiap data yang dikirim (key = student_id, value = status)
-        foreach ($request->attendance as $studentId => $status) {
-            AttendanceRecord::updateOrCreate(
+        // Loop setiap siswa dan simpan nilainya
+        // Struktur data dari view: marks[student_id][skill_name]
+        foreach ($request->marks as $studentId => $scores) {
+            
+            AssessmentForm::updateOrCreate(
                 [
-                    'attendance_session_id' => $sessionId,
+                    'assessment_session_id' => $assessmentId,
                     'student_id' => $studentId,
                 ],
                 [
-                    'status' => $status
+                    'vocabulary' => $scores['vocabulary'] ?? null,
+                    'grammar'    => $scores['grammar'] ?? null,
+                    'listening'  => $scores['listening'] ?? null,
+                    'speaking'   => $scores['speaking'] ?? null,
+                    'reading'    => $scores['reading'] ?? null,
+                    'spelling'   => $scores['spelling'] ?? null,
                 ]
             );
         }
 
-        // Redirect kembali ke detail kelas dengan pesan sukses
         return redirect()->route('teacher.classes.detail', $classId)
-                         ->with('success', 'Attendance recorded successfully!');
+                         ->with('success', 'Assessment marks updated successfully!');
     }
 
 }

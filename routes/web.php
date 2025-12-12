@@ -140,6 +140,9 @@ Route::prefix('teacher')->name('teacher.')->middleware(['auth'])->group(function
         Route::get('/{classId}/session/{sessionId}', [ClassTeacherController::class, 'sessionDetail'])->name('session.detail');
         Route::post('/{classId}/session/store', [ClassTeacherController::class, 'storeSession'])->name('session.store');
         Route::put('/{classId}/session/{sessionId}', [ClassTeacherController::class, 'updateSession'])->name('session.update');
+        Route::post('/{id}/assessment', [ClassTeacherController::class, 'storeAssessment'])->name('assessment.store');
+        Route::get('/{classId}/assessment/{assessmentId}', [ClassTeacherController::class, 'assessmentDetail'])->name('assessment.detail');
+        Route::put('/{classId}/assessment/{assessmentId}', [ClassTeacherController::class, 'updateAssessmentMarks'])->name('assessment.update');
     });
 
     /* Students */

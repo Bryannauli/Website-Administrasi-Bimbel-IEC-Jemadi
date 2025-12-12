@@ -131,6 +131,8 @@
             <div class="px-6 py-4 border-t border-gray-200">
                 {{ $students->links() }}
             </div>
+
+
         </div>
     </div>
 
@@ -194,6 +196,73 @@
             </div>
         </div>
     </div>
+    <hr class="border-gray-200">
+
+    <div class="space-y-4">
+        <div class="flex items-center justify-between">
+            <h3 class="text-xl font-bold text-gray-800">Assessments</h3>
+            
+            <button @click="openAssessmentModal = true" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition flex items-center space-x-2 text-sm shadow-sm shadow-purple-200">
+                <i class="fas fa-plus"></i>
+                <span>Add Assessment</span>
+            </button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-16">No</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        @forelse($assessments as $assessment)
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-4 text-sm text-gray-600">
+                                {{ $loop->iteration + $assessments->firstItem() - 1 }}
+                            </td>
+                            <td class="px-6 py-4 text-sm font-medium text-gray-900">
+                                @if($assessment->type == 'mid')
+                                    <span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-semibold">Mid Term</span>
+                                @else
+                                    <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-semibold">Final Term</span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600">
+                                {{ \Carbon\Carbon::parse($assessment->date)->format('d F Y') }}
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center space-x-3">
+                                    <a href="{{ route('teacher.classes.assessment.detail', [$class->id, $assessment->id]) }}" 
+                                    class="text-gray-500 hover:text-purple-600 transition" 
+                                    title="Input Marks">
+                                        <i class="fas fa-pen-to-square"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="4" class="px-6 py-8 text-center text-gray-500">
+                                No assessments scheduled yet.
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="px-6 py-4 border-t border-gray-200">
+                {{ $assessments->links() }}
+            </div>
+        </div>
+    </div>
+    </div>
+
 </div>
 
 <div x-data="{ openModal: false }" @keydown.escape="openModal = false">
@@ -236,6 +305,51 @@
                         </button>
                         <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-200">
                             Create Session
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div x-data="{ openAssessmentModal: false }" @keydown.escape="openAssessmentModal = false">
+    <div x-show="openAssessmentModal" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-black opacity-50" @click="openAssessmentModal = false"></div>
+            
+            <div class="relative bg-white rounded-xl shadow-xl max-w-lg w-full p-6 animate-fade-in-down">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Add New Assessment</h3>
+                    <button @click="openAssessmentModal = false" class="text-gray-400 hover:text-gray-600 transition">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+
+                <form action="{{ route('teacher.classes.assessment.store', $class->id) }}" method="POST">
+                    @csrf
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Assessment Type</label>
+                            <select name="type" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                <option value="" disabled selected>Select Type</option>
+                                <option value="mid">Mid Term Exam</option>
+                                <option value="final">Final Exam</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                            <input type="date" name="date" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex justify-end space-x-3">
+                        <button type="button" @click="openAssessmentModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                            Cancel
+                        </button>
+                        <button type="submit" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition shadow-lg shadow-purple-200">
+                            Create Assessment
                         </button>
                     </div>
                 </form>
