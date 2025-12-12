@@ -93,50 +93,50 @@ class TeacherAdminController extends Controller
      * Menampilkan Detail Guru & Statistik Absensi
      * Route: /admin/teachers/{id}
      */
-    public function show($id)
-    {
-        // 1. Ambil Data Guru
-        $teacher = User::with(['formClasses', 'localClasses'])->where('role', 'teacher')->findOrFail($id);
+    // public function show($id)
+    // {
+    //     // 1. Ambil Data Guru
+    //     $teacher = User::with(['formClasses', 'localClasses'])->where('role', 'teacher')->findOrFail($id);
 
-        // 2. Logic Tipe Guru
-        $isForm = $teacher->formClasses->isNotEmpty();
-        $isLocal = $teacher->localClasses->isNotEmpty();
+    //     // 2. Logic Tipe Guru
+    //     $isForm = $teacher->formClasses->isNotEmpty();
+    //     $isLocal = $teacher->localClasses->isNotEmpty();
         
-        if ($isForm && $isLocal) $type = 'Form & Local Teacher';
-        elseif ($isForm) $type = 'Form Teacher';
-        elseif ($isLocal) $type = 'Local Teacher';
-        else $type = '-';
+    //     if ($isForm && $isLocal) $type = 'Form & Local Teacher';
+    //     elseif ($isForm) $type = 'Form Teacher';
+    //     elseif ($isLocal) $type = 'Local Teacher';
+    //     else $type = '-';
 
-        // 3. Statistik Absensi (Bulan Ini)
-        $currentMonth = now()->month;
-        $currentYear = now()->year;
+    //     // 3. Statistik Absensi (Bulan Ini)
+    //     $currentMonth = now()->month;
+    //     $currentYear = now()->year;
 
-        $attendanceQuery = TeacherAttendanceRecord::where('teacher_id', $id)
-            ->whereHas('session', function($q) use ($currentMonth, $currentYear) {
-                $q->whereMonth('date', $currentMonth)
-                  ->whereYear('date', $currentYear);
-            });
+    //     $attendanceQuery = TeacherAttendanceRecord::where('teacher_id', $id)
+    //         ->whereHas('session', function($q) use ($currentMonth, $currentYear) {
+    //             $q->whereMonth('date', $currentMonth)
+    //               ->whereYear('date', $currentYear);
+    //         });
 
-        $present = (clone $attendanceQuery)->where('status', 'present')->count();
-        $absent  = (clone $attendanceQuery)->where('status', 'absent')->count();
-        $sick    = (clone $attendanceQuery)->where('status', 'sick')->count();
-        $late    = (clone $attendanceQuery)->whereIn('status', ['late', 'permission'])->count();
+    //     $present = (clone $attendanceQuery)->where('status', 'present')->count();
+    //     $absent  = (clone $attendanceQuery)->where('status', 'absent')->count();
+    //     $sick    = (clone $attendanceQuery)->where('status', 'sick')->count();
+    //     $late    = (clone $attendanceQuery)->whereIn('status', ['late', 'permission'])->count();
 
-        $totalDays = $present + $absent + $sick + $late;
-        $percentage = $totalDays > 0 ? round(($present / $totalDays) * 100) : 0;
+    //     $totalDays = $present + $absent + $sick + $late;
+    //     $percentage = $totalDays > 0 ? round(($present / $totalDays) * 100) : 0;
 
-        // 4. Data 7 Hari Terakhir
-        $lastRecords = TeacherAttendanceRecord::with('session')
-                        ->where('teacher_id', $id)
-                        ->join('teacher_attendance_sessions', 'teacher_attendance_records.attendance_session_id', '=', 'teacher_attendance_sessions.id')
-                        ->orderBy('teacher_attendance_sessions.date', 'desc')
-                        ->select('teacher_attendance_records.*')
-                        ->limit(7)
-                        ->get()
-                        ->reverse();
+    //     // 4. Data 7 Hari Terakhir
+    //     $lastRecords = TeacherAttendanceRecord::with('session')
+    //                     ->where('teacher_id', $id)
+    //                     ->join('teacher_attendance_sessions', 'teacher_attendance_records.attendance_session_id', '=', 'teacher_attendance_sessions.id')
+    //                     ->orderBy('teacher_attendance_sessions.date', 'desc')
+    //                     ->select('teacher_attendance_records.*')
+    //                     ->limit(7)
+    //                     ->get()
+    //                     ->reverse();
 
-        return view('admin.teacher.show', compact(
-            'teacher', 'type', 'present', 'absent', 'sick', 'late', 'totalDays', 'percentage', 'lastRecords'
-        ));
-    }
+    //     return view('admin.teacher.show', compact(
+    //         'teacher', 'type', 'present', 'absent', 'sick', 'late', 'totalDays', 'percentage', 'lastRecords'
+    //     ));
+    // }
 }

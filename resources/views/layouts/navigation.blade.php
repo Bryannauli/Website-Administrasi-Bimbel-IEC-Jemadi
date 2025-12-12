@@ -115,7 +115,7 @@ $subInactiveClasses = 'text-gray-700 hover:bg-blue-100 hover:text-blue-700';
             </button>
 
             <div x-show="open" x-transition class="mt-2 space-y-1">
-                <a href=""
+                <a href="{{ route('admin.teacher.index') }}"
                     class="block px-4 py-2 ml-4 rounded-md text-sm font-medium transition-colors duration-150
                   {{ request()->routeIs('teachers.index') ? $subActiveClasses : $subInactiveClasses }}">
                     All Teachers

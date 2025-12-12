@@ -5,20 +5,28 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\AssessmentFormController;
+
+// Admin Controllers
 use App\Http\Controllers\Admin\DashboardAdminController;
+use App\Http\Controllers\Admin\TeacherAdminController;
+use App\Http\Controllers\TeacherAttendanceRecordController;
+
+// Teacher Controllers
 use App\Http\Controllers\Teacher\DashboardTeacherController;
 use App\Http\Controllers\Teacher\ClassTeacherController;
 use App\Http\Controllers\Teacher\StudentTeacherController;
 use App\Http\Controllers\Teacher\AttendanceController;
 use App\Http\Controllers\Teacher\TeacherController;
 
-
-
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
+
+/* ============================================================================
+ |  ROOT DAN DASHBOARD
+ ============================================================================ */
+
 Route::get('/', function () {
-    // Cek login status
     if (Auth::check()) {
         return redirect()->route('dashboard');
     }
@@ -26,109 +34,117 @@ Route::get('/', function () {
 })->name('landing');
 
 Route::get('/dashboard', function () {
-    if (!Auth::check()) {
-        return redirect('/login');
-    }
-    
+    if (!Auth::check()) return redirect('/login');
+
     $user = Auth::user();
 
-    // Prioritaskan Admin: Admin memiliki akses tertinggi
     if ($user->role == 'admin') {
         return redirect()->route('admin.dashboard');
     }
-    
-    // Cek status Teacher
-    // if ($user->is_teacher) {
-    //     return redirect()->route('teacher.dashboard');
-    // }
 
-    // Jika tidak memiliki role/status yang diizinkan
     Auth::logout();
-    return redirect('/login')->with('error', 'You do not have access to this application. Please contact the administrator.');
+    return redirect('/login')->with('error', 'You do not have access.');
 
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-// --- Rute Admin ---
-Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', [DashboardAdminController::class, 'index'])->name('dashboard');
-    Route::get('/attendance-stats', [DashboardAdminController::class, 'getAttendanceStats']);
-    Route::get('/weekly-absence', [DashboardAdminController::class, 'getWeeklyAbsenceReport']);
-    Route::get('/today-schedule', [DashboardAdminController::class, 'getTodaySchedule']);
 
-    Route::get('/profile', [ProfileController::class, 'editAdmin'])->name('profile');
 
-    // Grouping Route untuk Student
-    Route::prefix('student')->name('student.')->group(function () {
-        // Menampilkan daftar siswa
-        Route::get('/', [StudentController::class, 'index'])->name('index');
-        // Menampilkan detail siswa
-        Route::get('/detail/{id}', [StudentController::class, 'detail'])->name('detail');
-        // Menampilkan form tambah siswa
-        Route::get('/add', [StudentController::class, 'add'])->name('add');
-        Route::post('/', [StudentController::class, 'store'])->name('store');
-        // Menampilkan form edit siswa
-        Route::get('/edit/{id}', [StudentController::class, 'edit'])->name('edit');
-        Route::put('/update/{id}', [StudentController::class, 'update'])->name('update');
-        // Proses toggle status aktif/non-aktif siswa
-        Route::patch('/{id}/toggle-status', [StudentController::class, 'toggleStatus'])->name('toggleStatus');
-        // Proses hapus siswa
-        Route::delete('/{id}', [StudentController::class, 'delete'])->name('delete');
+/* ============================================================================
+ |  ADMIN ROUTES
+ ============================================================================ */
+
+Route::middleware(['auth', 'verified', 'admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+
+        /* DASHBOARD */
+        Route::get('/dashboard', [DashboardAdminController::class, 'index'])->name('dashboard');
+        Route::get('/attendance-stats', [DashboardAdminController::class, 'getAttendanceStats']);
+        Route::get('/weekly-absence', [DashboardAdminController::class, 'getWeeklyAbsenceReport']);
+        Route::get('/today-schedule', [DashboardAdminController::class, 'getTodaySchedule']);
+
+        /* ADMIN PROFILE */
+        Route::get('/profile', [ProfileController::class, 'editAdmin'])->name('profile');
+
+
+        /* =====================================================================
+         | STUDENT
+         ===================================================================== */
+        Route::prefix('student')->name('student.')->group(function () {
+            Route::get('/', [StudentController::class, 'index'])->name('index');
+            Route::get('/add', [StudentController::class, 'add'])->name('add');
+            Route::post('/', [StudentController::class, 'store'])->name('store');
+            Route::get('/edit/{id}', [StudentController::class, 'edit'])->name('edit');
+            Route::put('/update/{id}', [StudentController::class, 'update'])->name('update');
+            Route::patch('/{id}/toggle-status', [StudentController::class, 'toggleStatus'])->name('toggleStatus');
+            Route::delete('/{id}', [StudentController::class, 'delete'])->name('delete');
+            Route::get('/detail/{id}', [StudentController::class, 'detail'])->name('detail');
+        });
+
+
+        /* =====================================================================
+         | CLASS
+         ===================================================================== */
+        Route::prefix('classes')->name('classes.')->group(function () {
+            Route::get('/', [ClassController::class, 'index'])->name('index');
+            Route::post('/store', [ClassController::class, 'store'])->name('store');
+            Route::put('/{id}', [ClassController::class, 'update'])->name('update');
+            Route::get('/detail/{id}', [ClassController::class, 'detailClass'])->name('detailclass');
+
+            // yang lama, tapi dibiarkan jika masih dipakai
+            Route::get('/{id}', [ClassController::class, 'class'])->name('class');
+            Route::get('/{id}/students', [ClassController::class, 'students'])->name('students');
+        });
+
+
+        /* =====================================================================
+         | TEACHER LIST (versi admin)
+         ===================================================================== */
+        Route::get('/teachers', [TeacherAdminController::class, 'index'])->name('teacher.index');
+
+
+        /* =====================================================================
+         | TEACHER ATTENDANCE RECORD
+         ===================================================================== */
+        Route::get('/teacher-attendance', [TeacherAttendanceRecordController::class, 'index'])->name('teacher.attendance');
+        Route::get('/teacher-attendance/{teacherId}', [TeacherAttendanceRecordController::class, 'detail'])->name('teacher.detail');
+
+
+        /* =====================================================================
+         | ASSESSMENT
+         ===================================================================== */
+        Route::get('/assessment', [AssessmentController::class, 'index'])->name('assessment.index');
+        Route::get('/assessment/show', [AssessmentController::class, 'show'])->name('assessment.show');
+        Route::post('/assessment/create', [AssessmentController::class, 'create'])->name('assessment.create');
     });
 
-    // Grouping Route untuk Class (BARU & RAPI)
-    Route::prefix('classes')->name('classes.')->group(function () {
-        // Menampilkan daftar kelas
-        Route::get('/', [ClassController::class, 'index'])->name('index'); 
-        // Menampilkan detail kelas
-        Route::get('/detail/{id}', [ClassController::class, 'detailClass'])->name('detailclass'); 
-        // Proses simpan data baru
-        Route::post('/store', [ClassController::class, 'store'])->name('store');
-        // Update data
-        Route::put('/{id}', [ClassController::class, 'update'])->name('update'); 
-        
-        // Route yang tampaknya salah/redundant, dipertahankan tapi dinilai perlu dihapus:
-        // Route::get('/{id}', [ClassController::class, 'class'])->name('class'); 
-        // Route::get('/{id}/students', [ClassController::class, 'students'])->name('students'); 
-    });
-});
 
-// --- Rute Teacher  ---
-Route::get('/teacher/dashboard', function () {
-    return view('teacher.dashboard'); 
-})->middleware(['auth', 'verified', 'teacher'])->name('teacher.dashboard');
 
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
+/* ============================================================================
+ |  TEACHER ROUTES (USER GURU)
+ ============================================================================ */
 
-// Rute Assesment
- Route::get('/admin/assessment', [AssessmentController::class, 'index'])->name('admin.assessment.index');
- Route::get('/admin/assessment/show', [AssessmentController::class, 'show'])->name('admin.assessment.show');
-    Route::post('/admin/assessment/create', [AssessmentController::class, 'create'])->name('admin.assessment.create');
-
-// Teacher Routes
 Route::prefix('teacher')->name('teacher.')->middleware(['auth'])->group(function () {
-    
-    // Dashboard
+
+    /* Dashboard */
     Route::get('/dashboard', [DashboardTeacherController::class, 'index'])->name('dashboard');
     Route::get('/analytics', [DashboardTeacherController::class, 'analytics'])->name('analytics');
-    
-    // Classes
+
+    /* Classes */
     Route::prefix('classes')->name('classes.')->group(function () {
         Route::get('/', [ClassTeacherController::class, 'index'])->name('index');
         Route::get('/{id}', [ClassTeacherController::class, 'show'])->name('show');
         Route::get('/{id}/detail', [ClassTeacherController::class, 'detail'])->name('detail');
         Route::post('/store', [ClassTeacherController::class, 'store'])->name('store');
-        
-        // Session Management
+
+        /* Session */
         Route::get('/{classId}/session/{sessionId}', [ClassTeacherController::class, 'sessionDetail'])->name('session.detail');
         Route::post('/{classId}/session/store', [ClassTeacherController::class, 'storeSession'])->name('session.store');
         Route::put('/{classId}/session/{sessionId}', [ClassTeacherController::class, 'updateSession'])->name('session.update');
     });
-    
-    // Students
+
+    /* Students */
     Route::prefix('students')->name('students.')->group(function () {
         Route::get('/', [StudentTeacherController::class, 'index'])->name('index');
         Route::get('/{id}', [StudentTeacherController::class, 'show'])->name('show');
@@ -136,26 +152,38 @@ Route::prefix('teacher')->name('teacher.')->middleware(['auth'])->group(function
         Route::get('/attendance', [StudentTeacherController::class, 'attendance'])->name('attendance');
         Route::post('/{id}/assessment', [StudentTeacherController::class, 'storeAssessment'])->name('assessment.store');
     });
-    
-    // Teachers
+
+    /* Teacher (User Guru melihat sesama guru) */
     Route::prefix('teachers')->name('teachers.')->group(function () {
         Route::get('/', [TeacherController::class, 'index'])->name('index');
         Route::get('/{id}', [TeacherController::class, 'show'])->name('show');
         Route::get('/attendance', [TeacherController::class, 'attendance'])->name('attendance');
         Route::get('/attendance/{classId}', [TeacherController::class, 'classAttendance'])->name('attendance.class');
     });
-    
-    // Attendance
+
+    /* Attendance */
     Route::prefix('attendance')->name('attendance.')->group(function () {
         Route::post('/submit', [AttendanceController::class, 'submit'])->name('submit');
         Route::put('/{id}/update', [AttendanceController::class, 'update'])->name('update');
         Route::get('/export', [AttendanceController::class, 'export'])->name('export');
     });
-    
-    // Schedule
+
+    /* Schedule */
     Route::prefix('schedule')->name('schedule.')->group(function () {
         Route::get('/my', [DashboardTeacherController::class, 'mySchedule'])->name('my');
     });
+});
+
+
+
+/* ============================================================================
+ |  PROFILE (SEMUA USER)
+ ============================================================================ */
+
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 
