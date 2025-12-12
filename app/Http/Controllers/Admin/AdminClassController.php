@@ -284,6 +284,7 @@ class AdminClassController extends Controller
                 'id' => $student->id, // PENTING: ID diperlukan untuk kunci Matrix
                 'name' => $student->name,
                 'student_number' => $student->student_number,
+                'is_active' => $student->is_active,
                 'percentage' => $percentage
             ];
         }

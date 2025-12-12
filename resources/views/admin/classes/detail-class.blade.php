@@ -4,13 +4,12 @@
     {{-- WRAPPER UTAMA DENGAN ALPINE JS --}}
     <div class="bg-[#EEF2FF] min-h-screen font-sans" x-data="{ 
         // 1. STATE MODAL
-        // Buka modal jika ada Error Validasi ATAU parameter edit_failed=true (dari controller)
         showEditModal: {{ $errors->any() || session('edit_failed') ? 'true' : 'false' }},
         showAddStudentModal: {{ request('search_student') ? 'true' : 'false' }},
         showHistoryModal: false,
         showStudentStatsModal: false,
 
-        // 2. STATE FORM DATA (Pre-filled dengan data kelas saat ini)
+        // 2. STATE FORM DATA
         editForm: {
             name: '{{ addslashes($class->name) }}',
             category: '{{ $class->category }}',
@@ -22,49 +21,38 @@
             local_teacher_id: '{{ $class->local_teacher_id ?? '' }}',
             time_start: '{{ \Carbon\Carbon::parse($class->start_time)->format('H:i') }}',
             time_end: '{{ \Carbon\Carbon::parse($class->end_time)->format('H:i') }}',
-            // Schedule days array (diambil dari schedules relasi)
             days: [
                 @foreach($class->schedules as $schedule)
                     '{{ $schedule->day_of_week }}',
                 @endforeach
             ],
-            // Status diisi 'active' atau 'inactive' untuk radio button
             status: '{{ $class->is_active ? 'active' : 'inactive' }}',
         },
 
         // 3. URL & ID DEFINITION
-        classId: '{{ $class->id }}', // ID kelas saat ini
+        classId: '{{ $class->id }}', 
         deleteUrl: '{{ route('admin.classes.delete', $class->id) }}',
-        // Menyimpan URL dasar, menghindari missing parameter saat compile
         updateBaseUrl: '{{ route('admin.classes.update', ['id' => 'PLACEHOLDER']) }}'.replace('/PLACEHOLDER', ''),
         
-        // FUNCTION UNTUK MENGAMBIL URL UPDATE (Untuk form action)
         getUpdateUrl() {
-            // Jika ada error validasi, gunakan ID lama (yang dikirim balik oleh controller)
             const oldId = '{{ old('id') ?? '' }}';
-            
-            // Gunakan ID kelas saat ini sebagai fallback
             const finalId = oldId || this.classId;
-            
-            // Mengembalikan URL dengan ID yang valid (menggunakan template literal JS)
             return `${this.updateBaseUrl}/${finalId}`;
         },
 
         closeModal(modalVar) {
             if ({{ $errors->any() || session('edit_failed') ? 'true' : 'false' }}) {
-                // Jika ada error, refresh halaman untuk membersihkan sesi error Laravel
                 window.location.href = window.location.href; 
             } else {
-                // Jika tidak ada error, tutup modal via Alpine JS
                 this[modalVar] = false;
             }
         },
         
-        // 4. FUNCTION CONFIRM DELETE
+        // 4. FUNCTION CONFIRM DELETE CLASS
         confirmDelete() {
             Swal.fire({
-                title: 'Are you sure?',
-                text: 'This class will be moved to trash (Soft Delete). You can restore it later.',
+                title: 'Delete Class?',
+                text: 'This class will be moved to trash (Soft Delete).',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#EF4444',
@@ -77,11 +65,11 @@
             });
         },
         
-        // Fungsi Confirm Remove Siswa
+        // 5. FUNCTION CONFIRM REMOVE STUDENT (UNASSIGN)
         confirmRemove(studentName, formId) {
             Swal.fire({
                 title: 'Remove Student?',
-                text: `Are you sure you want to remove ${studentName} from this class? They will become Unassigned.`,
+                text: `Remove ${studentName} from this class? They will become Unassigned (No Class).`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#EF4444',
@@ -90,6 +78,30 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     document.getElementById(formId).submit();
+                }
+            });
+        },
+
+        // 6. FUNCTION CONFIRM TOGGLE STATUS (BARU - SWEETALERT)
+        confirmToggleStatus(studentId, isActive) {
+            const action = isActive ? 'DEACTIVATE' : 'ACTIVATE';
+            const statusText = isActive ? 'inactive' : 'active';
+            const iconColor = isActive ? '#EF4444' : '#10B981';
+
+            Swal.fire({
+                title: `${action} Student?`,
+                text: `Change status to ${statusText}? Inactive students remain in history.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: iconColor,
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: `Yes, ${action}`
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.getElementById('toggleStatusForm');
+                    const url = '{{ route('admin.student.toggleStatus', ':id') }}'.replace(':id', studentId);
+                    form.action = url;
+                    form.submit();
                 }
             });
         }
@@ -101,23 +113,18 @@
             {{-- BREADCRUMB --}}
             <nav class="flex mb-5" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-3">
-                    {{-- 1. Dashboard --}}
                     <li class="inline-flex items-center">
                         <a href="{{ route('dashboard') }}" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600">
                             <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
                             Dashboard
                         </a>
                     </li>
-                    
-                    {{-- 2. Classes --}}
                     <li>
                         <div class="flex items-center">
                             <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                        <a href="{{ route('admin.classes.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Classes</a>
+                            <a href="{{ route('admin.classes.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Classes</a>
                         </div>
                     </li>
-                    
-                    {{-- 3. Nama Kelas (Halaman Aktif) --}}
                     <li aria-current="page">
                         <div class="flex items-center">
                             <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
@@ -195,53 +202,35 @@
                     {{-- A. LIST TEACHER --}}
                     <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
                         <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                Teachers Assigned
-                            </h3>
+                            <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">Teachers Assigned</h3>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {{-- Form Teacher --}}
                             @if($class->formTeacher)
                                 <div class="p-3 rounded-xl border border-blue-100 bg-blue-50/20 flex items-center justify-between">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm shadow-sm">
-                                            {{ substr($class->formTeacher->name, 0, 1) }}
-                                        </div>
-                                        <div>
-                                            <h4 class="font-bold text-gray-800 text-sm">{{ $class->formTeacher->name }}</h4>
-                                            <p class="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Form Teacher</p>
-                                        </div>
+                                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm shadow-sm">{{ substr($class->formTeacher->name, 0, 1) }}</div>
+                                        <div><h4 class="font-bold text-gray-800 text-sm">{{ $class->formTeacher->name }}</h4><p class="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Form Teacher</p></div>
                                     </div>
                                 </div>
                             @else
-                                <div class="w-full p-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center gap-2 text-gray-400">
-                                    <span class="text-xs font-medium italic">No Form Teacher Assigned</span>
-                                </div>
+                                <div class="w-full p-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center gap-2 text-gray-400"><span class="text-xs font-medium italic">No Form Teacher Assigned</span></div>
                             @endif
 
-                            {{-- Local Teacher --}}
                             @if($class->localTeacher)
                                 <div class="p-3 rounded-xl border border-purple-100 bg-purple-50/20 flex items-center justify-between">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-sm shadow-sm">
-                                            {{ substr($class->localTeacher->name, 0, 1) }}
-                                        </div>
-                                        <div>
-                                            <h4 class="font-bold text-gray-800 text-sm">{{ $class->localTeacher->name }}</h4>
-                                            <p class="text-[10px] text-purple-600 font-bold uppercase tracking-wider">Local Teacher</p>
-                                        </div>
+                                        <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-sm shadow-sm">{{ substr($class->localTeacher->name, 0, 1) }}</div>
+                                        <div><h4 class="font-bold text-gray-800 text-sm">{{ $class->localTeacher->name }}</h4><p class="text-[10px] text-purple-600 font-bold uppercase tracking-wider">Local Teacher</p></div>
                                     </div>
                                 </div>
                             @else
-                                <div class="w-full p-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center gap-2 text-gray-400">
-                                    <span class="text-xs font-medium italic">No Local Teacher Assigned</span>
-                                </div>
+                                <div class="w-full p-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center gap-2 text-gray-400"><span class="text-xs font-medium italic">No Local Teacher Assigned</span></div>
                             @endif
                         </div>
                     </div>
 
-                    {{-- B. TEACHER ATTENDANCE (BLUE CARD) --}}
+                    {{-- B. TEACHER ATTENDANCE --}}
                     <div class="lg:col-span-1 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg shadow-blue-200 p-6 text-white flex flex-col justify-between relative overflow-hidden">
                         <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
                         <div>
@@ -254,24 +243,16 @@
                                 @endif
                             </div>
 
-                            @php
-                                $lastTeacherRecord = $lastSession ? $lastSession->teacherRecords->first() : null;
-                            @endphp
+                            @php $lastTeacherRecord = $lastSession ? $lastSession->teacherRecords->first() : null; @endphp
 
                             @if($lastTeacherRecord && $lastTeacherRecord->teacher)
-                                <h3 class="text-lg font-bold truncate" title="{{ $lastTeacherRecord->teacher->name }}">
-                                    {{ $lastTeacherRecord->teacher->name }}
-                                </h3>
+                                <h3 class="text-lg font-bold truncate" title="{{ $lastTeacherRecord->teacher->name }}">{{ $lastTeacherRecord->teacher->name }}</h3>
                                 <div class="mt-3 bg-blue-800 bg-opacity-40 p-3 rounded-lg border border-blue-500 border-opacity-30">
-                                    <p class="text-blue-50 text-xs italic line-clamp-3">
-                                        "{{ $lastTeacherRecord->comment ?? 'No teaching notes provided.' }}"
-                                    </p>
+                                    <p class="text-blue-50 text-xs italic line-clamp-3">"{{ $lastTeacherRecord->comment ?? 'No teaching notes provided.' }}"</p>
                                 </div>
                             @else
                                 <h3 class="text-xl font-bold">No Data Yet</h3>
-                                <p class="text-blue-100 text-xs mt-2 opacity-80 leading-relaxed">
-                                    Teaching logs will appear here once attendance is submitted.
-                                </p>
+                                <p class="text-blue-100 text-xs mt-2 opacity-80 leading-relaxed">Teaching logs will appear here once attendance is submitted.</p>
                             @endif
                         </div>
 
@@ -309,30 +290,58 @@
                                         <th class="px-4 py-3 font-normal">Student ID</th>
                                         <th class="px-4 py-3 font-normal">Name</th>
                                         <th class="px-4 py-3 font-normal">Status</th>
-                                        <th class="px-4 py-3 font-normal text-center w-24">Action</th>
+                                        <th class="px-4 py-3 font-normal text-center w-28">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 text-sm text-gray-800">
                                     @forelse($class->students ?? [] as $index => $student)
-                                    <tr class="hover:bg-gray-50 transition group">
+                                    <tr class="transition group {{ $student->is_active ? 'hover:bg-gray-50' : 'bg-red-50 hover:bg-red-100' }}">
+                                        
                                         <td class="px-4 py-3 text-gray-400 text-xs">{{ $index + 1 }}</td>
                                         <td class="px-4 py-3 font-mono text-xs text-gray-500">{{ $student->student_number }}</td>
-                                        <td class="px-4 py-3 font-medium text-gray-900 group-hover:text-blue-600 transition-colors">{{ $student->name }}</td>
-                                        <td class="px-4 py-3">
-                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">
-                                                Active
-                                            </span>
+                                        
+                                        {{-- NAMA: Jika Inactive dicoret --}}
+                                        <td class="px-4 py-3 font-medium transition-colors {{ $student->is_active ? 'text-gray-900 group-hover:text-blue-600' : 'text-red-800 line-through decoration-red-500' }}">
+                                            {{ $student->name }}
                                         </td>
+                                        
+                                        {{-- STATUS BADGE --}}
                                         <td class="px-4 py-3">
+                                            @if($student->is_active)
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">Active</span>
+                                            @else
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 border border-red-200">Inactive</span>
+                                            @endif
+                                        </td>
+
+                                        <td class="px-4 py-3 text-center">
                                             <div class="flex items-center justify-center gap-2">
+                                                
+                                                {{-- 1. View Profile --}}
                                                 <a href="{{ route('admin.student.detail', ['id' => $student->id, 'ref' => 'class', 'class_id' => $class->id]) }}" 
                                                 class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="View Profile">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                                 </a>
+
+                                                {{-- 2. Toggle Status (SweetAlert) --}}
+                                                <button type="button" 
+                                                    @click="confirmToggleStatus({{ $student->id }}, {{ $student->is_active ? 'true' : 'false' }})"
+                                                    class="p-1.5 rounded transition-colors {{ $student->is_active ? 'text-gray-400 hover:text-red-600 hover:bg-red-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50' }}"
+                                                    title="{{ $student->is_active ? 'Deactivate (Quit)' : 'Activate' }}">
+
+                                                    @if($student->is_active)
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                                                    @else
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                    @endif
+                                                </button>
+
+                                                {{-- 3. Unassign / Remove (Only Form Hidden, Trigger by Alpine) --}}
                                                 <form id="remove-student-{{ $student->id }}" action="{{ route('admin.classes.unassignStudent', $student->id) }}" method="POST" style="display: none;">
                                                     @csrf @method('PATCH')
                                                 </form>
-                                                <button @click="confirmRemove('{{ addslashes($student->name) }}', 'remove-student-{{ $student->id }}')" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="Remove from Class">
+                                                <button @click="confirmRemove('{{ addslashes($student->name) }}', 'remove-student-{{ $student->id }}')" 
+                                                        class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="Unassign (Wrong Class)">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                                 </button>
                                             </div>
@@ -350,14 +359,10 @@
                         </div>
                     </div>
 
-                    {{-- D. STUDENT ATTENDANCE (WHITE CARD - MINI TABLE) --}}
+                    {{-- D. STUDENT ATTENDANCE --}}
                     <div class="lg:col-span-1 bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col h-full">
-                        
                         <div class="flex justify-between items-center mb-4">
-                            <div>
-                                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Attendance</h4>
-                                <h3 class="text-xl font-bold text-gray-800">Last Session</h3>
-                            </div>
+                            <div><h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Attendance</h4><h3 class="text-xl font-bold text-gray-800">Last Session</h3></div>
                             @if($lastSession)
                                 <div class="text-right">
                                     @php
@@ -365,9 +370,7 @@
                                         $tCount = $lastSession->records->count();
                                         $sPerc = $tCount > 0 ? round(($pCount / $tCount) * 100) : 0;
                                     @endphp
-                                    <span class="text-2xl font-bold {{ $sPerc >= 80 ? 'text-green-600' : ($sPerc >= 50 ? 'text-yellow-600' : 'text-red-600') }}">
-                                        {{ $sPerc }}%
-                                    </span>
+                                    <span class="text-2xl font-bold {{ $sPerc >= 80 ? 'text-green-600' : ($sPerc >= 50 ? 'text-yellow-600' : 'text-red-600') }}">{{ $sPerc }}%</span>
                                     <p class="text-[10px] text-gray-400">Present</p>
                                 </div>
                             @endif
@@ -375,42 +378,22 @@
 
                         <div class="flex-1 overflow-y-auto custom-scrollbar pr-1 mb-4 max-h-[300px]">
                             @if($lastSession && $lastSession->records->count() > 0)
-                                @php
-                                    $absentees = $lastSession->records->whereIn('status', ['absent', 'sick', 'permission']);
-                                @endphp
-
+                                @php $absentees = $lastSession->records->whereIn('status', ['absent', 'sick', 'permission']); @endphp
                                 @if($absentees->count() > 0)
                                     <p class="text-xs font-bold text-red-500 mb-2 uppercase tracking-wide">Absentees List:</p>
                                     <ul class="space-y-2">
                                     @foreach($absentees as $record)
                                         <li class="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-100">
-                                            <span class="text-sm font-medium text-gray-700 truncate w-32" title="{{ $record->student->name ?? '-' }}">
-                                                {{ $record->student->name ?? '-' }}
-                                            </span>
-                                            
-                                            {{-- Badge Status Absen (Updated Colors) --}}
-                                            <span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase
-                                                {{ $record->status == 'absent' ? 'bg-red-100 text-red-700 border border-red-200' : '' }}
-                                                {{ $record->status == 'sick' ? 'bg-purple-100 text-purple-700 border border-purple-200' : '' }}
-                                                {{ $record->status == 'permission' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : '' }}">
-                                                {{ $record->status }}
-                                            </span>
+                                            <span class="text-sm font-medium text-gray-700 truncate w-32" title="{{ $record->student->name ?? '-' }}">{{ $record->student->name ?? '-' }}</span>
+                                            <span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase {{ $record->status == 'absent' ? 'bg-red-100 text-red-700 border border-red-200' : '' }} {{ $record->status == 'sick' ? 'bg-purple-100 text-purple-700 border border-purple-200' : '' }} {{ $record->status == 'permission' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : '' }}">{{ $record->status }}</span>
                                         </li>
                                     @endforeach
-                                </ul>
+                                    </ul>
                                 @else
-                                    <div class="h-full flex flex-col items-center justify-center text-center py-6 bg-green-50 rounded-xl border border-dashed border-green-200">
-                                        <div class="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center mb-2">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                        </div>
-                                        <p class="text-sm font-bold text-green-700">Perfect Attendance!</p>
-                                        <p class="text-xs text-green-600">All students present.</p>
-                                    </div>
+                                    <div class="h-full flex flex-col items-center justify-center text-center py-6 bg-green-50 rounded-xl border border-dashed border-green-200"><div class="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center mb-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></div><p class="text-sm font-bold text-green-700">Perfect Attendance!</p><p class="text-xs text-green-600">All students present.</p></div>
                                 @endif
                             @else
-                                <div class="h-full flex flex-col items-center justify-center text-center p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                                    <p class="text-sm text-gray-500">No attendance data yet.</p>
-                                </div>
+                                <div class="h-full flex flex-col items-center justify-center text-center p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200"><p class="text-sm text-gray-500">No attendance data yet.</p></div>
                             @endif
                         </div>
 
@@ -419,6 +402,78 @@
                         </button>
                     </div>
                 </div>
+
+                {{-- 4. ROW 3: ACADEMIC ASSESSMENTS --}}
+    <div class="mt-8">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            Academic Assessments
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {{-- A. MID TERM EXAM CARD --}}
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden group hover:border-blue-300 hover:shadow-md transition-all">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-6 -mt-6 transition-transform group-hover:scale-110"></div>
+                
+                <div class="relative z-10">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="p-3 bg-blue-100 text-blue-600 rounded-xl">
+                            {{-- Icon Exam --}}
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-gray-100 text-gray-500 uppercase tracking-wide">
+                            Not Started
+                        </span>
+                    </div>
+
+                    <h4 class="text-lg font-bold text-gray-900">Mid Term Exam</h4>
+                    <p class="text-sm text-gray-500 mt-1 mb-6 h-10">
+                        Includes Written Test (Vocab, Grammar, etc) & Speaking Assessment.
+                    </p>
+
+                    <div class="flex items-center gap-3">
+                        <a href="#" class="flex-1 inline-flex justify-center items-center px-4 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition shadow-blue-200">
+                            Manage Grades
+                        </a>
+                        <button disabled class="p-2.5 text-gray-400 bg-gray-100 rounded-lg cursor-not-allowed" title="Print Report Card">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- B. FINAL TERM EXAM CARD --}}
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden group hover:border-indigo-300 hover:shadow-md transition-all">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-bl-full -mr-6 -mt-6 transition-transform group-hover:scale-110"></div>
+                
+                <div class="relative z-10">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="p-3 bg-indigo-100 text-indigo-600 rounded-xl">
+                            {{-- Icon Graduation --}}
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"></path></svg>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-gray-100 text-gray-500 uppercase tracking-wide">
+                            Not Started
+                        </span>
+                    </div>
+
+                    <h4 class="text-lg font-bold text-gray-900">Final Term Exam</h4>
+                    <p class="text-sm text-gray-500 mt-1 mb-6 h-10">
+                        Comprehensive assessment covering all materials & Final Speaking Test.
+                    </p>
+
+                    <div class="flex items-center gap-3">
+                        <a href="#" class="flex-1 inline-flex justify-center items-center px-4 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition shadow-indigo-200">
+                            Manage Grades
+                        </a>
+                        <button disabled class="p-2.5 text-gray-400 bg-gray-100 rounded-lg cursor-not-allowed" title="Print Certificate">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
             </div>
         </div> {{-- Penutup Container Konten --}}
 
@@ -427,30 +482,15 @@
         {{-- INCLUDE MODALS (PARTIALS) --}}
         {{-- ====================================== --}}
         
-        {{-- Modal 1: Add/Assign Student --}}
-        @include('admin.classes.partials.assign-student-modal', [
-            'class' => $class, 
-            'availableStudents' => $availableStudents
-        ])
+        @include('admin.classes.partials.assign-student-modal', ['class' => $class, 'availableStudents' => $availableStudents])
+        @include('admin.classes.partials.activity-history-modal', ['teachingLogs' => $teachingLogs])
+        @include('admin.classes.partials.attendance-modal', ['studentStats' => $studentStats, 'teachingLogs' => $teachingLogs, 'attendanceMatrix' => $attendanceMatrix])
+        @include('admin.classes.partials.edit-class-modal', ['teachers' => $teachers, 'categories' => $categories, 'years' => $years])
 
-        {{-- Modal 2: Teaching History Logs --}}
-        @include('admin.classes.partials.activity-history-modal', [
-            'teachingLogs' => $teachingLogs
-        ])
-
-        {{-- Modal 3: Attendance Matrix (Report) --}}
-        @include('admin.classes.partials.attendance-modal', [
-            'studentStats' => $studentStats, 
-            'teachingLogs' => $teachingLogs, 
-            'attendanceMatrix' => $attendanceMatrix
-        ])
-    
-        {{-- Modal 4: Edit Class --}}
-        @include('admin.classes.partials.edit-class-modal', [
-            'teachers' => $teachers, 
-            'categories' => $categories, 
-            'years' => $years
-        ])
+        {{-- FORM HIDDEN UNTUK TOGGLE STATUS (DIPANGGIL OLEH SWEETALERT) --}}
+        <form id="toggleStatusForm" method="POST" action="#" style="display: none;">
+            @csrf @method('PATCH')
+        </form>
 
     </div> {{-- Penutup Wrapper Utama x-data --}}
 

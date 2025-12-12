@@ -80,8 +80,10 @@
                         @foreach($studentStats as $stat)
                             <tr class="hover:bg-gray-50 transition">
                                 {{-- Nama Siswa (Sticky Kiri) --}}
-                                <td class="px-4 py-3 bg-white sticky left-0 z-10 border-r border-gray-100 font-medium text-gray-900 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] group-hover:bg-gray-50">
-                                    <div class="truncate w-40" title="{{ $stat->name }}">{{ $stat->name }}</div>
+                                <td class="px-4 py-3 bg-white sticky left-0 z-10 border-r border-gray-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] group-hover:bg-gray-50">
+                                    <div class="truncate w-40 {{ $stat->is_active ? 'text-gray-900 font-medium' : 'text-red-800 line-through decoration-red-400' }}" title="{{ $stat->name }}">
+                                        {{ $stat->name }}
+                                    </div>
                                     <div class="text-[10px] text-gray-400 font-mono">{{ $stat->student_number }}</div>
                                 </td>
 
