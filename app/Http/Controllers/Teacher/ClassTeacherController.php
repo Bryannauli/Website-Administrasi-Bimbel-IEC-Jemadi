@@ -11,6 +11,7 @@ use App\Models\ClassModel; // Penting: panggil Model
 use App\Models\AttendanceSession; // Model untuk sesi absen
 use App\Models\AssessmentSession; // Model untuk sesi penilaian
 use Illuminate\Support\Facades\Auth; // Penting: untuk Auth::id()
+use Illuminate\Support\Facades\DB;
 
 class ClassTeacherController extends Controller
 {
@@ -79,27 +80,82 @@ class ClassTeacherController extends Controller
             ->with('success', 'New attendance session created!');
     }
 
-    public function sessionDetail($classId, $sessionId)
+public function sessionDetail($classId, $sessionId)
     {
+        // 1. Ambil data Kelas dan Sesi
         $class = ClassModel::findOrFail($classId);
-        
-        // Ambil Session beserta record absensinya (jika sudah pernah diisi)
-        $session = AttendanceSession::with('records')->findOrFail($sessionId);
+        $session = AttendanceSession::where('class_id', $classId)
+                                    ->where('id', $sessionId)
+                                    ->firstOrFail();
 
-        // Ambil Siswa Aktif di Kelas Tersebut
-        $students = Student::where('class_id', $classId)
-            ->where('is_active', true)
-            ->orderBy('name', 'asc')
-            ->get();
+        // 2. Ambil semua siswa di kelas ini
+        $students = $class->students() // Asumsi ada relasi students() di ClassModel
+                           ->where('is_active', 1)
+                           ->get();
 
-        // Map status kehadiran existing ke setiap siswa (untuk logic 'checked' di radio button)
-        // Jika belum ada record, defaultnya null (atau bisa kita set 'present')
-        foreach($students as $student) {
-            $existingRecord = $session->records->where('student_id', $student->id)->first();
-            $student->current_status = $existingRecord ? $existingRecord->status : null; 
-        }
+        // 3. Ambil data absensi yang sudah ada untuk sesi ini
+        $attendanceRecords = AttendanceRecord::where('attendance_session_id', $sessionId)
+                                             ->pluck('status', 'student_id')
+                                             ->toArray();
+
+        // 4. Gabungkan data siswa dengan status absensi
+        $students = $students->map(function ($student) use ($attendanceRecords) {
+            $student->current_status = $attendanceRecords[$student->id] ?? null;
+            
+            // Catatan: 'permission' di DB match dengan 'permitted' di Blade
+            if ($student->current_status == 'permission') {
+                $student->current_status = 'permitted';
+            }
+
+            return $student;
+        });
 
         return view('teacher.classes.session-attandance', compact('class', 'session', 'students'));
+    }
+
+    /**
+     * Memproses pembaruan absensi sesi.
+     */
+    public function updateSession(Request $request, $classId, $sessionId)
+    {
+        $request->validate([
+            'attendance' => 'required|array',
+            'attendance.*' => 'in:present,absent,late,permitted,sick', // Validasi status
+        ]);
+
+        $session = AttendanceSession::where('class_id', $classId)
+                                    ->where('id', $sessionId)
+                                    ->firstOrFail();
+
+        DB::beginTransaction();
+        try {
+            foreach ($request->input('attendance') as $studentId => $status) {
+                // Konversi 'permitted' dari Blade menjadi 'permission' di database
+                $dbStatus = ($status === 'permitted') ? 'permission' : $status;
+
+                AttendanceRecord::updateOrCreate(
+                    [
+                        'attendance_session_id' => $sessionId,
+                        'student_id' => $studentId,
+                    ],
+                    [
+                        'status' => $dbStatus,
+                    ]
+                );
+            }
+
+            // Tambahkan logika lain, misal: membuat log atau notifikasi
+
+            DB::commit();
+
+            return redirect()->route('teacher.classes.detail', $classId)
+                             ->with('success', 'Attendance for ' . \Carbon\Carbon::parse($session->date)->format('d F Y') . ' updated successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            // Log error $e
+            return redirect()->back()->with('error', 'Failed to update attendance: ' . $e->getMessage());
+        }
     }
 
     // 1. Menampilkan Halaman Input Nilai
