@@ -22,10 +22,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
 
-/* ============================================================================
- |  ROOT DAN DASHBOARD
- ============================================================================ */
-
+/* ROOT DAN DASHBOARD */
 Route::get('/', function () {
     if (Auth::check()) {
         return redirect()->route('dashboard');
@@ -47,12 +44,9 @@ Route::get('/dashboard', function () {
 
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-
-
 /* ============================================================================
  |  ADMIN ROUTES
  ============================================================================ */
-
 Route::middleware(['auth', 'verified', 'admin'])
     ->prefix('admin')
     ->name('admin.')
@@ -67,7 +61,6 @@ Route::middleware(['auth', 'verified', 'admin'])
         /* ADMIN PROFILE */
         Route::get('/profile', [ProfileController::class, 'editAdmin'])->name('profile');
 
-
         /* STUDENT */
         Route::prefix('student')->name('student.')->group(function () {
             Route::get('/', [StudentController::class, 'index'])->name('index');
@@ -78,7 +71,6 @@ Route::middleware(['auth', 'verified', 'admin'])
             Route::delete('/{id}', [StudentController::class, 'delete'])->name('delete');
             Route::get('/detail/{id}', [StudentController::class, 'detail'])->name('detail');
         });
-
 
         /* CLASS */
         Route::prefix('classes')->name('classes.')->group(function () {
@@ -92,16 +84,12 @@ Route::middleware(['auth', 'verified', 'admin'])
             Route::patch('/students/{studentId}/unassign', [ClassController::class, 'unassignStudent'])->name('unassignStudent');
         });
 
-
-        /* =====================================================================
-         | TEACHER LIST (versi admin)
-         ===================================================================== */
+        /* TEACHER LIST */
         Route::get('/teachers', [TeacherAdminController::class, 'index'])->name('teacher.index');
         Route::get('/teachers/add', [TeacherAdminController::class, 'create'])->name('teacher.add');
         Route::post('/teachers', [TeacherAdminController::class, 'store'])->name('teacher.store');
         Route::get('/teachers/{id}', [TeacherAdminController::class, 'show'])->name('teacher.show');
         Route::put('/teachers/{teacher}', [TeacherAdminController::class, 'update'])->name('teacher.update');
-
 
         /* =====================================================================
          | TEACHER ATTENDANCE RECORD
@@ -117,8 +105,6 @@ Route::middleware(['auth', 'verified', 'admin'])
         Route::get('/assessment/show', [AssessmentController::class, 'show'])->name('assessment.show');
         Route::post('/assessment/create', [AssessmentController::class, 'create'])->name('assessment.create');
     });
-
-
 
 /* ============================================================================
  |  TEACHER ROUTES (USER GURU)
@@ -176,8 +162,6 @@ Route::prefix('teacher')->name('teacher.')->middleware(['auth'])->group(function
     });
 });
 
-
-
 /* ============================================================================
  |  PROFILE (SEMUA USER)
  ============================================================================ */
@@ -187,6 +171,5 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
-
 
 require __DIR__.'/auth.php';
