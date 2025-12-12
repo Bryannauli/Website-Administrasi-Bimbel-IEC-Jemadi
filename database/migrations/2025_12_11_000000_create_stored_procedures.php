@@ -7,7 +7,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // 1. PROCEDURE UTAMA: Dashboard Stats (DIREVISI: Menghapus boys dan girls)
+        // ==========================================
+        // 1. PROCEDURE: Dashboard Stats
+        // ==========================================
+        // Menghitung total siswa, guru, dan kelas untuk Card Dashboard
         DB::unprepared('
             DROP PROCEDURE IF EXISTS p_GetDashboardStats;
             CREATE PROCEDURE p_GetDashboardStats(
@@ -22,7 +25,10 @@ return new class extends Migration
             END
         ');
 
-        // 2. PROCEDURE TAMBAHAN: Attendance Stats (Tidak Diubah)
+        // ==========================================
+        // 2. PROCEDURE: Attendance Stats (Global/Class)
+        // ==========================================
+        // Menghitung persentase kehadiran berdasarkan tanggal tertentu
         DB::unprepared("
             DROP PROCEDURE IF EXISTS p_GetAttendanceStats;
             CREATE PROCEDURE p_GetAttendanceStats(IN date_filter DATE)
@@ -38,11 +44,33 @@ return new class extends Migration
                 WHERE (date_filter IS NULL OR s.date = date_filter);
             END
         ");
+
+        // ==========================================
+        // 3. PROCEDURE: Student Attendance Summary
+        // ==========================================
+        // Menghitung rekap detail kehadiran spesifik per siswa (Untuk Halaman Detail Siswa)
+        DB::unprepared("
+            DROP PROCEDURE IF EXISTS p_get_attendance_summary;
+            CREATE PROCEDURE p_get_attendance_summary (IN studentId INT)
+            BEGIN
+                SELECT
+                    COUNT(*) AS total_days,
+                    SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) AS present,
+                    SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) AS absent,
+                    SUM(CASE WHEN status = 'late' THEN 1 ELSE 0 END) AS late,
+                    SUM(CASE WHEN status = 'permission' THEN 1 ELSE 0 END) AS permission,
+                    SUM(CASE WHEN status = 'sick' THEN 1 ELSE 0 END) AS sick,
+                    (SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) / COUNT(*)) * 100 AS present_percent
+                FROM attendance_records
+                WHERE student_id = studentId;
+            END
+        ");
     }
 
     public function down(): void
     {
         DB::unprepared('DROP PROCEDURE IF EXISTS p_GetDashboardStats');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_GetAttendanceStats');
+        DB::unprepared('DROP PROCEDURE IF EXISTS p_get_attendance_summary');
     }
 };

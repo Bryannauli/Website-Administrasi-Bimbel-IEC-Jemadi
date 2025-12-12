@@ -1,28 +1,79 @@
 <x-app-layout>
-
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight hidden">
             {{ __('Students') }}
         </h2>
     </x-slot>
 
-    {{-- KONTEN UTAMA --}}
-    <div class="py-6">
+    {{-- 
+        WRAPPER UTAMA
+        Menangani Add & Edit Modal sekaligus
+    --}}
+    <div class="py-6" x-data="{ 
+        showAddModal: {{ $errors->any() ? 'true' : 'false' }},
+        showEditModal: {{ Session::get('edit_failed') ? 'true' : 'false' }},
+        updateUrl: '',
+        deleteUrl: '',
+        
+        editForm: {
+            id: null,
+            student_number: '',
+            name: '',
+            gender: 'male',
+            phone: '',
+            address: '',
+            is_active: true,
+            class_id: ''
+        },
+
+        // Fungsi buka modal edit & populate data
+        openEditModal(student) {
+            this.editForm = {
+                id: student.id,
+                student_number: student.student_number,
+                name: student.name,
+                gender: student.gender,
+                phone: student.phone || '',
+                address: student.address || '',
+                is_active: student.is_active == 1,
+                class_id: student.class_id || ''
+            };
+
+            // Setup URL untuk form update & delete
+            this.updateUrl = '{{ route('admin.student.update', ':id') }}'.replace(':id', student.id);
+            this.deleteUrl = '{{ route('admin.student.delete', ':id') }}'.replace(':id', student.id);
+            
+            this.showEditModal = true;
+        },
+
+        // Konfirmasi Delete (Dipanggil dari Edit Modal)
+        confirmDelete() {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: 'This student will be moved to trash (Soft Delete).',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#EF4444',
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: 'Yes, Delete'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('delete-student-form').submit();
+                }
+            });
+        }
+    }">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
-            {{-- BREADCRUMB (CONSISTENT STYLE: Dashboard > Students) --}}
+            {{-- BREADCRUMB --}}
             <nav class="flex mb-5" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-3">
-                    
-                    {{-- 1. Dashboard --}}
                     <li class="inline-flex items-center">
                         <a href="{{ route('dashboard') }}" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600">
                             <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
                             Dashboard
                         </a>
                     </li>
-
-                    {{-- 2. Students (Current Page) --}}
                     <li aria-current="page">
                         <div class="flex items-center">
                             <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
@@ -32,14 +83,14 @@
                 </ol>
             </nav>
 
-            {{-- Title Section --}}
+            {{-- TITLE --}}
             <div class="mb-8">
                 <h1 class="text-3xl font-bold bg-gradient-to-b from-blue-500 to-red-500 bg-clip-text text-transparent">
                     Students Data
                 </h1>
             </div>
 
-            {{-- Stats Card --}}
+            {{-- STATS CARD --}}
             <div class="bg-white rounded-xl shadow-sm p-4 mb-8 max-w-xl border border-gray-100">
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div class="flex items-center gap-6 w-full sm:w-auto">
@@ -61,208 +112,116 @@
                 </div>
             </div>
 
-            {{-- Table Section --}}
+            {{-- TABLE SECTION --}}
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
 
-                {{-- Table Header Actions --}}
+                {{-- FILTERS & ACTIONS --}}
                 <div class="p-4 sm:p-6 border-b border-gray-200 flex flex-col gap-4">
                     
-                    {{-- BARIS 1: SEARCH BAR --}}
+                    {{-- Search --}}
                     <div class="w-full">
                         <form action="{{ route('admin.student.index') }}" method="GET" class="relative w-full">
-                            @if(request('academic_year')) <input type="hidden" name="academic_year" value="{{ request('academic_year') }}"> @endif
-                            @if(request('category')) <input type="hidden" name="category" value="{{ request('category') }}"> @endif
-                            @if(request('class_id')) <input type="hidden" name="class_id" value="{{ request('class_id') }}"> @endif
-                            @if(request('sort')) <input type="hidden" name="sort" value="{{ request('sort') }}"> @endif
-                            
-                            <input type="text" name="search" value="{{ request('search') }}" 
-                                   placeholder="Search student name or ID..." 
-                                   class="w-full h-11 pl-12 pr-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm shadow-sm transition-all">
-
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
+                            @foreach(['academic_year', 'category', 'class_id', 'sort'] as $key)
+                                @if(request($key)) <input type="hidden" name="{{ $key }}" value="{{ request($key) }}"> @endif
+                            @endforeach
+                            <input type="text" name="search" value="{{ request('search') }}" placeholder="Search student name or ID..." class="w-full h-11 pl-12 pr-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg></div>
                         </form>
                     </div>
 
-                    {{-- BARIS 2: FILTERS & ADD BUTTON --}}
+                    {{-- Filters --}}
                     <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-
-                        {{-- FILTER FORM --}}
                         <form action="{{ route('admin.student.index') }}" method="GET" class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
                             @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
 
-                            {{-- Filter Tahun --}}
-                            <div class="relative flex-grow sm:flex-grow-0">
-                                <select name="academic_year" onchange="this.form.submit()" 
-                                        class="appearance-none h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 bg-gray-50 focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                                    <option value="">All Years</option>
-                                    @foreach($years as $year)
-                                        <option value="{{ $year }}" {{ request('academic_year') == $year ? 'selected' : '' }}>{{ $year }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            {{-- Filter Category --}}
-                            <div class="relative flex-grow sm:flex-grow-0">
-                                <select name="category" onchange="this.form.submit()" 
-                                        class="appearance-none h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                                    <option value="">Category</option>
-                                    @foreach($categories as $cat)
-                                        <option value="{{ $cat }}" {{ request('category') == $cat ? 'selected' : '' }}>{{ ucwords(str_replace('_', ' ', $cat)) }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            {{-- Filter Kelas --}}
-                            <div class="relative flex-grow sm:flex-grow-0">
-                                <select name="class_id" onchange="this.form.submit()" 
-                                        class="appearance-none h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer max-w-[200px] truncate">
-                                    <option value="">All Classes</option>
-                                    <option value="no_class" class="text-red-600 font-semibold" {{ request('class_id') == 'no_class' ? 'selected' : '' }}>⚠ No Class</option>
-                                    @forelse($classes as $classItem)
-                                        <option value="{{ $classItem->id }}" {{ request('class_id') == $classItem->id ? 'selected' : '' }}>{{ $classItem->name }}</option>
-                                    @empty
-                                        @if(request('class_id') != 'no_class') <option value="" disabled>No classes</option> @endif
-                                    @endforelse
-                                </select>
-                            </div>
-
-                            {{-- Sort --}}
-                            <div class="relative flex-grow sm:flex-grow-0">
-                                <select name="sort" onchange="this.form.submit()" 
-                                        class="appearance-none h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                                    <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Newest</option>
-                                    <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest</option>
-                                    <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>A-Z</option>
-                                    <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Z-A</option>
-                                </select>
-                            </div>
-
-                            {{-- Reset --}}
+                            <div class="relative"><select name="academic_year" onchange="this.form.submit()" class="h-10 w-full px-3 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:ring-blue-500"><option value="">All Years</option>@foreach($years as $y)<option value="{{$y}}" {{request('academic_year')==$y?'selected':''}}>{{$y}}</option>@endforeach</select></div>
+                            <div class="relative"><select name="category" onchange="this.form.submit()" class="h-10 w-full px-3 border border-gray-300 rounded-lg text-sm bg-white focus:ring-blue-500"><option value="">Category</option>@foreach($categories as $c)<option value="{{$c}}" {{request('category')==$c?'selected':''}}>{{ucwords(str_replace('_',' ',$c))}}</option>@endforeach</select></div>
+                            <div class="relative"><select name="class_id" onchange="this.form.submit()" class="h-10 w-full px-3 border border-gray-300 rounded-lg text-sm bg-white focus:ring-blue-500 max-w-[200px]"><option value="">All Classes</option><option value="no_class" class="text-red-600" {{request('class_id')=='no_class'?'selected':''}}>⚠ No Class</option>@foreach($classes as $c)<option value="{{$c->id}}" {{request('class_id')==$c->id?'selected':''}}>{{$c->name}}</option>@endforeach</select></div>
+                            <div class="relative"><select name="sort" onchange="this.form.submit()" class="h-10 w-full px-3 border border-gray-300 rounded-lg text-sm bg-white focus:ring-blue-500"><option value="newest" {{request('sort')=='newest'?'selected':''}}>Newest</option><option value="oldest" {{request('sort')=='oldest'?'selected':''}}>Oldest</option><option value="name_asc" {{request('sort')=='name_asc'?'selected':''}}>A-Z</option></select></div>
                             @if(request('class_id') || request('academic_year') || request('category') || request('sort') || request('search'))
-                                <a href="{{ route('admin.student.index') }}" class="h-10 w-10 flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg transition-colors flex-shrink-0" title="Reset Filters">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                </a>
+                                <a href="{{ route('admin.student.index') }}" class="h-10 w-10 flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></a>
                             @endif
                         </form>
 
-                        {{-- ADD BUTTON --}}
+                        {{-- Add Button --}}
                         <div class="w-full lg:w-auto">
-                            <a href="{{ route('admin.student.add') }}" 
-                               class="inline-flex w-full lg:w-auto items-center justify-center gap-2 px-5 h-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm whitespace-nowrap">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                                </svg>
+                            <button @click="showAddModal = true" class="inline-flex w-full lg:w-auto items-center justify-center gap-2 px-5 h-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm whitespace-nowrap">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" /></svg>
                                 Add New Student
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                {{-- Table --}}
+                {{-- TABLE CONTENT --}}
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse min-w-max">
                         <thead class="bg-gray-50 text-xs text-gray-500 font-bold uppercase border-b border-gray-200">
                             <tr>
-                                <th class="px-6 py-4 whitespace-nowrap">No</th>
-                                <th class="px-6 py-4 whitespace-nowrap">Student ID</th>
-                                <th class="px-6 py-4 whitespace-nowrap">Name</th>
-                                <th class="px-6 py-4 whitespace-nowrap">Gender</th>
-                                <th class="px-6 py-4 whitespace-nowrap">Phone</th>
-                                <th class="px-6 py-4 whitespace-nowrap">Address</th>
-                                <th class="px-6 py-4 whitespace-nowrap">Class</th>
-                                <th class="px-6 py-4 whitespace-nowrap text-center">Active</th>
-                                <th class="px-6 py-4 whitespace-nowrap text-center">Action</th>
+                                <th class="px-6 py-4">No</th>
+                                <th class="px-6 py-4">Student ID</th>
+                                <th class="px-6 py-4">Name</th>
+                                <th class="px-6 py-4">Gender</th>
+                                <th class="px-6 py-4">Phone</th>
+                                <th class="px-6 py-4">Class</th>
+                                <th class="px-6 py-4 text-center">Active</th>
+                                <th class="px-6 py-4 text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
-
-                            @php
-                                $startNumber = ($students->currentPage() - 1) * $students->perPage() + 1;
-                            @endphp
-
+                            @php $startNumber = ($students->currentPage() - 1) * $students->perPage() + 1; @endphp
                             @forelse ($students as $index => $student)
                                 <tr class="hover:bg-gray-50 transition-colors">
-                                    <td class="px-6 py-4 text-gray-500 font-medium whitespace-nowrap">{{ $startNumber + $index }}</td>
-                                    <td class="px-6 py-4 font-bold text-gray-900 whitespace-nowrap">{{ $student->student_number ?? $student->student_id }}</td>
-                                    <td class="px-6 py-4 font-semibold text-gray-800 whitespace-nowrap">{{ $student->name }}</td>
-                                    <td class="px-6 py-4 capitalize whitespace-nowrap">{{ $student->gender }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">{{ $student->phone ?? '-' }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">{{ $student->address ?? '-' }}</td>
-                                    <td class="px-6 py-4 text-center whitespace-nowrap">
-                                        @if($student->classModel)
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{{ $student->classModel->name }}</span>
-                                        @else
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-600 border border-red-200">Unassigned</span>
-                                        @endif
+                                    <td class="px-6 py-4 text-gray-500 font-medium">{{ $startNumber + $index }}</td>
+                                    <td class="px-6 py-4 font-bold text-gray-900">{{ $student->student_number }}</td>
+                                    <td class="px-6 py-4 font-semibold text-gray-800">{{ $student->name }}</td>
+                                    <td class="px-6 py-4 capitalize">{{ $student->gender }}</td>
+                                    <td class="px-6 py-4">{{ $student->phone ?? '-' }}</td>
+                                    <td class="px-6 py-4 text-center">
+                                        @if($student->classModel) <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{{ $student->classModel->name }}</span>
+                                        @else <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-600 border border-red-200">Unassigned</span> @endif
                                     </td>
-                                    <td class="px-6 py-4 text-center whitespace-nowrap">
-                                        @if($student->is_active == 1 || $student->status == 'active')
-                                            <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">Active</span>
-                                        @else
-                                            <span class="px-3 py-1 bg-gray-100 text-gray-500 rounded-full text-xs font-bold">Inactive</span>
-                                        @endif
+                                    <td class="px-6 py-4 text-center">
+                                        @if($student->is_active) <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">Active</span>
+                                        @else <span class="px-3 py-1 bg-gray-100 text-gray-500 rounded-full text-xs font-bold">Inactive</span> @endif
                                     </td>
-                                    <td class="px-6 py-4 text-center whitespace-nowrap">
+                                    <td class="px-6 py-4 text-center">
                                         <div class="flex items-center justify-center gap-3">
+                                            <a href="{{ route('admin.student.detail', $student->id) }}" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Detail"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg></a>
                                             
-                                            {{-- View --}}
-                                            <a href="{{ route('admin.student.detail', $student->id) }}" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View Details">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                                            </a>
+                                            {{-- TRIGGER EDIT MODAL --}}
+                                            <button type="button" @click='openEditModal(@json($student))' class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg" title="Edit"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
 
-                                            {{-- Edit (WITH REF=LIST) --}}
-                                            <a href="{{ route('admin.student.edit', ['id' => $student->id, 'ref' => 'list']) }}" class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Edit">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                            </a>
-
-                                            {{-- Toggle Status --}}
                                             <form action="{{ route('admin.student.toggleStatus', $student->id) }}" method="POST" class="inline-block">
-                                                @csrf
-                                                @method('PATCH')
-                                                @if($student->is_active)
-                                                    <button type="submit" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Deactivate Student"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg></button>
-                                                @else
-                                                    <button type="submit" class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Activate Student"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button>
-                                                @endif
+                                                @csrf @method('PATCH')
+                                                <button type="submit" class="p-1.5 text-gray-400 {{ $student->is_active ? 'hover:text-red-600' : 'hover:text-green-600' }} hover:bg-gray-50 rounded-lg" title="Toggle Status">
+                                                    @if($student->is_active) <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                                                    @else <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> @endif
+                                                </button>
                                             </form>
                                         </div>
                                     </td>
                                 </tr>
                             @empty
-                                <tr>
-                                    <td colspan="9" class="px-6 py-10 text-center text-gray-500">
-                                        <div class="flex flex-col items-center justify-center">
-                                            <svg class="w-12 h-12 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                                            <p class="text-base font-medium">No students found.</p>
-                                        </div>
-                                    </td>
-                                </tr>
+                                <tr><td colspan="9" class="px-6 py-10 text-center text-gray-500">No students found.</td></tr>
                             @endforelse
-
                         </tbody>
                     </table>
                 </div>
 
                 {{-- Pagination --}}
                 <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white">
-                    @if ($students->onFirstPage())
-                        <button class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-400 bg-white cursor-not-allowed" disabled>Previous</button>
-                    @else
-                        <a href="{{ $students->previousPageUrl() }}" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 hover:text-gray-800 transition-colors">Previous</a>
-                    @endif
-                    <span class="text-sm text-gray-500 font-medium">Page {{ $students->currentPage() }} of {{ $students->lastPage() }}</span>
-                    @if ($students->hasMorePages())
-                        <a href="{{ $students->nextPageUrl() }}" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 hover:text-gray-800 transition-colors">Next</a>
-                    @else
-                        <button class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-400 bg-white cursor-not-allowed" disabled>Next</button>
-                    @endif
+                    {{ $students->links() }} {{-- Gunakan default Laravel links jika mau simpel, atau custom view --}}
                 </div>
 
             </div>
         </div>
+
+        {{-- INCLUDE PARTIALS --}}
+        @include('admin.student.partials.add-modal')
+        @include('admin.student.partials.edit-modal', ['showClassAssignment' => false]) {{-- Lite Mode for List --}}
+
     </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </x-app-layout>

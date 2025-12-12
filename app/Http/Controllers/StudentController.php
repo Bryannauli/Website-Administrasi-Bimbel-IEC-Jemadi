@@ -4,20 +4,17 @@ namespace App\Http\Controllers;
 
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use App\Models\ClassModel;
 use App\Models\Student;
-use App\Models\AttendanceRecord;
-use App\Models\AttendanceSession;
-
-
 
 class StudentController extends Controller
 {
-    // Halaman List Siswa
+    /**
+     * Halaman List Siswa (Index)
+     */
     public function index(Request $request)
     {
         // 1. STATISTIK
@@ -25,72 +22,35 @@ class StudentController extends Controller
         $total_active   = Student::where('is_active', 1)->count();
         $total_inactive = Student::where('is_active', 0)->count();
 
-
-        // 2. SIAPKAN DATA FILTER (TAHUN & KELAS)
-        // A. Ambil daftar tahun unik dari tabel kelas untuk dropdown pertama
-        $years = ClassModel::select('academic_year')
-                    ->distinct()
-                    ->orderBy('academic_year', 'desc')
-                    ->pluck('academic_year');
-
-        // B. Ambil Daftar Kategori Unik (Pre-level, Level, Step, dll)
+        // 2. SIAPKAN DATA FILTER
+        $years = ClassModel::select('academic_year')->distinct()->orderBy('academic_year', 'desc')->pluck('academic_year');
         $categories = ClassModel::select('category')->distinct()->pluck('category');
 
-        // C. Query untuk isi Dropdown Kelas (Dipengaruhi Tahun & Kategori)
+        // 3. Query Dropdown Kelas
         $classQuery = ClassModel::orderBy('name', 'asc');
-
-        // Jika tahun akademik dipilih, saring daftar kelasnya
-        if ($request->filled('academic_year')) {
-            $classQuery->where('academic_year', $request->academic_year);
-        }
-
-        // Jika kategori dipilih, saring daftar kelasnya
-        if ($request->filled('category')) {
-            $classQuery->where('category', $request->category);
-        }
-        
+        if ($request->filled('academic_year')) $classQuery->where('academic_year', $request->academic_year);
+        if ($request->filled('category')) $classQuery->where('category', $request->category);
         $classes = $classQuery->get();
 
-        // 3. QUERY DATA SISWA (UTAMA)
+        // 4. QUERY DATA SISWA
         $query = Student::with('classModel');
 
-        // Filter A: Berdasarkan Tahun Akademik (via Relasi Kelas)
-        // PENTING: Jika user mencari siswa "Tanpa Kelas", kita harus ABAIKAN filter tahun.
-        // Karena siswa tanpa kelas tidak punya tahun akademik.
+        // Filter Logic
         if ($request->filled('academic_year') && $request->class_id != 'no_class') {
-            $query->whereHas('classModel', function($q) use ($request) {
-                $q->where('academic_year', $request->academic_year);
-            });
+            $query->whereHas('classModel', fn($q) => $q->where('academic_year', $request->academic_year));
         }
-
-        // Filter B: Berdasarkan Kategori Kelas (via Relasi Kelas)
         if ($request->filled('category') && $request->class_id != 'no_class') {
-            $query->whereHas('classModel', function($q) use ($request) {
-                $q->where('category', $request->category);
-            });
+            $query->whereHas('classModel', fn($q) => $q->where('category', $request->category));
         }
-
-        // Filter C: Berdasarkan Kelas Spesifik
         if ($request->filled('class_id')) {
-            if ($request->class_id == 'no_class') {
-                // Cari yang class_id-nya NULL jika memilih "Tanpa Kelas"
-                $query->whereNull('class_id'); 
-            } else {
-                // Cari berdasarkan ID kelas
-                $query->where('class_id', $request->class_id);
-            }
+            $request->class_id == 'no_class' ? $query->whereNull('class_id') : $query->where('class_id', $request->class_id);
         }
-
-        // Filter D: Search
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'LIKE', "%$search%")
-                    ->orWhere('student_number', 'LIKE', "%$search%");
-            });
+            $query->where(fn($q) => $q->where('name', 'LIKE', "%$search%")->orWhere('student_number', 'LIKE', "%$search%"));
         }
 
-        // Filter E: Sort
+        // Sorting
         $sort = $request->get('sort', 'newest');
         switch ($sort) {
             case 'name_asc': $query->orderBy('name', 'asc'); break;
@@ -100,38 +60,17 @@ class StudentController extends Controller
             case 'newest': default: $query->orderBy('created_at', 'desc'); break;
         }
 
-        // Eksekusi Pagination
         $students = $query->paginate(10)->appends($request->query());
 
-
-        // 4. RETURN VIEW
         return view('admin.student.student', compact(
-            'students',
-            'classes',
-            'years',
-            'categories',
-            'total_students',
-            'total_active',
-            'total_inactive'
+            'students', 'classes', 'years', 'categories',
+            'total_students', 'total_active', 'total_inactive'
         ));
     }
 
-    // Halaman Form Tambah Siswa
-    public function add()
-    {
-        // 1. Ambil HANYA kelas yang AKTIF
-        // Urutkan berdasarkan kategori lalu nama, biar rapi
-        $classes = \App\Models\ClassModel::where('is_active', true)
-                    ->orderBy('category')
-                    ->orderBy('name')
-                    ->get();
-
-        // 2. Ambil daftar kategori unik dari koleksi kelas aktif tadi
-        $categories = $classes->pluck('category')->unique();
-
-        return view('admin.student.add-student', compact('classes', 'categories'));
-    }
-
+    /**
+     * Proses Simpan Siswa Baru
+     */
     public function store(Request $request)
     {
         $request->validate([
@@ -143,40 +82,36 @@ class StudentController extends Controller
             'class_id'       => 'nullable|exists:classes,id',
         ]);
         
-        Student::create([
-            'student_number' => $request->student_number,
-            'name'           => $request->name,
-            'gender'         => $request->gender,
-            'phone'          => $request->phone,
-            'address'        => $request->address,
-            'class_id'       => $request->class_id,
-            'is_active'      => 1,
-        ]);
+        Student::create(array_merge($request->all(), ['is_active' => 1]));
         
-        return redirect()->route('admin.student.index')
-        ->with('success', 'Student berhasil ditambahkan!');
+        return redirect()->route('admin.student.index')->with('success', 'Student successfully added!');
     }
     
-    // Halaman Detail Siswa
+    /**
+     * Halaman Detail Siswa (Sekarang juga menangani Modal Edit)
+     */
     public function detail($id)
     {
         $student = Student::findOrFail($id);
 
-        // 1. Mengambil data attendance menggunakan View
-        // View menggantikan join AttendanceRecord::with('session')
+        // --- [BARU] Data untuk Modal Edit ---
+        $classes = ClassModel::where('is_active', true)
+                    ->orderBy('category')
+                    ->orderBy('name')
+                    ->get();
+        $categories = $classes->pluck('category')->unique();
+        // ------------------------------------
+
+        // 1. Ambil History Absensi (View)
         $attendance = DB::table('v_student_attendance')
             ->where('student_id', $id)
-            ->orderBy('session_date', 'DESC') // Menggunakan kolom date dari view
+            ->orderBy('session_date', 'DESC')
             ->get();
 
-        // 2. Mengambil Summary Attendance menggunakan Stored Procedure
-        // SP menggantikan semua logika kalkulasi summary
-        $rawSummary = DB::select("CALL sp_get_attendance_summary(?)", [$id]);
-
-        // DB::select mengembalikan array. Ambil hasil pertama (dan satu-satunya)
+        // 2. Ambil Summary Statistik (Stored Procedure)
+        $rawSummary = DB::select("CALL p_get_attendance_summary(?)", [$id]);
         $summaryData = $rawSummary[0];
 
-        // Format ulang data summary dari SP
         $summary = [
             'present'      => $summaryData->present,
             'absent'       => $summaryData->absent,
@@ -186,74 +121,43 @@ class StudentController extends Controller
         ];
 
         $totalDays = $summaryData->total_days;
-        $presentPercent = round($summaryData->present_percent); // Sudah dikalkulasi di SP
+        $presentPercent = round($summaryData->present_percent);
 
-        // Catatan: Logika Last 7 Days (iterasi harian) paling baik tetap di PHP/Laravel
-        // karena menggunakan library Carbon dan looping tanggal, lebih fleksibel di sisi aplikasi.
-        
-        // ... (Logika Last 7 Days tetap sama seperti kode Anda) ...
+        // 3. Grafik 7 Hari Terakhir
         $last7Days = [];
         $today = Carbon::today();
 
-        // ... (Looping 7 hari dan query per hari masih menggunakan DB::table) ...
-        // Anda BISA menggunakan View v_student_attendance di sini untuk simplifikasi:
         for ($i = 6; $i >= 0; $i--) {
             $date = $today->copy()->subDays($i)->format('Y-m-d');
-
-            $record = DB::table('v_student_attendance') // Menggunakan View
+            
+            // Cek status via View
+            $record = DB::table('v_student_attendance')
                 ->where('student_id', $student->id)
                 ->where('session_date', $date)
                 ->select('status')
                 ->first();
 
             $status = $record->status ?? 'none';
-
-            $last7Days[] = [
-                'date' => $date,
-                'day' => Carbon::parse($date)->format('D'),
-                'status' => $status
-            ];
+            $last7Days[] = ['date' => $date, 'day' => Carbon::parse($date)->format('D'), 'status' => $status];
         }
         
-        // Rentang tanggal
         $rangeStart = $today->copy()->subDays(6)->format('d M Y');
         $rangeEnd   = $today->format('d M Y');
 
-
         return view('admin.student.detail-student', compact(
-            'student',
-            'attendance',
-            'summary',
-            'presentPercent',
-            'totalDays',
-            'last7Days',
-            'rangeStart',
-            'rangeEnd',
+            'student', 'attendance', 'summary', 'presentPercent', 
+            'totalDays', 'last7Days', 'rangeStart', 'rangeEnd',
+            'classes', 'categories' // Kirim data kelas & kategori untuk modal edit
         ));
     }
-    // Halaman Edit Siswa
-    public function edit($id)
-    {
-        $student = Student::findOrFail($id);
-        
-        // 1. Ambil HANYA kelas yang AKTIF
-        $classes = \App\Models\ClassModel::where('is_active', true)
-        ->orderBy('category')
-        ->orderBy('name')
-        ->get();
-        
-        // 2. Ambil daftar kategori unik untuk dropdown filter
-        $categories = $classes->pluck('category')->unique();
-        
-        return view('admin.student.edit-student', compact('student', 'classes', 'categories'));
-    }
-    
-    // Proses Update Siswa
+
+    /**
+     * Proses Update Data Siswa
+     */
     public function update(Request $request, $id)
     {
-        // Validasi
         $data = $request->validate([
-            'student_number' => ['required', 'string', \Illuminate\Validation\Rule::unique('students')->ignore($id)],
+            'student_number' => ['required', 'string', Rule::unique('students')->ignore($id)],
             'name'           => 'required|string|max:255',
             'gender'         => 'required|in:male,female',
             'phone'          => 'nullable|string|max:30',
@@ -264,49 +168,54 @@ class StudentController extends Controller
         
         try {
             $student = Student::findOrFail($id);
-            
-            // Update data
             $student->update($data);
             
-            return redirect()->route('admin.student.index')
-            ->with('success', 'Student updated successfully.');
+            // Redirect BACK ke halaman detail (karena edit sekarang ada di modal detail)
+            return back()->with('success', 'Student profile updated successfully.');
             
         } catch (\Throwable $e) {
             Log::error('Student update failed: '.$e->getMessage());
-            return back()->withInput()->with('error', 'Update failed: '.$e->getMessage());
+            return back()->withInput()->with('error', 'Update failed: '.$e->getMessage())->with('edit_failed', true);
         }
     }
     
+    /**
+     * Toggle Status (Active/Inactive)
+     */
     public function toggleStatus($id)
     {
         $student = Student::findOrFail($id);
+        $student->update(['is_active' => !$student->is_active]);
         
-        // Switch status (jika 1 jadi 0, jika 0 jadi 1)
-        $student->update([
-            'is_active' => !$student->is_active
-        ]);
-
         $statusText = $student->is_active ? 'activated' : 'deactivated';
-        
         return back()->with('success', "Student has been {$statusText}.");
     }
     
+    /**
+     * Soft Delete Siswa
+     */
     public function delete($id)
     {
         try {
-            // FindOrFail otomatis hanya mencari data yg aktif (belum dihapus)
             $student = Student::findOrFail($id);
-            
-            // Karena pakai Trait SoftDeletes, ini otomatis jadi Soft Delete
-            $student->delete();
+            $student->delete(); 
 
-            return redirect()
-                ->route('admin.student.index')
-                // Ubah pesan agar informatif
+            return redirect()->route('admin.student.index')
                 ->with('success', 'Student moved to trash. Data is safe and hidden.');
                 
         } catch (\Exception $e) {
             return back()->with('error', 'Failed to delete student: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Halaman Edit Siswa (Opsional/Fallback)
+     * Bisa dihapus jika semua edit dilakukan lewat Modal di Detail.
+     * Tapi disarankan simpan saja agar route 'admin.student.edit' tidak 404 jika diakses langsung.
+     */
+    public function edit($id)
+    {
+        // Redirect langsung ke detail karena form edit sudah di sana
+        return redirect()->route('admin.student.detail', $id);
     }
 }

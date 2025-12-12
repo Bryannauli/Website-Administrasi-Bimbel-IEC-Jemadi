@@ -71,7 +71,6 @@ Route::middleware(['auth', 'verified', 'admin'])
         /* STUDENT */
         Route::prefix('student')->name('student.')->group(function () {
             Route::get('/', [StudentController::class, 'index'])->name('index');
-            Route::get('/add', [StudentController::class, 'add'])->name('add');
             Route::post('/', [StudentController::class, 'store'])->name('store');
             Route::get('/edit/{id}', [StudentController::class, 'edit'])->name('edit');
             Route::put('/update/{id}', [StudentController::class, 'update'])->name('update');

@@ -10,7 +10,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // 1. View: v_weekly_absence (Laporan Absen Mingguan)
+        // ==========================================
+        // 1. View: v_weekly_absence
+        // ==========================================
         DB::unprepared("
             CREATE OR REPLACE VIEW v_weekly_absence AS
             SELECT 
@@ -22,7 +24,9 @@ return new class extends Migration
             GROUP BY DATE(attendance_sessions.date);
         ");
 
-        // 2. View: v_attendance_summary (Statistik Absensi Bulanan/Harian)
+        // ==========================================
+        // 2. View: v_attendance_summary
+        // ==========================================
         DB::unprepared("
             CREATE OR REPLACE VIEW v_attendance_summary AS
             SELECT
@@ -38,8 +42,9 @@ return new class extends Migration
             GROUP BY t2.date
         ");
 
-        // 3. View: v_today_schedule (Jadwal Kelas Hari Ini)
-        // Memfilter berdasarkan DAYNAME(NOW()) yang mengacu pada kolom schedules.day_of_week
+        // ==========================================
+        // 3. View: v_today_schedule
+        // ==========================================
         DB::unprepared("
             CREATE OR REPLACE VIEW v_today_schedule AS
             SELECT
@@ -60,14 +65,53 @@ return new class extends Migration
                 AND c.is_active = TRUE
             ORDER BY c.start_time, c.name;
         ");
+
+        // ==========================================
+        // 4. View: v_student_attendance (FIXED)
+        // ==========================================
+        // Perbaikan: Join ke table classes (c) untuk ambil c.name sebagai session_name
+        DB::unprepared("
+            CREATE OR REPLACE VIEW v_student_attendance AS
+            SELECT 
+                ar.student_id,
+                ar.status,
+                ar.created_at,
+                ar.updated_at,
+                s.date AS session_date,
+                c.name AS session_name 
+            FROM attendance_records ar
+            JOIN attendance_sessions s ON ar.attendance_session_id = s.id
+            JOIN classes c ON s.class_id = c.id; 
+        ");
+
+        // ==========================================
+        // 5. View: v_teacher_attendance (FIXED)
+        // ==========================================
+        // Perbaikan: Join ke table classes (c) untuk ambil c.name sebagai session_name
+        DB::unprepared("
+            CREATE OR REPLACE VIEW v_teacher_attendance AS
+            SELECT 
+                tar.id AS record_id,
+                tar.teacher_id,
+                tar.status,
+                tar.created_at,
+                tar.attendance_session_id,
+                s.date AS session_date,
+                c.name AS session_name
+            FROM teacher_attendance_records tar
+            JOIN attendance_sessions s ON tar.attendance_session_id = s.id
+            JOIN classes c ON s.class_id = c.id
+            ORDER BY tar.id DESC;
+        ");
     }
 
     /**
-     * Reverse the migrations (Menghapus Views jika dilakukan rollback).
+     * Reverse the migrations.
      */
     public function down(): void
     {
-        // Hapus semua views yang dibuat
+        DB::unprepared("DROP VIEW IF EXISTS v_teacher_attendance");
+        DB::unprepared("DROP VIEW IF EXISTS v_student_attendance");
         DB::unprepared("DROP VIEW IF EXISTS v_today_schedule");
         DB::unprepared("DROP VIEW IF EXISTS v_attendance_summary"); 
         DB::unprepared("DROP VIEW IF EXISTS v_weekly_absence");
