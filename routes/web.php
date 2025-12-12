@@ -68,9 +68,7 @@ Route::middleware(['auth', 'verified', 'admin'])
         Route::get('/profile', [ProfileController::class, 'editAdmin'])->name('profile');
 
 
-        /* =====================================================================
-         | STUDENT
-         ===================================================================== */
+        /* STUDENT */
         Route::prefix('student')->name('student.')->group(function () {
             Route::get('/', [StudentController::class, 'index'])->name('index');
             Route::get('/add', [StudentController::class, 'add'])->name('add');
@@ -83,18 +81,16 @@ Route::middleware(['auth', 'verified', 'admin'])
         });
 
 
-        /* =====================================================================
-         | CLASS
-         ===================================================================== */
+        /* CLASS */
         Route::prefix('classes')->name('classes.')->group(function () {
             Route::get('/', [ClassController::class, 'index'])->name('index');
             Route::post('/store', [ClassController::class, 'store'])->name('store');
             Route::put('/{id}', [ClassController::class, 'update'])->name('update');
+            Route::patch('/{id}/toggle-status', [ClassController::class, 'toggleStatus'])->name('toggleStatus');
+            Route::delete('/{id}', [ClassController::class, 'delete'])->name('delete');
             Route::get('/detail/{id}', [ClassController::class, 'detailClass'])->name('detailclass');
-
-            // yang lama, tapi dibiarkan jika masih dipakai
-            Route::get('/{id}', [ClassController::class, 'class'])->name('class');
-            Route::get('/{id}/students', [ClassController::class, 'students'])->name('students');
+            Route::post('/{id}/assign-student', [ClassController::class, 'assignStudent'])->name('assignStudent');
+            Route::patch('/students/{studentId}/unassign', [ClassController::class, 'unassignStudent'])->name('unassignStudent');
         });
 
 

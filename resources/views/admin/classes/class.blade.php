@@ -1,8 +1,14 @@
 <x-app-layout>
     <x-slot name="header"></x-slot>
 
-    {{-- x-data UTAMA UNTUK MODAL EDIT --}}
+    {{-- 
+        MAIN WRAPPER: 
+        Menggabungkan logika Add, Edit, Toggle Status, dan Delete dalam satu scope Alpine.js
+    --}}
     <div class="py-6" x-data="{ 
+        // =====================================================================
+        // 1. ADD & EDIT LOGIC
+        // =====================================================================
         showAddModal: false, 
         showEditModal: false,
         
@@ -22,7 +28,9 @@
             status: 'active'
         },
 
+        // URL Templates
         updateUrl: '{{ route('admin.classes.update', ':id') }}',
+        deleteUrlTemplate: '{{ route('admin.classes.delete', 'PLACEHOLDER') }}',
         
         getUpdateUrl() {
             return this.editForm.id ? this.updateUrl.replace(':id', this.editForm.id) : '#';
@@ -44,6 +52,61 @@
             this.editForm.status = data.is_active ? 'active' : 'inactive'; 
             
             this.showEditModal = true;
+        },
+
+        // =====================================================================
+        // 2. DELETE LOGIC (DANGER ZONE)
+        // =====================================================================
+        confirmDelete() {
+            if (!this.editForm.id) return;
+
+            Swal.fire({
+                title: 'Are you sure?',
+                text: 'This class will be moved to trash (Soft Delete). You can restore it later if needed.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#EF4444', // Red
+                cancelButtonColor: '#6B7280',  // Gray
+                confirmButtonText: 'Yes, Delete Class'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // 1. Ambil elemen form delete dari x-ref
+                    const form = this.$refs.deleteForm;
+                    // 2. Ganti placeholder ID dengan ID kelas yang sedang diedit
+                    form.action = this.deleteUrlTemplate.replace('PLACEHOLDER', this.editForm.id);
+                    // 3. Submit
+                    form.submit();
+                }
+            });
+        },
+
+        // =====================================================================
+        // 3. CONFIRMATION LOGIC (TOGGLE STATUS)
+        // =====================================================================
+        showConfirmModal: false, 
+        confirmClassId: null, 
+        confirmIsActive: false, 
+        confirmActionText: '', 
+        confirmTitleText: '',
+
+        openConfirmModal(id, isActive) {
+            this.confirmClassId = id;
+            this.confirmIsActive = isActive;
+            
+            this.confirmActionText = isActive ? 'DEACTIVATE' : 'ACTIVATE';
+            this.confirmTitleText = isActive ? 'Deactivate Class' : 'Activate Class';
+            
+            this.showConfirmModal = true;
+        },
+
+        confirmAction() {
+            if (this.confirmClassId) {
+                const form = document.getElementById('toggleStatusForm');
+                const template = form.getAttribute('data-url');
+                const finalUrl = template.replace('PLACEHOLDER', this.confirmClassId);
+                form.action = finalUrl;
+                form.submit();
+            }
         }
     }">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -130,8 +193,8 @@
                             <div class="relative flex-grow sm:flex-grow-0">
                                 <select name="status" onchange="this.form.submit()" 
                                         class="appearance-none h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                                    <option value="">Status</option>
-                                    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
+                                    <option value="" {{ request('status') === null ? '' : (request('status') == '' ? 'selected' : '') }}>All Status</option>
+                                    <option value="active" {{ request('status', 'active') == 'active' ? 'selected' : '' }}>Active</option>
                                     <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
                                 </select>
                             </div>
@@ -158,7 +221,7 @@
                         {{-- ADD BUTTON --}}
                         <div class="w-full lg:w-auto">
                             <button @click="showAddModal = true"
-                               class="inline-flex w-full lg:w-auto items-center justify-center gap-2 px-5 h-10 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors font-medium text-sm shadow-sm whitespace-nowrap">
+                                class="inline-flex w-full lg:w-auto items-center justify-center gap-2 px-5 h-10 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors font-medium text-sm shadow-sm whitespace-nowrap">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                                 Add New Class
                             </button>
@@ -200,7 +263,7 @@
                                     {{-- Classroom --}}
                                     <td class="px-6 py-5 text-gray-500 font-medium whitespace-nowrap">{{ $class->classroom }}</td>
                                     
-                                    {{-- Schedule (Format: Hari Teks, Jam Badge Biru) --}}
+                                    {{-- Schedule --}}
                                     <td class="px-6 py-5">
                                         <div class="flex flex-col gap-1.5">
                                             <span class="font-medium text-gray-800 text-xs">
@@ -216,7 +279,7 @@
                                         </div>
                                     </td>
 
-                                    {{-- Teacher (Format: FORM: Local:) --}}
+                                    {{-- Teacher --}}
                                     <td class="px-6 py-5 text-xs whitespace-nowrap">
                                         <div class="flex flex-col gap-1">
                                             <div class="flex items-center gap-1.5">
@@ -230,7 +293,7 @@
                                         </div>
                                     </td>
 
-                                    {{-- Status (Format: Clean Badge Tanpa Dot) --}}
+                                    {{-- Status --}}
                                     <td class="px-6 py-5 text-center">
                                         @if($class->is_active)
                                             <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200">Active</span>
@@ -242,18 +305,35 @@
                                     {{-- Action Buttons --}}
                                     <td class="px-6 py-5 text-center">
                                         <div class="flex items-center justify-center gap-3">
+                                            {{-- Detail --}}
                                             <a href="{{ route('admin.classes.detailclass', $class->id) }}" 
                                                 class="text-gray-400 hover:text-blue-600 transition-colors" title="View Details">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                             </a>
                                             
+                                            {{-- Edit --}}
                                             <button type="button" @click='openEditModal(@json($class))' 
                                                     class="text-gray-400 hover:text-green-600 transition-colors" title="Edit">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                             </button>
                                             
-                                            <button class="text-gray-400 hover:text-red-600 transition-colors" title="Delete">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                            {{-- Toggle Status --}}
+                                            <button type="button" 
+                                                @click="openConfirmModal({{ $class->id }}, {{ $class->is_active ? 'true' : 'false' }})"
+                                                class="transition-colors {{ $class->is_active ? 'text-gray-400 hover:text-red-500' : 'text-gray-400 hover:text-green-600' }}"
+                                                title="{{ $class->is_active ? 'Deactivate Class' : 'Activate Class' }}">
+                                                
+                                                @if($class->is_active)
+                                                    {{-- Icon Power Off --}}
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                                    </svg>
+                                                @else
+                                                    {{-- Icon Refresh --}}
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                    </svg>
+                                                @endif
                                             </button>
                                         </div>
                                     </td>
@@ -288,7 +368,8 @@
                 </div>
             </div>
 
-            {{-- 3. MODALS (Add & Edit - Disimpan di file yang sama agar ringkas) --}}
+            {{-- 3. MODALS AREA --}}
+            
             {{-- MODAL ADD --}}
             <div x-show="showAddModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
                 <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
@@ -386,21 +467,26 @@
                 </div>
             </div>
 
-            {{-- MODAL EDIT --}}
+            {{-- MODAL EDIT (WITH DANGER ZONE) --}}
             <div x-show="showEditModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
                 <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
                     <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showEditModal = false"></div>
+                    
+                    {{-- Container Modal --}}
                     <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl w-full border border-gray-100">
+                        
+                        {{-- Header Modal --}}
                         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                             <h3 class="text-lg font-bold text-gray-900">Edit Class</h3>
                             <button @click="showEditModal = false" class="text-gray-400 hover:text-gray-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
                         </div>
+                        
                         <div class="p-6">
+                            {{-- FORM UPDATE --}}
                             <form :action="getUpdateUrl()" method="POST"> 
                                 @csrf
                                 @method('PUT')
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-                                    {{-- Sama dengan ADD, hanya ada x-model --}}
                                     <div class="space-y-4">
                                         <div><label class="block text-sm font-bold text-gray-700 mb-1">Class Name</label><input type="text" name="name" x-model="editForm.name" class="w-full border-gray-300 rounded-lg shadow-sm"></div>
                                         <div>
@@ -474,16 +560,82 @@
                                         </div>
                                     </div>
                                 </div>
+                                
                                 <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
                                     <button type="button" @click="showEditModal = false" class="px-5 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition">Cancel</button>
                                     <button type="submit" class="px-5 py-2.5 bg-blue-700 text-white font-medium rounded-lg hover:bg-blue-800 shadow-sm transition">Update Class</button>
                                 </div>
                             </form>
+
+                            {{-- DANGER ZONE --}}
+                            <div class="bg-red-50 rounded-xl shadow-sm border border-red-200 overflow-hidden mt-8">
+                                <div class="px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                                    <div>
+                                        <h3 class="text-sm font-bold text-red-800 uppercase tracking-wider">Danger Zone</h3>
+                                        <p class="text-xs text-red-600 mt-1">Deleting this class will move it to trash (Soft Delete).</p>
+                                    </div>
+                                    
+                                    {{-- FORM DELETE HIDDEN --}}
+                                    <form method="POST" action="#" x-ref="deleteForm">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="button" @click="confirmDelete()" class="whitespace-nowrap px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg font-medium text-sm transition-all shadow-sm">
+                                            Delete Class
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            
                         </div>
                     </div>
                 </div>
             </div>
 
-        </div>
+            {{-- MODAL CONFIRMATION TOGGLE STATUS --}}
+            <div x-show="showConfirmModal" style="display: none;" 
+                 class="fixed inset-0 z-50 overflow-y-auto bg-gray-600 bg-opacity-75"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100">
+                
+                <div class="flex items-center justify-center min-h-screen p-4">
+                    <div x-show="showConfirmModal" @click.away="showConfirmModal = false"
+                         class="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 transform transition-all">
+            
+                        <h3 class="text-lg font-bold text-gray-900 mb-4" x-text="confirmTitleText"></h3>
+                        
+                        <p class="text-sm text-gray-500 mb-6">
+                            Are you sure you want to <strong x-text="confirmActionText" class="font-semibold" :class="confirmIsActive ? 'text-red-600' : 'text-green-600'"></strong> this class?
+                        </p>
+            
+                        <div class="flex justify-end gap-3">
+                            <button @click="showConfirmModal = false" type="button" 
+                                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                                Cancel
+                            </button>
+                            
+                            <button @click="confirmAction()" type="button" 
+                                    class="px-4 py-2 text-sm font-medium text-white rounded-md focus:outline-none"
+                                    :class="confirmIsActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'">
+                                Yes, Confirm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                {{-- Hidden Form Toggle Status --}}
+                <form id="toggleStatusForm" method="POST" 
+                      action="" 
+                      data-url="{{ route('admin.classes.toggleStatus', ['id' => 'PLACEHOLDER']) }}" 
+                      style="display: none;">
+                    @csrf
+                    @method('PATCH')
+                </form>
+            </div>
+
+        </div> {{-- END MAIN WRAPPER --}}
     </div>
+    
+    {{-- PASTIKAN SWEETALERT2 ADA --}}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </x-app-layout>

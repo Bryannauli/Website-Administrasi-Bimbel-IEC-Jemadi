@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\ClassModel; 
 use App\Models\Schedule; 
 use App\Models\User; // Import Model User untuk ambil data guru
+use App\Models\Student;
+use App\Models\AttendanceSession;
 use Illuminate\Http\Request;
 
 class ClassController extends Controller
@@ -38,7 +40,11 @@ class ClassController extends Controller
         }
         
         // 5. Filter Status (BARU)
-        if ($request->filled('status')) {
+        if (!$request->has('status')) {
+            // Default behavior: Tampilkan hanya Active
+            $query->where('is_active', true);
+        } elseif ($request->filled('status')) {
+            // Jika ada parameter status dan tidak kosong
             if ($request->status === 'active') {
                 $query->where('is_active', true);
             } elseif ($request->status === 'inactive') {
@@ -135,7 +141,7 @@ class ClassController extends Controller
             ]);
         }
 
-        return redirect()->route('admin.classes.class')->with('success', 'Class created successfully!');
+        return redirect()->route('admin.classes.index')->with('success', 'Class updated successfully!');
     }
 
     /**
@@ -184,30 +190,150 @@ class ClassController extends Controller
             }
         }
 
-        return redirect()->route('admin.classes.class')->with('success', 'Class updated successfully!');
+        return redirect()->route('admin.classes.index')->with('success', 'Class created successfully!');
     }
     
-public function detailClass($id)
+    public function detailClass(Request $request, $id)
+    {
+        // 1. Load Data Kelas
+        $class = ClassModel::with(['schedules', 'formTeacher', 'localTeacher', 'students'])
+            ->findOrFail($id);
+        
+        $class->students_count = $class->students->count();
+
+        // 2. Logic Enroll (Available Students)
+        $query = \App\Models\Student::where('is_active', true)
+                        ->whereNull('class_id')
+                        ->orderBy('name', 'asc');
+
+        if ($request->filled('search_student')) {
+            $search = $request->search_student;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'LIKE', "%{$search}%")
+                ->orWhere('student_number', 'LIKE', "%{$search}%");
+            });
+        }
+        $availableStudents = $query->get();
+
+        // 3. History Sesi (Columns)
+        // Ambil 15 sesi terakhir agar tabel tidak terlalu lebar (bisa disesuaikan)
+        $teachingLogs = \App\Models\AttendanceSession::where('class_id', $id)
+            ->with(['teacherRecords.teacher', 'records'])
+            ->orderBy('date', 'desc')
+            ->limit(15) 
+            ->get();
+
+        $lastSession = $teachingLogs->first();
+
+        // 4. Buat Matrix Absensi & Statistik
+        $studentStats = [];
+        $attendanceMatrix = []; // Array untuk lookup cepat: [student_id][session_id] = status
+
+        // Pre-fill Matrix
+        foreach ($teachingLogs as $session) {
+            foreach ($session->records as $record) {
+                $attendanceMatrix[$record->student_id][$session->id] = $record->status;
+            }
+        }
+        
+        foreach ($class->students as $student) {
+            // Hitung statistik ringkas untuk kolom Total %
+            // Kita hitung manual dari data matrix/teachingLogs yang ada agar sinkron
+            $stats = ['present' => 0, 'total' => 0];
+
+            foreach ($teachingLogs as $session) {
+                $status = $attendanceMatrix[$student->id][$session->id] ?? null;
+                if ($status) {
+                    $stats['total']++;
+                    if (in_array($status, ['present', 'late'])) {
+                        $stats['present']++;
+                    }
+                }
+            }
+
+            $percentage = $stats['total'] > 0 
+                ? round(($stats['present'] / $stats['total']) * 100) 
+                : 0;
+
+            $studentStats[] = (object) [
+                'id' => $student->id, // PENTING: ID diperlukan untuk kunci Matrix
+                'name' => $student->name,
+                'student_number' => $student->student_number,
+                'percentage' => $percentage
+            ];
+        }
+
+        // Sortir berdasarkan persentase kehadiran terendah
+        $studentStats = collect($studentStats)->sortBy('percentage')->values();
+
+        return view('admin.classes.detail-class', compact(
+            'class', 
+            'availableStudents', 
+            'teachingLogs', 
+            'lastSession',
+            'studentStats',
+            'attendanceMatrix' // Kirim matrix ke view
+        ));
+    }
+
+    public function toggleStatus($id)
+    {
+        $class = ClassModel::findOrFail($id);
+        
+        // Toggle status: jika true jadi false, jika false jadi true
+        $class->update([
+            'is_active' => !$class->is_active
+        ]);
+
+        $statusMessage = $class->is_active ? 'activated' : 'deactivated';
+
+        return back()->with('success', "Class successfully {$statusMessage}!");
+    }
+
+    public function delete($id)
+        {
+            try {
+                // Cari kelas
+                $class = ClassModel::findOrFail($id);
+
+                // Soft Delete (Data disembunyikan, tidak hilang dari DB)
+                $class->delete(); 
+                
+                // Opsional: Jika ingin menghapus jadwalnya juga secara soft delete
+                // $class->schedules()->delete();
+
+                return redirect()->route('admin.classes.index')
+                    ->with('success', 'Class moved to trash successfully.');
+                    
+            } catch (\Exception $e) {
+                return back()->with('error', 'Failed to delete class: ' . $e->getMessage());
+            }
+        }
+
+    public function assignStudent(Request $request, $classId)
 {
-    // Ambil class sekaligus relasi schedules (sesuaikan nama relasi di model)
-    $class = ClassModel::with(['schedules', 'formTeacher', 'localTeacher', 'students'])->findOrFail($id);
+    // Validasi input berupa ARRAY student_ids
+    $request->validate([
+        'student_ids' => 'required|array',
+        'student_ids.*' => 'exists:students,id'
+    ]);
 
-    // Ambil koleksi jadwal dari relasi
-    $schedules = $class->schedules;
+    // Lakukan update massal
+    // Kita update semua siswa yang ID-nya ada di dalam array yang dikirim
+    Student::whereIn('id', $request->student_ids)->update(['class_id' => $classId]);
 
-    // (Optional) hitung beberapa properti seperti di sebelumnya
-    $class->students_count = $class->students ? $class->students->count() : 0;
-    $class->teachers_count = collect([$class->formTeacher, $class->localTeacher])->filter()->count();
-    $class->total_sessions = $class->schedules->count() * 4;
-    $class->completed_sessions = 0; // ganti dengan logika attendance kalau ada
-    $class->progress_percent = $class->total_sessions ? round(($class->completed_sessions / $class->total_sessions) * 100) : 0;
-
-    // Pastikan nama view sesuai file blade kamu
-    return view('admin.classes.detail-class', compact('class', 'schedules'));
+    $count = count($request->student_ids);
+    return back()->with('success', "Successfully enrolled {$count} students to this class.");
 }
 
+    // METHOD BARU: Keluarkan Murid dari Kelas
+    public function unassignStudent($studentId)
+    {
+        $student = Student::findOrFail($studentId);
+        
+        // Set class_id jadi NULL
+        $student->update(['class_id' => null]);
 
-    // --- Method Placeholder untuk View Detail ---
-    // public function class($id) { return view('admin.classes.class2'); }
-    // public function students($id) { return view('admin.classes.students'); }
+        return back()->with('success', 'Student removed from class (moved to unassigned).');
+    }
 }
