@@ -16,7 +16,7 @@ class AssessmentController extends Controller
         // $assessments = Assessment::all(); 
         
         // Untuk sekarang, kita return view saja
-        return view('admin.assessment.index');
+        return view('admin.assessment.assessment');
     }
       public function show()
     {

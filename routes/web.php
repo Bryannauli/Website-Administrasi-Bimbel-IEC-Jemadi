@@ -1,14 +1,15 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\AssessmentController;
-use App\Http\Controllers\AssessmentFormController;
+use App\Http\Controllers\AssessmentController; // Controller Lama (Global Assessment)
+// use App\Http\Controllers\AssessmentFormController; // Tidak Terpakai
 
 // Admin Controllers
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminStudentController;
 use App\Http\Controllers\Admin\AdminClassController;
 use App\Http\Controllers\Admin\AdminTeacherController;
+use App\Http\Controllers\Admin\AdminAssessmentController; // Controller Baru (Manage Grades per Class)
 use App\Http\Controllers\TeacherAttendanceRecordController;
 
 // Teacher Controllers
@@ -45,8 +46,8 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 /* ============================================================================
- |  ADMIN ROUTES
- ============================================================================ */
+|  ADMIN ROUTES
+============================================================================ */
 Route::middleware(['auth', 'verified', 'admin'])
     ->prefix('admin')
     ->name('admin.')
@@ -84,6 +85,10 @@ Route::middleware(['auth', 'verified', 'admin'])
             Route::patch('/classes/{class}/unassign-teacher/{type}', [AdminClassController::class, 'unassignTeacher'])->name('unassignTeacher');
             Route::post('/{id}/assign-student', [AdminClassController::class, 'assignStudent'])->name('assignStudent');
             Route::patch('/students/{studentId}/unassign', [AdminClassController::class, 'unassignStudent'])->name('unassignStudent');
+            
+            // Assessment Routes (Management per Class)
+            Route::get('/{classId}/assessment/{type}', [AdminAssessmentController::class, 'manageGrades'])->name('assessment.manage');
+            Route::patch('/{sessionId}/store-grades', [AdminAssessmentController::class, 'storeOrUpdateGrades'])->name('assessment.storeOrUpdate');
         });
 
         /* TEACHER LIST */
@@ -95,26 +100,27 @@ Route::middleware(['auth', 'verified', 'admin'])
 
         /* =====================================================================
         | TEACHER ATTENDANCE RECORD
-         ===================================================================== */
+        ===================================================================== */
         Route::get('/teacher-attendance', [TeacherAttendanceRecordController::class, 'teacher'])->name('teacher.attendance');
         Route::get('/teacher-attendance/{teacherId}', [TeacherAttendanceRecordController::class, 'detail'])->name('teacher.detail');
         Route::post('/teacher-attendance/store', [TeacherAttendanceRecordController::class, 'store'])->name('teacher.attendance.store');
 
 
         /* =====================================================================
-         | ASSESSMENT
-         ===================================================================== */
-        Route::get('/assessment', [AssessmentController::class, 'index'])->name('assessment.index');
-        Route::get('/assessment/show', [AssessmentController::class, 'show'])->name('assessment.show');
-        Route::post('/assessment/create', [AssessmentController::class, 'create'])->name('assessment.create');
+        | ASSESSMENT (Global Index/Recap)
+        ===================================================================== */
+        Route::prefix('assessment')->name('assessment.')->group(function () {
+             // Route ini akan menampilkan daftar semua sesi penilaian (Index Global)
+            Route::get('/', [AssessmentController::class, 'index'])->name('index');
+             // Route::get('/assessment/show', [AssessmentController::class, 'show'])->name('assessment.show'); // Diabaikan
+             // Route::post('/assessment/create', [AssessmentController::class, 'create'])->name('assessment.create'); // Diabaikan
+        });
     });
 
 /* ============================================================================
- |  TEACHER ROUTES (USER GURU)
- ============================================================================ */
-
+|  TEACHER ROUTES (USER GURU)
+============================================================================ */
 Route::prefix('teacher')->name('teacher.')->middleware(['auth'])->group(function () {
-
     /* Dashboard */
     Route::get('/dashboard', [DashboardTeacherController::class, 'index'])->name('dashboard');
     Route::get('/analytics', [DashboardTeacherController::class, 'analytics'])->name('analytics');
@@ -166,8 +172,8 @@ Route::prefix('teacher')->name('teacher.')->middleware(['auth'])->group(function
 });
 
 /* ============================================================================
- |  PROFILE (SEMUA USER)
- ============================================================================ */
+|  PROFILE (SEMUA USER)
+============================================================================ */
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
