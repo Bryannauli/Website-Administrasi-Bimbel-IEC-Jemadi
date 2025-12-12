@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\TeacherAttendanceRecordController;
 
 use Illuminate\Http\Request;
 use App\Models\User;       // Model Guru
 use App\Models\ClassModel; // Model Kelas
+use App\Models\TeacherAttendanceRecord;
 
 
 class TeacherAdminController extends Controller
@@ -156,54 +158,89 @@ class TeacherAdminController extends Controller
         // 5. Redirect kembali dengan pesan sukses
         return redirect()->route('admin.teacher.index')->with('success', 'Teacher added successfully!');
     }
-    /**
-     * Menampilkan Detail Guru & Statistik Absensi
-     * Route: /admin/teachers/{id}
-     */
-    // public function show($id)
-    // {
-    //     // 1. Ambil Data Guru
-    //     $teacher = User::with(['formClasses', 'localClasses'])->where('role', 'teacher')->findOrFail($id);
+  public function show($id)
+    {
+        // 1. Ambil Data Guru (TETAP DARI DATABASE)
+        // Kita butuh ini agar Nama, ID, Foto, dan Email tetap asli
+        $teacher = User::with(['formClasses', 'localClasses'])->where('role', 'teacher')->findOrFail($id);
 
-    //     // 2. Logic Tipe Guru
-    //     $isForm = $teacher->formClasses->isNotEmpty();
-    //     $isLocal = $teacher->localClasses->isNotEmpty();
+        // 2. Logic Tipe Guru (TETAP)
+        $isForm = $teacher->formClasses->isNotEmpty();
+        $isLocal = $teacher->localClasses->isNotEmpty();
         
-    //     if ($isForm && $isLocal) $type = 'Form & Local Teacher';
-    //     elseif ($isForm) $type = 'Form Teacher';
-    //     elseif ($isLocal) $type = 'Local Teacher';
-    //     else $type = '-';
+        if ($isForm && $isLocal) $type = 'Form & Local Teacher';
+        elseif ($isForm) $type = 'Form Teacher';
+        elseif ($isLocal) $type = 'Local Teacher';
+        else $type = '-';
 
-    //     // 3. Statistik Absensi (Bulan Ini)
-    //     $currentMonth = now()->month;
-    //     $currentYear = now()->year;
+        // ==========================================================
+        // 3. DUMMY DATA ATTENDANCE (DATA PALSU UNTUK TAMPILAN)
+        // ==========================================================
+        
+        // Angka-angka statistik manual (bisa diubah sesuka hati)
+        $present = 22;
+        $late    = 3;
+        $sick    = 1;
+        $absent  = 2;
+        $permission = 0;
 
-    //     $attendanceQuery = TeacherAttendanceRecord::where('teacher_id', $id)
-    //         ->whereHas('session', function($q) use ($currentMonth, $currentYear) {
-    //             $q->whereMonth('date', $currentMonth)
-    //               ->whereYear('date', $currentYear);
-    //         });
+        $totalDays = $present + $late + $sick + $absent + $permission;
+        
+        // Hitung persentase kehadiran (Present + Late)
+        $percentage = $totalDays > 0 ? round((($present + $late) / $totalDays) * 100) : 0;
 
-    //     $present = (clone $attendanceQuery)->where('status', 'present')->count();
-    //     $absent  = (clone $attendanceQuery)->where('status', 'absent')->count();
-    //     $sick    = (clone $attendanceQuery)->where('status', 'sick')->count();
-    //     $late    = (clone $attendanceQuery)->whereIn('status', ['late', 'permission'])->count();
+        // Data Summary untuk dikirim ke View
+        $summary = [
+            'present' => $present,
+            'late' => $late,
+            'sick' => $sick,
+            'absent' => $absent,
+            'permission' => $permission
+        ];
 
-    //     $totalDays = $present + $absent + $sick + $late;
-    //     $percentage = $totalDays > 0 ? round(($present / $totalDays) * 100) : 0;
+        // 4. Generate Dummy History (Pura-pura ada data 30 hari terakhir)
+        // Kita pakai Collection agar fungsi di view seperti reverse() tetap jalan
+        $dummyRecords = collect([]);
 
-    //     // 4. Data 7 Hari Terakhir
-    //     $lastRecords = TeacherAttendanceRecord::with('session')
-    //                     ->where('teacher_id', $id)
-    //                     ->join('teacher_attendance_sessions', 'teacher_attendance_records.attendance_session_id', '=', 'teacher_attendance_sessions.id')
-    //                     ->orderBy('teacher_attendance_sessions.date', 'desc')
-    //                     ->select('teacher_attendance_records.*')
-    //                     ->limit(7)
-    //                     ->get()
-    //                     ->reverse();
+        for ($i = 0; $i < 15; $i++) {
+            // Buat objek pura-pura (Mock Object)
+            $mockRecord = new \stdClass();
+            
+            // Random status biar terlihat variatif
+            $statuses = ['present', 'present', 'present', 'late', 'absent', 'sick']; 
+            $mockRecord->status = $statuses[array_rand($statuses)];
+            
+            // Buat objek session di dalamnya
+            $mockSession = new \stdClass();
+            $mockSession->date = now()->subDays($i)->format('Y-m-d'); // Tanggal mundur
+            
+            $mockRecord->session = $mockSession;
 
-    //     return view('admin.teacher.show', compact(
-    //         'teacher', 'type', 'present', 'absent', 'sick', 'late', 'totalDays', 'percentage', 'lastRecords'
-    //     ));
-    // }
+            $dummyRecords->push($mockRecord);
+        }
+
+        // Variabel untuk Timeline (scroll) dan Last 7 Days
+        $attendance = $dummyRecords; 
+        $lastRecords = $dummyRecords->take(7); // Ambil 7 data teratas
+
+        // ==========================================================
+        // END DUMMY DATA
+        // ==========================================================
+
+return view('admin.teacher.show', compact(
+            'teacher', 
+            'type', 
+            'totalDays', 
+            'percentage', 
+            'summary', 
+            'lastRecords', 
+            'attendance',
+            // Tambahkan variabel ini agar terbaca di View:
+            'present', 
+            'late', 
+            'sick', 
+            'absent', 
+            'permission'
+        ));
+    }
 }

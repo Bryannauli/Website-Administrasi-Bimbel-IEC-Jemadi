@@ -61,4 +61,18 @@ class User extends Authenticatable
     {
         return $this->hasMany(UserLog::class, 'actor_id');
     }
+    public function formClasses()
+    {
+        // 'form_teacher_id' adalah nama kolom di tabel 'classes'
+        return $this->hasMany(ClassModel::class, 'form_teacher_id');
+    }
+
+    /**
+     * Relasi: Guru ini adalah Guru Mapel/Pendamping (Local Teacher) di kelas mana saja?
+     */
+    public function localClasses()
+    {
+        // 'local_teacher_id' adalah nama kolom di tabel 'classes'
+        return $this->hasMany(ClassModel::class, 'local_teacher_id');
+    }
 }
