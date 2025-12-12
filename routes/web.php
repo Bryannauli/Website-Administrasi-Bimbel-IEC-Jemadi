@@ -102,6 +102,8 @@ Route::middleware(['auth', 'verified', 'admin'])
          | TEACHER LIST (versi admin)
          ===================================================================== */
         Route::get('/teachers', [TeacherAdminController::class, 'index'])->name('teacher.index');
+        Route::get('/teachers/add', [TeacherAdminController::class, 'create'])->name('teacher.add');
+        Route::post('/teachers', [TeacherAdminController::class, 'store'])->name('teacher.store');
 
 
         /* =====================================================================

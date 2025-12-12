@@ -89,6 +89,73 @@ class TeacherAdminController extends Controller
         ));
     }
 
+
+    public function create()
+{
+    // Ambil semua data kelas untuk dropdown
+    $classes = ClassModel::all(); 
+
+    // Kirim data $classes ke view
+    return view('admin.teacher.add', compact('classes'));
+}
+
+    public function store(Request $request)
+    {
+        // 1. Validasi Input
+        $request->validate([
+            'name'      => 'required|string|max:255',
+            'username'  => 'required|string|max:255|unique:users',
+            'email'     => 'required|email|unique:users',
+            'phone'     => 'required|string|max:20',
+            'password'  => 'required|min:8',
+            'address'   => 'nullable|string',
+            'type'      => 'required|in:Form Teacher,Local Teacher',
+            'status'    => 'required|boolean',
+            'photo'     => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'class_id'  => 'nullable|exists:classes,id', // Validasi kelas jika dipilih
+        ]);
+
+        // 2. Upload Foto (Jika ada)
+        $photoPath = null;
+        if ($request->hasFile('photo')) {
+            // Simpan di folder: storage/app/public/profile-photos
+            $path = $request->file('photo')->store('profile-photos', 'public');
+            $photoPath = $path; 
+            // Catatan: Pastikan sudah jalankan 'php artisan storage:link'
+        }
+
+        // 3. Simpan ke Tabel Users
+        $teacher = User::create([
+            'name'              => $request->name,
+            'username'          => $request->username,
+            'email'             => $request->email,
+            'phone'             => $request->phone,
+            'password'          => Hash::make($request->password),
+            'address'           => $request->address,
+            'role'              => 'teacher', // Set otomatis sebagai teacher
+            'type'              => $request->type, // Opsional: simpan tipe di user juga jika perlu
+            'is_active'         => $request->status,
+            'profile_photo_path'=> $photoPath,
+        ]);
+
+        // 4. Logika Assign Kelas (Jika kelas dipilih)
+        if ($request->filled('class_id')) {
+            $class = ClassModel::find($request->class_id);
+            
+            if ($class) {
+                if ($request->type == 'Form Teacher') {
+                    // Update kolom wali kelas di tabel classes
+                    $class->update(['form_teacher_id' => $teacher->id]);
+                } elseif ($request->type == 'Local Teacher') {
+                    // Update kolom guru pendamping di tabel classes
+                    $class->update(['local_teacher_id' => $teacher->id]);
+                }
+            }
+        }
+
+        // 5. Redirect kembali dengan pesan sukses
+        return redirect()->route('admin.teacher.index')->with('success', 'Teacher added successfully!');
+    }
     /**
      * Menampilkan Detail Guru & Statistik Absensi
      * Route: /admin/teachers/{id}
