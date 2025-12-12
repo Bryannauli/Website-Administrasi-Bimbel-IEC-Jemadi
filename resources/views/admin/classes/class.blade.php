@@ -9,31 +9,46 @@
         // =====================================================================
         // 1. ADD & EDIT LOGIC
         // =====================================================================
-        showAddModal: false, 
-        showEditModal: false,
+        // Logic: Buka Modal Add jika ada error validasi
+        showAddModal: {{ $errors->any() && !Session::get('edit_failed') ? 'true' : 'false' }}, 
         
+        // Logic: Buka Modal Edit jika ada error validasi dari proses edit
+        showEditModal: {{ Session::get('edit_failed') ? 'true' : 'false' }},
+        
+        // Data formulir edit. Diisi dari data lama (old()) jika validasi gagal.
         editForm: {
-            id: null,
-            category: '',
-            name: '',
-            classroom: '',
-            start_month: '',
-            end_month: '',
-            academic_year: '',
-            form_teacher_id: '',  
-            local_teacher_id: '', 
-            days: [],
-            time_start: '',
-            time_end: '',
-            status: 'active'
+            id: '{{ old('id') }}', // Harus ada ID lama agar form update bisa jalan
+            category: '{{ old('category') }}',
+            name: '{{ old('name') }}',
+            classroom: '{{ old('classroom') }}',
+            start_month: '{{ old('start_month') }}',
+            end_month: '{{ old('end_month') }}',
+            academic_year: '{{ old('academic_year') }}',
+            form_teacher_id: '{{ old('form_teacher_id') }}',  
+            local_teacher_id: '{{ old('local_teacher_id') }}', 
+            // Untuk hari, kita pakai data lama atau data yang diload dari tabel
+            days: {{ $errors->any() ? json_encode(old('days', [])) : '[]' }}, 
+            time_start: '{{ old('start_time') }}', // Perhatikan: field di DB start_time, di modal old('start_time')
+            time_end: '{{ old('end_time') }}',     // Perhatikan: field di DB end_time, di modal old('end_time')
+            status: '{{ old('status', 'active') }}'
         },
 
         // URL Templates
-        updateUrl: '{{ route('admin.classes.update', ':id') }}',
+        updateUrlTemplate: '{{ route('admin.classes.update', ':id') }}',
         deleteUrlTemplate: '{{ route('admin.classes.delete', 'PLACEHOLDER') }}',
         
         getUpdateUrl() {
-            return this.editForm.id ? this.updateUrl.replace(':id', this.editForm.id) : '#';
+            return this.editForm.id ? this.updateUrlTemplate.replace(':id', this.editForm.id) : '#';
+        },
+
+        closeModal(modalVar) {
+            if ({{ $errors->any() ? 'true' : 'false' }}) {
+                // Jika ada error, refresh halaman untuk membersihkan sesi error
+                window.location.href = window.location.href.split('?')[0]; // Ambil URL bersih
+            } else {
+                // Jika tidak ada error, tutup modal via Alpine JS
+                this[modalVar] = false;
+            }
         },
 
         openEditModal(data) {
@@ -65,8 +80,8 @@
                 text: 'This class will be moved to trash (Soft Delete). You can restore it later if needed.',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#EF4444', // Red
-                cancelButtonColor: '#6B7280',  // Gray
+                confirmButtonColor: '#EF4444', 
+                cancelButtonColor: '#6B7280', 
                 confirmButtonText: 'Yes, Delete Class'
             }).then((result) => {
                 if (result.isConfirmed) {
@@ -81,32 +96,33 @@
         },
 
         // =====================================================================
-        // 3. CONFIRMATION LOGIC (TOGGLE STATUS)
+        // 3. CONFIRMATION LOGIC (TOGGLE STATUS) - MENGGUNAKAN SWEETALERT
         // =====================================================================
-        showConfirmModal: false, 
-        confirmClassId: null, 
-        confirmIsActive: false, 
-        confirmActionText: '', 
-        confirmTitleText: '',
+        confirmToggleStatus(classId, isActive) {
+            const action = isActive ? 'DEACTIVATE' : 'ACTIVATE';
+            const statusText = isActive ? 'inactive' : 'active';
+            const iconColor = isActive ? '#EF4444' : '#10B981'; 
 
-        openConfirmModal(id, isActive) {
-            this.confirmClassId = id;
-            this.confirmIsActive = isActive;
-            
-            this.confirmActionText = isActive ? 'DEACTIVATE' : 'ACTIVATE';
-            this.confirmTitleText = isActive ? 'Deactivate Class' : 'Activate Class';
-            
-            this.showConfirmModal = true;
-        },
-
-        confirmAction() {
-            if (this.confirmClassId) {
-                const form = document.getElementById('toggleStatusForm');
-                const template = form.getAttribute('data-url');
-                const finalUrl = template.replace('PLACEHOLDER', this.confirmClassId);
-                form.action = finalUrl;
-                form.submit();
-            }
+            Swal.fire({
+                title: `${action} Class?`,
+                text: `Are you sure you want to change this class's status to ${statusText}?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: iconColor, 
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: `Yes, ${action}`
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Submit form PATCH secara dinamis
+                    const form = document.getElementById('toggleStatusForm');
+                    // Mengambil URL template dari atribut data-url form tersembunyi
+                    const urlTemplate = form.getAttribute('data-url');
+                    const url = urlTemplate.replace('PLACEHOLDER', classId); 
+                    
+                    form.action = url;
+                    form.submit();
+                }
+            });
         }
     }">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -139,7 +155,7 @@
             {{-- 2. TABLE SECTION --}}
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
 
-                {{-- Header Actions --}}
+                {{-- Header Actions (Filters) --}}
                 <div class="p-4 sm:p-6 border-b border-gray-200 flex flex-col gap-4">
                     
                     {{-- SEARCH BAR --}}
@@ -154,9 +170,7 @@
                                    class="w-full h-11 pl-12 pr-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm shadow-sm transition-all">
 
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                                </svg>
+                                <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
                             </div>
                         </form>
                     </div>
@@ -170,7 +184,7 @@
                             {{-- Academic Year --}}
                             <div class="relative flex-grow sm:flex-grow-0">
                                 <select name="academic_year" onchange="this.form.submit()" 
-                                        class="appearance-none h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 bg-gray-50 focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                        class="h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 bg-gray-50 focus:ring-2 focus:ring-blue-500 cursor-pointer">
                                     <option value="">All Years</option>
                                     @foreach($years as $year)
                                         <option value="{{ $year }}" {{ request('academic_year') == $year ? 'selected' : '' }}>{{ $year }}</option>
@@ -181,7 +195,7 @@
                             {{-- Category --}}
                             <div class="relative flex-grow sm:flex-grow-0">
                                 <select name="category" onchange="this.form.submit()" 
-                                        class="appearance-none h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                        class="h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer">
                                     <option value="">Category</option>
                                     @foreach($categories as $cat)
                                         <option value="{{ $cat }}" {{ request('category') == $cat ? 'selected' : '' }}>{{ ucwords(str_replace('_', ' ', $cat)) }}</option>
@@ -192,7 +206,7 @@
                             {{-- Status --}}
                             <div class="relative flex-grow sm:flex-grow-0">
                                 <select name="status" onchange="this.form.submit()" 
-                                        class="appearance-none h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                        class="h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer">
                                     <option value="" {{ request('status') === null ? '' : (request('status') == '' ? 'selected' : '') }}>All Status</option>
                                     <option value="active" {{ request('status', 'active') == 'active' ? 'selected' : '' }}>Active</option>
                                     <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
@@ -202,7 +216,7 @@
                             {{-- Sort --}}
                             <div class="relative flex-grow sm:flex-grow-0">
                                 <select name="sort" onchange="this.form.submit()" 
-                                        class="appearance-none h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                        class="h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer">
                                     <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Newest</option>
                                     <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest</option>
                                     <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>A-Z</option>
@@ -221,7 +235,7 @@
                         {{-- ADD BUTTON --}}
                         <div class="w-full lg:w-auto">
                             <button @click="showAddModal = true"
-                                class="inline-flex w-full lg:w-auto items-center justify-center gap-2 px-5 h-10 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition-colors font-medium text-sm shadow-sm whitespace-nowrap">
+                                class="inline-flex w-full lg:w-auto items-center justify-center gap-2 px-5 h-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm whitespace-nowrap">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                                 Add New Class
                             </button>
@@ -317,11 +331,12 @@
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                             </button>
                                             
-                                            {{-- Toggle Status --}}
+                                            {{-- Toggle Status BARU (Memanggil SweetAlert) --}}
                                             <button type="button" 
-                                                @click="openConfirmModal({{ $class->id }}, {{ $class->is_active ? 'true' : 'false' }})"
-                                                class="transition-colors {{ $class->is_active ? 'text-gray-400 hover:text-red-500' : 'text-gray-400 hover:text-green-600' }}"
-                                                title="{{ $class->is_active ? 'Deactivate Class' : 'Activate Class' }}">
+                                                @click="confirmToggleStatus({{ $class->id }}, {{ $class->is_active ? 'true' : 'false' }})"
+                                                class="p-1.5 transition-colors 
+                                                       {{ $class->is_active ? 'text-gray-400 hover:text-red-600 hover:bg-red-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50' }}"
+                                                title="{{ $class->is_active ? 'Deactivate' : 'Activate' }}">
                                                 
                                                 @if($class->is_active)
                                                     {{-- Icon Power Off --}}
@@ -354,288 +369,40 @@
                 
                 {{-- Pagination --}}
                 <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white">
-                    @if ($classes->onFirstPage())
-                        <button class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-400 bg-white cursor-not-allowed" disabled>Previous</button>
-                    @else
-                        <a href="{{ $classes->previousPageUrl() }}" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 hover:text-gray-800 transition-colors">Previous</a>
-                    @endif
                     <span class="text-sm text-gray-500 font-medium">Page {{ $classes->currentPage() }} of {{ $classes->lastPage() }}</span>
-                    @if ($classes->hasMorePages())
-                        <a href="{{ $classes->nextPageUrl() }}" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 hover:text-gray-800 transition-colors">Next</a>
-                    @else
-                        <button class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-400 bg-white cursor-not-allowed" disabled>Next</button>
+                    @if ($classes->lastPage() > 1)
+                        {{ $classes->links() }}
                     @endif
                 </div>
             </div>
 
             {{-- 3. MODALS AREA --}}
             
-            {{-- MODAL ADD --}}
-            <div x-show="showAddModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
-                <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-                    <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showAddModal = false"></div>
-                    <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl w-full border border-gray-100">
-                        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                            <h3 class="text-lg font-bold text-gray-900">Add New Class</h3>
-                            <button @click="showAddModal = false" class="text-gray-400 hover:text-gray-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-                        </div>
-                        <div class="p-6">
-                            <form action="{{ route('admin.classes.store') }}" method="POST">
-                                @csrf
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-                                    <div class="space-y-4">
-                                        <div>
-                                            <label class="block text-sm font-bold text-gray-700 mb-1">Class Name <span class="text-red-500">*</span></label>
-                                            <input type="text" name="name" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500" required placeholder="e.g. Level 1A">
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-bold text-gray-700 mb-1">Category <span class="text-red-500">*</span></label>
-                                            <select name="category" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
-                                                <option value="">Select Category</option>
-                                                @foreach($categories as $cat) <option value="{{ $cat }}">{{ ucwords(str_replace('_', ' ', $cat)) }}</option> @endforeach
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-bold text-gray-700 mb-1">Academic Year</label>
-                                            <select name="academic_year" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                                <option value="2025">2025</option>
-                                                <option value="2026">2026</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="space-y-4">
-                                        <div>
-                                            <label class="block text-sm font-bold text-gray-700 mb-1">Classroom <span class="text-red-500">*</span></label>
-                                            <input type="text" name="classroom" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500" required placeholder="e.g. Room 101">
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-bold text-gray-700 mb-1">Period (Start - End)</label>
-                                            <div class="flex gap-2">
-                                                <select name="start_month" class="w-1/2 border-gray-300 rounded-lg shadow-sm text-sm">@foreach(['January','February','March','April','May','June','July','August','September','October','November','December'] as $m)<option value="{{$m}}">{{$m}}</option>@endforeach</select>
-                                                <select name="end_month" class="w-1/2 border-gray-300 rounded-lg shadow-sm text-sm">@foreach(['January','February','March','April','May','June','July','August','September','October','November','December'] as $m)<option value="{{$m}}">{{$m}}</option>@endforeach</select>
-                                            </div>
-                                        </div>
-                                    </div>
+            {{-- Include Modal Add --}}
+            @include('admin.classes.partials.add-class-modal')
 
-                                    <div class="md:col-span-2 grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
-                                        <div>
-                                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Form Teacher</label>
-                                            <select name="form_teacher_id" class="w-full border-gray-300 rounded-lg shadow-sm text-sm">
-                                                <option value="">Select Teacher (Optional)</option>
-                                                @foreach($teachers as $teacher) <option value="{{ $teacher->id }}">{{ $teacher->name }}</option> @endforeach
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Local Teacher</label>
-                                            <select name="local_teacher_id" class="w-full border-gray-300 rounded-lg shadow-sm text-sm">
-                                                <option value="">Select Teacher (Optional)</option>
-                                                @foreach($teachers as $teacher) <option value="{{ $teacher->id }}">{{ $teacher->name }}</option> @endforeach
-                                            </select>
-                                        </div>
-                                    </div>
+            {{-- Include Modal Edit --}}
+            @include('admin.classes.partials.edit-class-modal')
 
-                                    <div class="md:col-span-2">
-                                        <label class="block text-sm font-bold text-gray-700 mb-2">Schedule Days</label>
-                                        <div class="flex flex-wrap gap-3">
-                                            @foreach(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as $day)
-                                                <label class="inline-flex items-center cursor-pointer bg-white border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition">
-                                                    <input type="checkbox" name="days[]" value="{{ $day }}" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                                                    <span class="ml-2 text-gray-700 text-sm font-medium">{{ $day }}</span>
-                                                </label>
-                                            @endforeach
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="md:col-span-2">
-                                        <label class="block text-sm font-bold text-gray-700 mb-1">Class Time</label>
-                                        <div class="flex items-center gap-2">
-                                            <input type="time" name="start_time" class="border-gray-300 rounded-lg shadow-sm" required>
-                                            <span class="text-gray-400 font-bold">-</span>
-                                            <input type="time" name="end_time" class="border-gray-300 rounded-lg shadow-sm" required>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
-                                    <button type="button" @click="showAddModal = false" class="px-5 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition">Cancel</button>
-                                    <button type="submit" class="px-5 py-2.5 bg-blue-700 text-white font-medium rounded-lg hover:bg-blue-800 shadow-sm transition">Create Class</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- MODAL EDIT (WITH DANGER ZONE) --}}
-            <div x-show="showEditModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
-                <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-                    <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showEditModal = false"></div>
-                    
-                    {{-- Container Modal --}}
-                    <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl w-full border border-gray-100">
-                        
-                        {{-- Header Modal --}}
-                        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                            <h3 class="text-lg font-bold text-gray-900">Edit Class</h3>
-                            <button @click="showEditModal = false" class="text-gray-400 hover:text-gray-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-                        </div>
-                        
-                        <div class="p-6">
-                            {{-- FORM UPDATE --}}
-                            <form :action="getUpdateUrl()" method="POST"> 
-                                @csrf
-                                @method('PUT')
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-                                    <div class="space-y-4">
-                                        <div><label class="block text-sm font-bold text-gray-700 mb-1">Class Name</label><input type="text" name="name" x-model="editForm.name" class="w-full border-gray-300 rounded-lg shadow-sm"></div>
-                                        <div>
-                                            <label class="block text-sm font-bold text-gray-700 mb-1">Category</label>
-                                            <select name="category" x-model="editForm.category" class="w-full border-gray-300 rounded-lg shadow-sm">
-                                                @foreach($categories as $cat) <option value="{{ $cat }}">{{ ucwords(str_replace('_', ' ', $cat)) }}</option> @endforeach
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-bold text-gray-700 mb-1">Academic Year</label>
-                                            <select name="academic_year" x-model="editForm.academic_year" class="w-full border-gray-300 rounded-lg shadow-sm">
-                                                <option value="2025">2025</option><option value="2026">2026</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="space-y-4">
-                                        <div><label class="block text-sm font-bold text-gray-700 mb-1">Classroom</label><input type="text" name="classroom" x-model="editForm.classroom" class="w-full border-gray-300 rounded-lg shadow-sm"></div>
-                                        <div>
-                                            <label class="block text-sm font-bold text-gray-700 mb-1">Period</label>
-                                            <div class="flex gap-2">
-                                                <select name="start_month" x-model="editForm.start_month" class="w-1/2 border-gray-300 rounded-lg text-sm">@foreach(['January','February','March','April','May','June','July','August','September','October','November','December'] as $m)<option value="{{$m}}">{{$m}}</option>@endforeach</select>
-                                                <select name="end_month" x-model="editForm.end_month" class="w-1/2 border-gray-300 rounded-lg text-sm">@foreach(['January','February','March','April','May','June','July','August','September','October','November','December'] as $m)<option value="{{$m}}">{{$m}}</option>@endforeach</select>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="md:col-span-2 grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
-                                        <div>
-                                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Form Teacher</label>
-                                            <select name="form_teacher_id" x-model="editForm.form_teacher_id" class="w-full border-gray-300 rounded-lg shadow-sm text-sm">
-                                                <option value="">Select (Optional)</option>
-                                                @foreach($teachers as $teacher) <option value="{{ $teacher->id }}">{{ $teacher->name }}</option> @endforeach
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Local Teacher</label>
-                                            <select name="local_teacher_id" x-model="editForm.local_teacher_id" class="w-full border-gray-300 rounded-lg shadow-sm text-sm">
-                                                <option value="">Select (Optional)</option>
-                                                @foreach($teachers as $teacher) <option value="{{ $teacher->id }}">{{ $teacher->name }}</option> @endforeach
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div class="md:col-span-2">
-                                        <label class="block text-sm font-bold text-gray-700 mb-2">Schedule Days</label>
-                                        <div class="flex flex-wrap gap-3">
-                                            @foreach(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as $day)
-                                                <label class="inline-flex items-center cursor-pointer bg-white border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition">
-                                                    <input type="checkbox" name="days[]" value="{{ $day }}" x-model="editForm.days" class="w-4 h-4 text-blue-600 rounded border-gray-300">
-                                                    <span class="ml-2 text-gray-700 text-sm font-medium">{{ $day }}</span>
-                                                </label>
-                                            @endforeach
-                                        </div>
-                                    </div>
-
-                                    <div class="md:col-span-2 flex justify-between items-end">
-                                        <div>
-                                            <label class="block text-sm font-bold text-gray-700 mb-1">Class Time</label>
-                                            <div class="flex items-center gap-2">
-                                                <input type="time" name="start_time" x-model="editForm.time_start" class="border-gray-300 rounded-lg shadow-sm">
-                                                <span class="text-gray-400 font-bold">-</span>
-                                                <input type="time" name="end_time" x-model="editForm.time_end" class="border-gray-300 rounded-lg shadow-sm">
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Status</label>
-                                            <div class="flex gap-4">
-                                                <label class="inline-flex items-center"><input type="radio" name="status" value="active" x-model="editForm.status" class="text-green-600"><span class="ml-2 text-sm">Active</span></label>
-                                                <label class="inline-flex items-center"><input type="radio" name="status" value="inactive" x-model="editForm.status" class="text-gray-600"><span class="ml-2 text-sm">Inactive</span></label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
-                                    <button type="button" @click="showEditModal = false" class="px-5 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition">Cancel</button>
-                                    <button type="submit" class="px-5 py-2.5 bg-blue-700 text-white font-medium rounded-lg hover:bg-blue-800 shadow-sm transition">Update Class</button>
-                                </div>
-                            </form>
-
-                            {{-- DANGER ZONE --}}
-                            <div class="bg-red-50 rounded-xl shadow-sm border border-red-200 overflow-hidden mt-8">
-                                <div class="px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
-                                    <div>
-                                        <h3 class="text-sm font-bold text-red-800 uppercase tracking-wider">Danger Zone</h3>
-                                        <p class="text-xs text-red-600 mt-1">Deleting this class will move it to trash (Soft Delete).</p>
-                                    </div>
-                                    
-                                    {{-- FORM DELETE HIDDEN --}}
-                                    <form method="POST" action="#" x-ref="deleteForm">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="button" @click="confirmDelete()" class="whitespace-nowrap px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg font-medium text-sm transition-all shadow-sm">
-                                            Delete Class
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                            
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- MODAL CONFIRMATION TOGGLE STATUS --}}
-            <div x-show="showConfirmModal" style="display: none;" 
-                 class="fixed inset-0 z-50 overflow-y-auto bg-gray-600 bg-opacity-75"
-                 x-transition:enter="transition ease-out duration-300"
-                 x-transition:enter-start="opacity-0"
-                 x-transition:enter-end="opacity-100">
-                
-                <div class="flex items-center justify-center min-h-screen p-4">
-                    <div x-show="showConfirmModal" @click.away="showConfirmModal = false"
-                         class="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 transform transition-all">
+            {{-- CATATAN: Modal Konfirmasi Kustom Alpine JS dihapus, diganti SweetAlert --}}
             
-                        <h3 class="text-lg font-bold text-gray-900 mb-4" x-text="confirmTitleText"></h3>
-                        
-                        <p class="text-sm text-gray-500 mb-6">
-                            Are you sure you want to <strong x-text="confirmActionText" class="font-semibold" :class="confirmIsActive ? 'text-red-600' : 'text-green-600'"></strong> this class?
-                        </p>
-            
-                        <div class="flex justify-end gap-3">
-                            <button @click="showConfirmModal = false" type="button" 
-                                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                                Cancel
-                            </button>
-                            
-                            <button @click="confirmAction()" type="button" 
-                                    class="px-4 py-2 text-sm font-medium text-white rounded-md focus:outline-none"
-                                    :class="confirmIsActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'">
-                                Yes, Confirm
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                {{-- Hidden Form Toggle Status --}}
-                <form id="toggleStatusForm" method="POST" 
-                      action="" 
-                      data-url="{{ route('admin.classes.toggleStatus', ['id' => 'PLACEHOLDER']) }}" 
-                      style="display: none;">
-                    @csrf
-                    @method('PATCH')
-                </form>
-            </div>
+            {{-- Hidden Form Toggle Status (DIPERTahankan untuk SweetAlert) --}}
+            <form id="toggleStatusForm" method="POST" 
+                  action="" 
+                  data-url="{{ route('admin.classes.toggleStatus', ['id' => 'PLACEHOLDER']) }}" 
+                  style="display: none;">
+                @csrf
+                @method('PATCH')
+            </form>
+
+            {{-- Hidden Form Delete (Masih menggunakan x-ref di file utama) --}}
+            <form method="POST" action="#" x-ref="deleteForm" style="display: none;">
+                @csrf
+                @method('DELETE')
+            </form>
 
         </div> {{-- END MAIN WRAPPER --}}
     </div>
     
-    {{-- PASTIKAN SWEETALERT2 ADA --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </x-app-layout>

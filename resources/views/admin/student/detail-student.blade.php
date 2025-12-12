@@ -27,6 +27,17 @@
         updateUrl: '{{ route('admin.student.update', $student->id) }}',
         deleteUrl: '{{ route('admin.student.delete', $student->id) }}',
 
+        closeModal(modalVar) {
+            if ({{ $errors->any() ? 'true' : 'false' }}) {
+                // Jika ada error, refresh halaman untuk membersihkan sesi error Laravel
+                // split('?')[0] digunakan untuk membersihkan parameter URL action=edit
+                window.location.href = window.location.href.split('?')[0]; 
+            } else {
+                // Jika tidak ada error, tutup modal via Alpine JS
+                this[modalVar] = false;
+            }
+        },
+        
         // 4. FUNCTION CONFIRM DELETE
         confirmDelete() {
             Swal.fire({

@@ -1,8 +1,8 @@
 <div x-show="showEditModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
     <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         
-        {{-- Overlay --}}
-        <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showEditModal = false"></div>
+        {{-- Overlay (Memanggil closeModal) --}}
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="closeModal('showEditModal')"></div>
         
         {{-- Modal Panel --}}
         <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl w-full">
@@ -10,7 +10,8 @@
             {{-- Header --}}
             <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                 <h3 class="text-lg font-bold text-gray-900">Edit Student</h3>
-                <button @click="showEditModal = false" class="text-gray-400 hover:text-gray-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                {{-- Tombol X (Memanggil closeModal) --}}
+                <button @click="closeModal('showEditModal')" class="text-gray-400 hover:text-gray-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
             </div>
 
             <div class="p-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
@@ -73,7 +74,7 @@
 
                         {{-- 7. Class Assignment (Optional Display) --}}
                         @if($showClassAssignment ?? true)
-                            <div class="md:col-span-2 bg-blue-50/50 p-4 rounded-lg border border-blue-100">
+                            <div class="md:col-span-2 bg-blue-50/50 p-4 rounded-lg border border-blue-100" x-data="{ editCategory: 'all' }">
                                 <label class="block text-sm font-bold text-gray-700 mb-3">Class Assignment</label>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
@@ -104,8 +105,9 @@
                     </div>
 
                     <div class="mt-8 flex items-center justify-end gap-3 pt-6 border-t border-gray-100">
+                        {{-- Tombol Cancel (Memanggil closeModal) --}}
                         <button type="button" 
-                                @click="{{ $errors->any() ? "window.location.href='".url()->current()."'" : "showEditModal = false" }}"
+                                @click="closeModal('showEditModal')"
                                 class="px-5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-50">
                                 Cancel
                             </button>

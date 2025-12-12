@@ -5,16 +5,19 @@
         </h2>
     </x-slot>
 
-    {{-- 
-        WRAPPER UTAMA DENGAN ALPINE JS 
-        Mengelola State Modal (Add & Edit), Data Form, dan URL Dinamis
-    --}}
     <div class="py-6" x-data="{ 
+        // === STATUS ERROR GLOBAL ===
+        hasError: {{ $errors->any() ? 'true' : 'false' }},
+        isEditFailed: {{ Session::get('edit_failed') ? 'true' : 'false' }}, 
+        
+        // LOGIKA AUTO-OPEN
         showAddModal: {{ $errors->any() && !Session::get('edit_failed') ? 'true' : 'false' }},
         showEditModal: {{ Session::get('edit_failed') ? 'true' : 'false' }}, 
+        
         updateUrl: '',
         deleteUrl: '',
         
+        // Data Form Edit (Menggunakan data 'old' hanya jika error edit terjadi)
         editForm: {
             id: null,
             student_number: '',
@@ -26,8 +29,38 @@
             class_id: ''
         },
 
-        // Fungsi untuk membuka Modal Edit dan mengisi datanya
+        // 1. FUNGSI UNTUK MENGISI FORM SAAT HALAMAN DIMUAT ULANG KARENA ERROR EDIT
+        init() {
+            if (this.isEditFailed) {
+                this.editForm = {
+                    id: '{{ old('id') }}',
+                    student_number: '{{ old('student_number') }}',
+                    name: '{{ old('name') }}',
+                    gender: '{{ old('gender') }}',
+                    phone: '{{ old('phone') }}',
+                    address: '{{ old('address') }}',
+                    is_active: {{ old('is_active') == 1 ? 'true' : 'false' }},
+                    class_id: '{{ old('class_id') }}'
+                };
+                // Pastikan URL di set agar form edit bisa disubmit saat reload
+                this.updateUrl = '{{ route('admin.student.update', ':id') }}'.replace(':id', this.editForm.id);
+                this.deleteUrl = '{{ route('admin.student.delete', ':id') }}'.replace(':id', this.editForm.id);
+            }
+        },
+
+        // 2. FUNGSI UTAMA PENUTUP MODAL (Diakses oleh semua tombol close)
+        closeModal(modalVar) {
+            if (this.hasError) {
+                window.location.href = window.location.href.split('?')[0]; 
+            } else {
+                this[modalVar] = false;
+            }
+        },
+
+        // 3. FUNGSI UNTUK MEMBUKA MODAL EDIT (Saat klik tombol edit di tabel)
         openEditModal(student) {
+            // Saat diklik dari tabel, kita SELALU menimpa data old() jika ada, 
+            // karena user sudah memilih siswa baru.
             this.editForm = {
                 id: student.id,
                 student_number: student.student_number,
@@ -39,14 +72,13 @@
                 class_id: student.class_id || ''
             };
 
-            // Generate URL Update & Delete secara dinamis
             this.updateUrl = '{{ route('admin.student.update', ':id') }}'.replace(':id', student.id);
             this.deleteUrl = '{{ route('admin.student.delete', ':id') }}'.replace(':id', student.id);
             
             this.showEditModal = true;
         },
 
-        // Konfirmasi Delete (Dipanggil dari Edit Modal)
+        // 4. Konfirmasi Delete
         confirmDelete() {
             Swal.fire({
                 title: 'Are you sure?',
@@ -59,6 +91,32 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     document.getElementById('delete-student-form').submit();
+                }
+            });
+        },
+
+        // 5. Konfirmasi Toggle Status (BARU)
+        confirmToggleStatus(studentId, isActive) {
+            const action = isActive ? 'DEACTIVATE' : 'ACTIVATE';
+            const statusText = isActive ? 'inactive' : 'active';
+            const iconColor = isActive ? '#EF4444' : '#10B981'; // Red for Deactivate, Green for Activate
+
+            Swal.fire({
+                title: `${action} Student?`,
+                text: `Are you sure you want to change this student's status to ${statusText}?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: iconColor, 
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: `Yes, ${action}`
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Submit form PATCH secara dinamis
+                    const form = document.getElementById('toggleStatusForm');
+                    const url = '{{ route('admin.student.toggleStatus', ':id') }}'.replace(':id', studentId);
+                    
+                    form.action = url;
+                    form.submit();
                 }
             });
         }
@@ -89,8 +147,6 @@
                     Students Data
                 </h1>
             </div>
-
-            {{-- CATATAN: STATS CARD DIHAPUS DARI SINI --}}
 
             {{-- TABLE SECTION --}}
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -246,14 +302,21 @@
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                             </button>
 
-                                            <form action="{{ route('admin.student.toggleStatus', $student->id) }}" method="POST" class="inline-block">
-                                                @csrf @method('PATCH')
+                                            {{-- TOMBOL TOGGLE STATUS BARU (Memanggil SweetAlert) --}}
+                                            <button type="button" 
+                                                @click="confirmToggleStatus({{ $student->id }}, {{ $student->is_active ? 'true' : 'false' }})"
+                                                class="p-1.5 transition-colors 
+                                                       {{ $student->is_active ? 'text-gray-400 hover:text-red-600 hover:bg-red-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50' }}"
+                                                title="{{ $student->is_active ? 'Deactivate' : 'Activate' }}">
+                                
                                                 @if($student->is_active)
-                                                    <button type="submit" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Deactivate"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg></button>
+                                                    {{-- Icon Power Off (Deactivate) --}}
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
                                                 @else
-                                                    <button type="submit" class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Activate"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></button>
+                                                    {{-- Icon Check (Activate) --}}
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                                 @endif
-                                            </form>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -277,6 +340,11 @@
         @include('admin.student.partials.add-modal')
         @include('admin.student.partials.edit-modal', ['showClassAssignment' => false])
 
+        {{-- FORM HIDDEN UNTUK TOGGLE STATUS (DIPANGGIL OLEH SWEETALERT) --}}
+        <form id="toggleStatusForm" method="POST" action="#" style="display: none;">
+            @csrf 
+            @method('PATCH')
+        </form>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

@@ -1,8 +1,8 @@
 <div x-show="showAddModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
     <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         
-        {{-- Overlay --}}
-        <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showAddModal = false"></div>
+        {{-- Overlay (Memanggil closeModal) --}}
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="closeModal('showAddModal')"></div>
         
         {{-- Modal Panel --}}
         <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl w-full">
@@ -10,7 +10,8 @@
             {{-- Header --}}
             <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                 <h3 class="text-lg font-bold text-gray-900">Add New Student</h3>
-                <button @click="showAddModal = false" class="text-gray-400 hover:text-gray-600">
+                {{-- Tombol X (Memanggil closeModal) --}}
+                <button @click="closeModal('showAddModal')" class="text-gray-400 hover:text-gray-600">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
@@ -120,8 +121,9 @@
 
                     {{-- Footer Action --}}
                     <div class="mt-8 flex items-center justify-end gap-3 pt-6 border-t border-gray-100">
+                        {{-- Tombol Cancel (Memanggil closeModal) --}}
                         <button type="button" 
-                            @click="{{ $errors->any() ? "window.location.href='".url()->current()."'" : "showAddModal = false" }}"
+                            @click="closeModal('showAddModal')"
                             class="px-5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors">
                             Cancel
                         </button>

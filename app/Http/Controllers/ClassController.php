@@ -6,8 +6,9 @@ use App\Models\ClassModel;
 use App\Models\Schedule; 
 use App\Models\User; // Import Model User untuk ambil data guru
 use App\Models\Student;
-use App\Models\AttendanceSession;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Log;
 
 class ClassController extends Controller
 {
@@ -151,46 +152,71 @@ class ClassController extends Controller
     {
         $class = ClassModel::findOrFail($id);
 
-        // Validasi
-        $request->validate([
-            'name' => 'required|string|max:100',
-            'classroom' => 'required|string|max:50',
-            'form_teacher_id' => 'nullable|exists:users,id',
-            'local_teacher_id' => 'nullable|exists:users,id',
-            'days' => 'nullable|array',
-        ]);
-
-        // Update Data Utama
-        $class->update([
-            'category' => $request->category,
-            'name' => $request->name,
-            'classroom' => $request->classroom,
-            'start_month' => $request->start_month,
-            'end_month' => $request->end_month,
-            'academic_year' => $request->academic_year,
-            'form_teacher_id' => $request->form_teacher_id,
-            'local_teacher_id' => $request->local_teacher_id,
-            
-            // Handle jika nama field di form beda (time_start vs start_time)
-            'start_time' => $request->start_time ?? $class->start_time,
-            'end_time' => $request->end_time ?? $class->end_time,
-            
-            'is_active' => $request->status == 'active' ? true : false,
-        ]);
-
-        // Sync Jadwal Hari: Hapus yang lama, insert yang baru
-        $class->schedules()->delete(); 
-
-        if ($request->has('days')) {
-            foreach ($request->days as $day) {
-                Schedule::create([
-                    'class_id' => $class->id,
-                    'day_of_week' => $day,
-                ]);
+        try {
+            // Validasi
+            $data = $request->validate([
+                'name' => 'required|string|max:100',
+                'classroom' => 'required|string|max:50',
+                'form_teacher_id' => 'nullable|exists:users,id',
+                'local_teacher_id' => 'nullable|exists:users,id',
+                'days' => 'nullable|array',
+                'category' => 'required|string',
+                'start_month' => 'required|string',
+                'end_month' => 'required|string',
+                'academic_year' => 'required',
+            ]);
+        
+            // Update Data Utama
+            $class->update([
+                'category' => $request->category,
+                'name' => $request->name,
+                'classroom' => $request->classroom,
+                'start_month' => $request->start_month,
+                'end_month' => $request->end_month,
+                'academic_year' => $request->academic_year,
+                'form_teacher_id' => $request->form_teacher_id,
+                'local_teacher_id' => $request->local_teacher_id,
+                
+                // Handle jika nama field di form beda (time_start vs start_time)
+                'start_time' => $request->start_time ?? $class->start_time,
+                'end_time' => $request->end_time ?? $class->end_time,
+                
+                // Perbaikan kecil: Pastikan 'is_active' dihandle dari request,
+                // atau gunakan nilai yang sudah ada jika tidak ada di request.
+                'is_active' => $request->status == 'active' ? true : false,
+            ]);
+        
+            // Sync Jadwal Hari: Hapus yang lama, insert yang baru
+            $class->schedules()->delete(); 
+        
+            if ($request->has('days')) {
+                foreach ($request->days as $day) {
+                    Schedule::create([
+                        'class_id' => $class->id,
+                        'day_of_week' => $day,
+                    ]);
+                }
             }
-        }
+        
+            // Perbaikan: Ganti pesan success
+            return redirect()->route('admin.classes.index')->with('success', 'Class updated successfully!');
 
-        return redirect()->route('admin.classes.index')->with('success', 'Class created successfully!');
+        } catch (ValidationException $e) {
+            // TANGKAP KEGAGALAN VALIDASI
+            return back()
+                ->withErrors($e->errors())
+                // Penting: Kirim 'id' lama agar Alpine JS bisa menyusun updateUrl
+                ->withInput($request->all() + ['id' => $id]) 
+                ->with('edit_failed', true); // FLAG UTAMA UNTUK EDIT MODAL
+                
+        } catch (\Throwable $e) {
+            // Tangani kegagalan lainnya
+            Log::error('Class update failed: '.$e->getMessage());
+            return back()
+                ->withInput($request->all() + ['id' => $id])
+                ->with('error', 'Update failed: ' . $e->getMessage())
+                ->with('edit_failed', true);
+        }
     }
     
     public function detailClass(Request $request, $id)
