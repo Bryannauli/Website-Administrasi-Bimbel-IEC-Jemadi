@@ -25,7 +25,10 @@ class DatabaseSeeder extends Seeder
         // 3. Siswa (Butuh Kelas untuk assign class_id)
         $this->call(StudentSeeder::class);
 
-        // 4. Absensi (Butuh Kelas & Siswa untuk digenerate absennya)
+        // 4. Assessment & Speaking Test (Butuh Kelas & Siswa untuk generate resultnya)
+        $this->call(AssessmentSeeder::class);
+
+        // 5. Absensi (Butuh Kelas & Siswa untuk digenerate absennya)
         $this->call(AttendanceSeeder::class);
     }
 }
