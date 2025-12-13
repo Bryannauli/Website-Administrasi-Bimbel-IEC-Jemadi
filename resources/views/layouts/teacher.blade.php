@@ -11,6 +11,8 @@
         .gradient-pink-purple {
             background: linear-gradient(180deg, #FDE1F5 0%, #E9D5FF 100%);
         }
+
+        [x-cloak] { display: none !important; }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-purple-50">
@@ -59,7 +61,7 @@
     </aside>
 
         <!-- Main Content -->   
-            <main class="flex-1 transition-all duration-300" :class="sidebarOpen ? 'ml-64' : 'ml-0'">
+            <main class="flex-1 transition-all duration-300" :class="sidebarOpen ? 'ml-64' : 'ml-0'" x-data="{ openModal: false, openAssessmentModal: false }">
                 <header class="bg-white shadow-sm sticky top-0 z-30">
                 <div class="px-6 py-4 flex items-center justify-between">
                     <div class="flex items-center space-x-4">
@@ -119,8 +121,6 @@
         </main>
     </div>
 
-    <!-- Alpine.js -->
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     @stack('scripts')
 </body>
 </html>
