@@ -176,7 +176,39 @@ class AdminAssessmentController extends Controller
         $session = AssessmentSession::where('class_id', $classId)
             ->where('type', $type)
             ->firstOrFail();
+
+        // 1. Tentukan Aksi Utama
+        $action = $request->input('action_type', 'save');
+
+        // ==========================================================
+        // LOGIKA QUICK STATUS CHANGE (Dari tombol mode baca: finalize_quick atau draft_quick)
+        // Jika ini Quick Action, kita tidak perlu memproses data grades
+        // ==========================================================
+        if ($action === 'finalize_quick' || $action === 'draft_quick') {
+            
+            $newStatus = ($action === 'finalize_quick') ? 'final' : 'draft';
+            
+            // Cek apakah ada perubahan status
+            if ($session->status !== $newStatus) {
+                $session->update(['status' => $newStatus]);
+
+                $msg = ($newStatus === 'final') 
+                    ? 'Assessment has been APPROVED and FINALISED. All grades are now locked.' 
+                    : 'Assessment status reverted to DRAFT. Teachers can now edit grades again.';
+            } else {
+                $msg = 'Assessment status is already ' . ucfirst($newStatus) . '. No changes made.';
+            }
+
+            return redirect()->route('admin.classes.assessment.detail', [
+                'classId' => $classId,
+                'type' => $type
+            ])->with('success', $msg);
+        }
         
+        // ==========================================================
+        // LOGIKA FULL GRADE UPDATE (Jika bukan Quick Action, lanjutkan proses nilai)
+        // ==========================================================
+
         $rules = [
             'written_date' => 'required|date',
             'speaking_date' => 'required|date',
@@ -199,6 +231,9 @@ class AdminAssessmentController extends Controller
             
             'grades.*.student_id' => 'required|exists:students,id',
             'grades.*.form_id' => 'nullable', 
+            
+            // TANGKAP ACTION TYPE DARI TOMBOL MODE EDIT
+            'action_type' => 'nullable|string|in:save,finalize,draft', 
         ];
 
         // Custom Messages agar error "grades.1.listening" jadi lebih enak dibaca
@@ -220,10 +255,23 @@ class AdminAssessmentController extends Controller
         $grades = $validatedData['grades'];
 
         try {
-            // A. Update Info Sesi
-            $session->update(['date' => $validatedData['written_date']]);
+            // A. Tentukan Status Baru Berdasarkan Tombol yang Diklik (Mode Edit)
+            $newStatus = $session->status; // Default status tidak berubah
 
-            // B. Update Info Speaking Test
+            if ($action === 'finalize') {
+                $newStatus = 'final';
+            } elseif ($action === 'draft') {
+                $newStatus = 'draft';
+            }
+            // Jika action 'save', status tetap sama (hanya nilai yang terupdate)
+
+            // B. Update Info Sesi (Termasuk Status Baru)
+            $session->update([
+                'date' => $validatedData['written_date'],
+                'status' => $newStatus, // <--- UPDATE STATUS SESI DI SINI
+            ]);
+
+            // C. Update Info Speaking Test
             $speakingTest = SpeakingTest::updateOrCreate(
                 ['assessment_session_id' => $session->id],
                 [
@@ -236,15 +284,14 @@ class AdminAssessmentController extends Controller
             $speakingTestId = $speakingTest->id;
             $sessionId = $session->id;
 
-            // C. LOOP DAN PANGGIL STORED PROCEDURE
+            // D. LOOP DAN PANGGIL STORED PROCEDURE
             foreach ($grades as $grade) {
                 
                 // Panggil Stored Procedure untuk mengurus INSERT/UPDATE/TRANSACTION SATU SISWA
-                // Prosedur ini sekarang ada di file terpusat 'create_stored_procedures.php'
                 DB::statement('CALL p_UpdateStudentGrade(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
                     $sessionId,
                     $grade['student_id'],
-                    $grade['form_id'] ?? null, // form_id (Gunakan '?? null' untuk record baru)
+                    $grade['form_id'] ?? null, 
                     $speakingTestId,
 
                     $grade['vocabulary'],
@@ -258,10 +305,16 @@ class AdminAssessmentController extends Controller
                 ]);
             }
             
+            // Pesan Sukses yang Dinamis
+            $msg = 'Grades updated successfully!';
+            if ($action === 'finalize') $msg = 'Assessment has been APPROVED and FINALISED. All grades are now locked.';
+            if ($action === 'draft') $msg = 'Assessment status reverted to DRAFT.';
+
+            // Redirect ke mode baca (tanpa parameter 'mode=edit')
             return redirect()->route('admin.classes.assessment.detail', [
                 'classId' => $classId,
                 'type' => $type
-            ])->with('success', 'Grades updated successfully! (via Stored Procedure)');
+            ])->with('success', $msg);
 
         } catch (\Exception $e) {
             // Jika ada error (termasuk trigger database), PHP akan menangkapnya di sini.

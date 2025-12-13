@@ -84,7 +84,7 @@
                             </div>
                         </div>
 
-                        {{-- Bagian 4: Jadwal & Tipe Guru (SWITCH UI - UPDATED) --}}
+                        {{-- Bagian 4: Jadwal & Tipe Guru (SWITCH UI) --}}
                         <div class="md:col-span-2">
                             <label class="block text-sm font-bold text-gray-700 mb-3 @error('days') text-red-500 @enderror">Schedule & Teacher Assignment <span class="text-red-500">*</span></label>
                             
@@ -107,13 +107,10 @@
                                         {{-- SWITCH UI: Form / Local (Muncul saat hari dipilih) --}}
                                         <div x-show="editForm.days.includes('{{ $day }}')" x-transition class="mt-3">
                                             
-                                            {{-- Hidden Input untuk kirim nilai ke backend --}}
-                                            {{-- Default ke 'form' jika key belum ada di objek --}}
                                             <input type="hidden" name="teacher_types[{{ $day }}]" 
                                                    :value="editForm.teacher_types['{{ $day }}'] || 'form'">
 
                                             <div class="flex bg-gray-100 p-1 rounded-md">
-                                                {{-- Button Form --}}
                                                 <button type="button" 
                                                     @click="editForm.teacher_types['{{ $day }}'] = 'form'"
                                                     :class="(editForm.teacher_types['{{ $day }}'] || 'form') === 'form' ? 'bg-white text-blue-700 shadow-sm ring-1 ring-black/5 font-bold' : 'text-gray-500 hover:text-gray-700 font-medium'"
@@ -121,7 +118,6 @@
                                                     Form
                                                 </button>
 
-                                                {{-- Button Local --}}
                                                 <button type="button" 
                                                     @click="editForm.teacher_types['{{ $day }}'] = 'local'"
                                                     :class="editForm.teacher_types['{{ $day }}'] === 'local' ? 'bg-white text-purple-700 shadow-sm ring-1 ring-black/5 font-bold' : 'text-gray-500 hover:text-gray-700 font-medium'"
@@ -136,25 +132,52 @@
                             @error('days') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
 
-                        {{-- Bagian 5: Waktu & Status --}}
-                        <div class="md:col-span-2 flex justify-between items-end">
+                        {{-- Bagian 5: Waktu & Status (LAYOUT DIPERBAIKI DENGAN TOGGLE BARU) --}}
+                        <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5 items-end">
+                            {{-- Class Time --}}
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Class Time <span class="text-red-500">*</span></label>
                                 <div class="flex items-center gap-2">
-                                    <input type="time" name="start_time" x-model="editForm.time_start" class="border-gray-300 rounded-lg shadow-sm @error('start_time') border-red-500 @enderror">
+                                    <input type="time" name="start_time" x-model="editForm.time_start" class="w-full border-gray-300 rounded-lg shadow-sm @error('start_time') border-red-500 @enderror">
                                     <span class="text-gray-400 font-bold">-</span>
-                                    <input type="time" name="end_time" x-model="editForm.time_end" class="border-gray-300 rounded-lg shadow-sm @error('end_time') border-red-500 @enderror">
+                                    <input type="time" name="end_time" x-model="editForm.time_end" class="w-full border-gray-300 rounded-lg shadow-sm @error('end_time') border-red-500 @enderror">
                                 </div>
                                 @if ($errors->has('start_time') || $errors->has('end_time')) <p class="text-red-500 text-xs mt-1">Time fields are required.</p> @endif
                             </div>
+
+                            {{-- STATUS TOGGLE (MODERN STYLE) --}}
                             <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Status</label>
-                                <div class="flex gap-4">
-                                    <label class="inline-flex items-center"><input type="radio" name="status" value="active" x-model="editForm.status" class="text-green-600"><span class="ml-2 text-sm">Active</span></label>
-                                    <label class="inline-flex items-center"><input type="radio" name="status" value="inactive" x-model="editForm.status" class="text-gray-600"><span class="ml-2 text-sm">Inactive</span></label>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Class Status</label>
+                                
+                                <div class="bg-gray-50 rounded-lg p-3 border border-gray-200 flex items-center h-[42px]">
+                                    {{-- Hidden Input agar nilai terkirim ke backend --}}
+                                    <input type="hidden" name="status" :value="editForm.status">
+                                    
+                                    {{-- Toggle Switch Component --}}
+                                    <div @click="editForm.status = (editForm.status === 'active' ? 'inactive' : 'active')" 
+                                         class="relative inline-flex items-center cursor-pointer shrink-0">
+                                        
+                                        {{-- Background Pill --}}
+                                        <div class="w-11 h-6 bg-gray-200 rounded-full peer transition-colors duration-200 ease-in-out"
+                                             :class="editForm.status === 'active' ? 'bg-green-600' : 'bg-gray-300'">
+                                        </div>
+                                        
+                                        {{-- Sliding Circle --}}
+                                        <div class="absolute left-[2px] top-[2px] bg-white border border-gray-300 rounded-full h-5 w-5 transition-transform duration-200 ease-in-out shadow-sm"
+                                             :class="editForm.status === 'active' ? 'translate-x-full border-transparent' : 'translate-x-0'">
+                                        </div>
+                                    </div>
+
+                                    {{-- Text Label --}}
+                                    <span class="ml-3 text-sm font-medium select-none cursor-pointer" 
+                                          @click="editForm.status = (editForm.status === 'active' ? 'inactive' : 'active')"
+                                          :class="editForm.status === 'active' ? 'text-green-700 font-bold' : 'text-gray-500'">
+                                        <span x-text="editForm.status === 'active' ? 'Active (Running)' : 'Inactive (Archived)'"></span>
+                                    </span>
                                 </div>
                             </div>
                         </div>
+
                     </div>
                     
                     <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">

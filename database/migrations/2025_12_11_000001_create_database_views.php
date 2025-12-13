@@ -85,7 +85,7 @@ return new class extends Migration
         ");
 
         // ==========================================
-        // 5. View: v_teacher_attendance (DIPERBAIKI)
+        // 5. View: v_teacher_attendance
         // ==========================================
         DB::unprepared("
             CREATE OR REPLACE VIEW v_teacher_attendance AS
@@ -154,6 +154,37 @@ return new class extends Migration
             LEFT JOIN speaking_test_results str ON st.id = str.speaking_test_id AND af.student_id = str.student_id
             LEFT JOIN users u ON st.interviewer_id = u.id;
         ");
+
+        // ==========================================
+        // 7. View: v_class_activity_logs (UPDATE KRITIS)
+        // ==========================================
+        DB::unprepared("
+            CREATE OR REPLACE VIEW v_class_activity_logs AS
+            SELECT 
+                s.id AS session_id,
+                s.class_id,             
+                s.date,
+                s.comment AS comment,     -- MENGGUNAKAN KOLOM 'comment'
+                u.name AS teacher_name,
+                u.id AS teacher_id,
+                
+                -- Hitung Total Siswa di Sesi Ini
+                COUNT(r.id) AS total_students,
+                
+                -- Hitung Yang Hadir (Present + Late biasanya dianggap hadir)
+                SUM(CASE WHEN r.status IN ('present', 'late') THEN 1 ELSE 0 END) AS present_count,
+                
+                -- Hitung Persentase (Handle division by zero)
+                CASE 
+                    WHEN COUNT(r.id) > 0 THEN ROUND((SUM(CASE WHEN r.status IN ('present', 'late') THEN 1 ELSE 0 END) / COUNT(r.id)) * 100)
+                    ELSE 0 
+                END AS attendance_percentage
+
+            FROM class_sessions s  -- NAMA TABEL BARU
+            LEFT JOIN users u ON s.teacher_id = u.id -- KOLOM FK GURU BARU
+            LEFT JOIN attendance_records r ON s.id = r.class_session_id -- ASUMSI FK DI attendance_records SUDAH DIGANTI
+            GROUP BY s.id, s.class_id, s.date, s.comment, u.name, u.id;
+        ");
     }
 
     /**
@@ -161,6 +192,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        DB::unprepared("DROP VIEW IF EXISTS v_class_activity_logs");
         DB::unprepared("DROP VIEW IF EXISTS v_student_grades");
         DB::unprepared("DROP VIEW IF EXISTS v_teacher_attendance");
         DB::unprepared("DROP VIEW IF EXISTS v_student_attendance");

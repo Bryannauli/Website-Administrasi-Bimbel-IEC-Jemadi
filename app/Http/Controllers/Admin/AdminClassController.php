@@ -7,8 +7,7 @@ use App\Models\ClassModel;
 use App\Models\Schedule; 
 use App\Models\User; // Import Model User untuk ambil data guru
 use App\Models\Student;
-use App\Models\AssessmentSession;
-use App\Models\SpeakingTest;
+use App\Models\ClassSession;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
@@ -99,9 +98,6 @@ class AdminClassController extends Controller
     /**
      * Menyimpan Data Kelas Baru (Create)
      */
-    /**
-     * Menyimpan Data Kelas Baru (Create)
-     */
     public function store(Request $request)
     {
         // 1. Validasi Input
@@ -116,75 +112,59 @@ class AdminClassController extends Controller
             'local_teacher_id' => 'nullable|exists:users,id',
             'start_time' => 'required', 
             'end_time' => 'required',
-            'days' => 'required|array',
+            'days' => 'required|array', 
             'days.*' => 'string|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
             'teacher_types' => 'nullable|array',
         ]);
 
-        // Gunakan Transaction agar data konsisten (semua tersimpan atau batal semua)
-        DB::beginTransaction();
-
         try {
-            // 2. Simpan Data Kelas Utama
-            $class = ClassModel::create([
-                'category' => $request->category,
-                'name' => $request->name,
-                'classroom' => $request->classroom,
-                'start_month' => $request->start_month,
-                'end_month' => $request->end_month,
-                'academic_year' => $request->academic_year,
-                'form_teacher_id' => $request->form_teacher_id,
-                'local_teacher_id' => $request->local_teacher_id,
-                'start_time' => $request->start_time,
-                'end_time' => $request->end_time,
-                'is_active' => true,
-            ]);
-
-            // 3. Simpan Jadwal Hari ke Tabel Schedules
+            // 2. SIAPKAN DATA SCHEDULE menjadi JSON String
+            // Array dari: [{"day": "Monday", "type": "form"}, {"day": "Tuesday", "type": "local"}]
+            $scheduleData = [];
             $teacherTypes = $request->input('teacher_types', []);
 
             foreach ($request->days as $day) {
-                $type = $teacherTypes[$day] ?? 'form';
-
-                Schedule::create([
-                    'class_id' => $class->id,
-                    'day_of_week' => $day,
-                    'teacher_type' => $type,
-                ]);
+                $scheduleData[] = [
+                    'day' => $day,
+                    // Default ke 'form' jika tidak ada tipe guru spesifik
+                    'type' => $teacherTypes[$day] ?? 'form'
+                ];
             }
+            
+            $jsonSchedule = json_encode($scheduleData); 
 
-            // 4. OTOMATISASI: Buat Sesi Assessment (Mid & Final) Kosong
-            // Logic: Interviewer default diambil dari Local Teacher.
-            // Jika local_teacher_id NULL (belum diassign), maka interviewer_id juga NULL.
-            $interviewerId = $class->local_teacher_id; 
+            // 3. PANGGIL Stored Procedure (Transaction dan Logic Insert ada di dalam SP)
+            
+            // Set variabel sesi untuk menampung output ID kelas
+            DB::statement('SET @newClassId = 0');
 
-            $types = ['mid', 'final'];
+            // Panggil Procedure dengan 11 parameter input dan 1 parameter output
+            // Total 12 placeholder '?'
+            DB::statement('CALL p_CreateClass(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, @newClassId)', [
+                $request->category,
+                $request->name,
+                $request->classroom,
+                $request->start_month,
+                $request->end_month,
+                $request->academic_year,
+                $request->form_teacher_id,
+                $request->local_teacher_id,
+                $request->start_time,
+                $request->end_time,
+                $jsonSchedule // <-- Parameter ke-11: JSON Schedule
+            ]);
 
-            foreach ($types as $type) {
-                
-                // A. Buat Session (Date NULL)
-                $session = AssessmentSession::create([
-                    'class_id' => $class->id,
-                    'type'     => $type,
-                    'date'     => null, // Masih kosong
-                ]);
+            /// 4. AMBIL ID KELAS YANG BARU DIBUAT
+            $result = DB::select('SELECT @newClassId AS id');
+            $newClassId = $result[0]->id; // ID kelas baru
 
-                // B. Buat Speaking Test (Date & Topic NULL, Interviewer = Local Teacher/Null)
-                SpeakingTest::create([
-                    'assessment_session_id' => $session->id,
-                    'date'           => null, // Masih kosong
-                    'topic'          => null, // Masih kosong
-                    'interviewer_id' => $interviewerId, // Local Teacher ID atau NULL
-                ]);
-            }
-
-            DB::commit();
-            return redirect()->route('admin.classes.index')->with('success', 'Class and assessment sessions created successfully!');
+            // 5. REDIRECT KE HALAMAN DETAIL KELAS BARU
+            return redirect()->route('admin.classes.detailclass', $newClassId)
+                                ->with('success', 'Class, schedules, and assessment sessions created successfully!');
 
         } catch (\Exception $e) {
-            DB::rollBack();
-            // Log error untuk developer jika perlu
-            // Log::error("Failed to create class: " . $e->getMessage());
+            // Jika ada error, Procedure otomatis ROLLBACK karena ada EXIT HANDLER.
+            // Di sini kita hanya menangkap Exception PHP untuk menampilkan pesan error.
             
             return back()
                 ->withInput()
@@ -265,7 +245,7 @@ class AdminClassController extends Controller
     public function detailClass(Request $request, $id)
     {
         // 1. Load Data Kelas
-        $class = ClassModel::with(['schedules', 'formTeacher', 'localTeacher', 'students'])
+        $class = ClassModel::with(['schedules', 'formTeacher', 'localTeacher', 'students', 'assessmentSessions'])
             ->findOrFail($id);
         
         $class->students_count = $class->students->count();
@@ -284,19 +264,31 @@ class AdminClassController extends Controller
         }
         $availableStudents = $query->get();
 
-        // 3. History Sesi (Columns)
-        $teachingLogs = \App\Models\ClassSession::where('class_id', $id)
-            ->with(['teacher', 'records'])
+        // 3. HISTORY SESI (Menggunakan View Database untuk performa di MODAL)
+        // Hasilnya: Collection of stdClass (tidak ada relasi teacher)
+        $teachingLogs = DB::table('v_class_activity_logs') 
+            ->where('class_id', $id)
             ->orderBy('date', 'desc')
             ->get();
 
-        $lastSession = $teachingLogs->first();
-
-        // 4. Panggil Stored Procedure untuk mengambil data statistik
+        // 4. LAST SESSION (Menggunakan Eloquent untuk mendapatkan relasi guru/teacher)
+        // Hanya ambil satu record terakhir dengan relasi guru, ini lebih ringan daripada load semua logs via Eloquent.
+        $lastSession = ClassSession::where('class_id', $id)
+            ->with('teacher') // Memuat relasi teacher
+            ->orderBy('date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->first();
+            
+        // 5. Panggil Stored Procedure untuk mengambil data statistik (Tetap sama)
         $studentStats = DB::select('CALL p_get_class_attendance_stats(?)', [$id]);
         
+        // 6. Matrix Absensi (Menggunakan ClassSession Model yang sudah benar)
+        $rawLogs = ClassSession::where('class_id', $id)
+            ->with(['records:id,class_session_id,student_id,status']) 
+            ->get();
+
         $attendanceMatrix = []; 
-        foreach ($teachingLogs as $session) {
+        foreach ($rawLogs as $session) {
             foreach ($session->records as $record) {
                 $attendanceMatrix[$record->student_id][$session->id] = $record->status;
             }

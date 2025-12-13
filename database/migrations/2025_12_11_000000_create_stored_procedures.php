@@ -109,7 +109,7 @@ return new class extends Migration
         ');
 
         // ==========================================
-        // 6. PROCEDURE: p_UpdateStudentGrade (FIXED: NO is_submitted)
+        // 6. PROCEDURE: p_UpdateStudentGrade
         // ==========================================
         DB::unprepared('
             DROP PROCEDURE IF EXISTS p_UpdateStudentGrade;
@@ -149,7 +149,7 @@ return new class extends Migration
                 -- Hitung Total Speaking
                 SET total_speaking = p_s_content + p_s_partic;
 
-                -- 2. Simpan Nilai Tertulis (TANPA kolom is_submitted)
+                -- 2. Simpan Nilai Tertulis
                 IF EXISTS (SELECT 1 FROM assessment_forms WHERE student_id = p_student_id AND assessment_session_id = p_session_id) THEN
                     -- UPDATE Existing Record
                     UPDATE assessment_forms
@@ -170,10 +170,118 @@ return new class extends Migration
                 COMMIT;
             END
         ');
+
+        // ==========================================
+        // 7. VIEW: Class Activity Logs (UPDATE KRITIS: Pakai class_sessions & comment)
+        // ==========================================
+        DB::unprepared("
+            CREATE OR REPLACE VIEW v_class_activity_logs AS
+            SELECT 
+                s.id AS session_id,
+                s.class_id,             
+                s.date,
+                s.comment AS comment,    
+                u.name AS teacher_name,
+                u.id AS teacher_id,
+                COUNT(r.id) AS total_students,
+                SUM(CASE WHEN r.status IN ('present', 'late') THEN 1 ELSE 0 END) AS present_count,
+                CASE 
+                    WHEN COUNT(r.id) > 0 THEN ROUND((SUM(CASE WHEN r.status IN ('present', 'late') THEN 1 ELSE 0 END) / COUNT(r.id)) * 100)
+                    ELSE 0 
+                END AS attendance_percentage
+
+            FROM class_sessions s  
+            LEFT JOIN users u ON s.teacher_id = u.id 
+            LEFT JOIN attendance_records r ON s.id = r.class_session_id 
+            GROUP BY s.id, s.class_id, s.date, s.comment, u.name, u.id;
+        ");
+
+        // ==========================================
+        // 8. PROCEDURE: Create Class (BARU: Pindahkan Logic Store ke Sini)
+        // ==========================================
+        DB::unprepared("
+            DROP PROCEDURE IF EXISTS p_CreateClass;
+            CREATE PROCEDURE p_CreateClass(
+                IN p_category VARCHAR(50),
+                IN p_name VARCHAR(100),
+                IN p_classroom VARCHAR(50),
+                IN p_start_month VARCHAR(20),
+                IN p_end_month VARCHAR(20),
+                IN p_academic_year VARCHAR(20),
+                IN p_form_teacher_id BIGINT,
+                IN p_local_teacher_id BIGINT,
+                IN p_start_time TIME,
+                IN p_end_time TIME,
+                IN p_schedules JSON,  -- PARAMETER BARU: JSON STRING
+                OUT p_new_class_id BIGINT
+            )
+            BEGIN
+                DECLARE mid_session_id BIGINT;
+                DECLARE final_session_id BIGINT;
+                DECLARE v_interviewer_id BIGINT;
+
+                DECLARE EXIT HANDLER FOR SQLEXCEPTION
+                BEGIN
+                    ROLLBACK;
+                    RESIGNAL;
+                END;
+
+                START TRANSACTION; -- Transaction dimulai DI SINI, bukan di PHP
+
+                -- A. Insert Data Kelas
+                INSERT INTO classes (
+                    category, name, classroom, start_month, end_month, 
+                    academic_year, form_teacher_id, local_teacher_id, 
+                    start_time, end_time, is_active, created_at, updated_at
+                ) VALUES (
+                    p_category, p_name, p_classroom, p_start_month, p_end_month, 
+                    p_academic_year, p_form_teacher_id, p_local_teacher_id, 
+                    p_start_time, p_end_time, 1, NOW(), NOW()
+                );
+
+                SET p_new_class_id = LAST_INSERT_ID();
+
+                -- B. Insert Data Jadwal dari JSON
+                INSERT INTO schedules (class_id, day_of_week, teacher_type, created_at, updated_at)
+                SELECT 
+                    p_new_class_id, 
+                    jt.day, 
+                    jt.type, 
+                    NOW(), 
+                    NOW()
+                FROM JSON_TABLE(
+                    p_schedules, 
+                    '$[*]' COLUMNS (
+                        day VARCHAR(20) PATH '$.day',
+                        type VARCHAR(20) PATH '$.type'
+                    )
+                ) AS jt;
+
+                -- C. Otomatisasi Assessment (Sama seperti sebelumnya)
+                SET v_interviewer_id = p_local_teacher_id;
+
+                INSERT INTO assessment_sessions (class_id, type, date, status, created_at, updated_at)
+                VALUES (p_new_class_id, 'mid', NULL, 'draft', NOW(), NOW());
+                SET mid_session_id = LAST_INSERT_ID();
+                INSERT INTO speaking_tests (assessment_session_id, date, topic, interviewer_id, created_at, updated_at)
+                VALUES (mid_session_id, NULL, NULL, v_interviewer_id, NOW(), NOW());
+
+                INSERT INTO assessment_sessions (class_id, type, date, status, created_at, updated_at)
+                VALUES (p_new_class_id, 'final', NULL, 'draft', NOW(), NOW());
+                SET final_session_id = LAST_INSERT_ID();
+                INSERT INTO speaking_tests (assessment_session_id, date, topic, interviewer_id, created_at, updated_at)
+                VALUES (final_session_id, NULL, NULL, v_interviewer_id, NOW(), NOW());
+
+                COMMIT; -- Commit dilakukan DI SINI
+            END
+        ");
     }
 
     public function down(): void
     {
+        // Drop semua procedure dan view saat rollback
+        DB::unprepared('DROP PROCEDURE IF EXISTS p_CreateClass'); // Hapus procedure baru
+        DB::unprepared('DROP VIEW IF EXISTS v_class_activity_logs');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_UpdateStudentGrade');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_GetDashboardStats');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_GetAttendanceStats');

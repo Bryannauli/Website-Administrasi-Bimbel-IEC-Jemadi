@@ -13,24 +13,26 @@
                 @else
                     <div class="space-y-4">
                         @foreach($teachingLogs as $log)
-                            @php $teacher = $log->teacher; @endphp 
+                            {{-- HAPUS baris @php $teacher = $log->teacher; @endphp --}} 
                             
                             <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                                 <div class="flex justify-between items-start mb-2">
                                     <div class="flex items-center gap-3">
                                         <div class="bg-blue-50 text-blue-700 font-bold px-3 py-1.5 rounded-lg text-center"><span class="block text-xs uppercase">{{ \Carbon\Carbon::parse($log->date)->format('M') }}</span><span class="block text-xl leading-none">{{ \Carbon\Carbon::parse($log->date)->format('d') }}</span></div>
                                         <div>
-                                            {{-- PERBAIKAN: Mengakses langsung $teacher --}}
-                                            <h4 class="font-bold text-gray-800 text-sm">{{ $teacher->name ?? 'Unknown' }}</h4> 
+                                            {{-- AMBIL teacher_name LANGSUNG DARI VIEW DB --}}
+                                            <h4 class="font-bold text-gray-800 text-sm">{{ $log->teacher_name ?? 'Unknown' }}</h4> 
                                             <span class="text-xs text-gray-500">{{ \Carbon\Carbon::parse($log->date)->format('l') }}</span>
                                         </div>
                                     </div>
-                                    @php
-                                        $p = $log->records->where('status', 'present')->count();
-                                        $t = $log->records->count();
-                                        $pct = $t > 0 ? round(($p/$t)*100) : 0;
-                                    @endphp
-                                    <div class="text-right"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">{{ $pct }}% Present</span></div>
+                                    {{-- HAPUS LOGIKA PHP PERHITUNGAN PERSENTASE --}}
+                                    <div class="text-right">
+                                        {{-- AMBIL attendance_percentage LANGSUNG DARI VIEW DB --}}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                            {{ $log->attendance_percentage >= 80 ? 'bg-green-100 text-green-800' : ($log->attendance_percentage >= 50 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
+                                            {{ $log->attendance_percentage }}% Present
+                                        </span>
+                                    </div>
                                 </div>
                                 <div class="mt-3 pl-[72px]"><p class="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg italic border border-gray-100">"{{ $log->comment ?? '-' }}"</p></div> 
                             </div>

@@ -63,9 +63,9 @@
                                         
                                         {{-- MODIFIKASI: Nama Guru --}}
                                         @php
-                                            // Ambil record guru pertama di sesi ini
-                                            $teacherName = $session->teacher->name ?? '-';
-                                            // Ambil kata pertama saja agar tidak terlalu panjang (misal: "Budi Santoso" jadi "Budi")
+                                            // Menggunakan teacher_name dari View DB
+                                            $teacherName = $session->teacher_name ?? '-'; 
+                                            // Ambil kata pertama saja agar tidak terlalu panjang
                                             $shortName = ($teacherName !== '-') ? explode(' ', trim($teacherName))[0] : '-';
                                         @endphp
                                         <div class="mt-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 text-[9px] border border-blue-100 truncate max-w-[70px]" title="{{ $teacherName }}">
@@ -97,7 +97,8 @@
                                 {{-- Loop Status Per Tanggal --}}
                                 @foreach($teachingLogs as $session)
                                     @php
-                                        $status = $attendanceMatrix[$stat->student_id][$session->id] ?? '-';
+                                        // MENGGUNAKAN session_id (Nama Kolom dari View DB)
+                                        $status = $attendanceMatrix[$stat->student_id][$session->session_id] ?? '-';
                                         
                                         $cellContent = match($status) {
                                             'present' => '<span class="inline-flex w-6 h-6 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm" title="Present">

@@ -63,36 +63,116 @@
                     <p class="text-gray-500 text-sm mt-1">Class: <span class="font-bold text-gray-800">{{ $class->name }}</span></p>
                 </div>
                 
-                {{-- SWITCH BUTTONS (Edit / Save / Cancel) --}}
+                {{-- FORM TERSEMBUNYI UNTUK QUICK ACTION (Hanya mengubah status tanpa mengirim data nilai) --}}
+                {{-- Tombol di mode baca akan menggunkan form ini --}}
+                <form id="quickStatusForm" method="POST" action="{{ route('admin.classes.assessment.storeOrUpdateGrades', ['classId' => $class->id, 'type' => $type]) }}" style="display: none;">
+                    @csrf
+                    {{-- action_type akan diisi 'finalize_quick' atau 'draft_quick' oleh tombol --}}
+                    <input type="hidden" name="action_type" value=""> 
+                </form>
+
+
+                {{-- SWITCH BUTTONS (Tombol Aksi) --}}
                 <div class="flex items-center gap-3">
                     
-                    {{-- TOMBOL 1: EDIT (Hanya muncul saat mode BACA) --}}
-                    <button type="button" 
-                            x-show="!isEditing"
-                            @click="isEditing = true"
-                            class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition shadow-md flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                        Edit Assessment Info
-                    </button>
+                    {{-- ================================== --}}
+                    {{-- A. ACTIONS SAAT MODE BACA (!isEditing) --}}
+                    {{-- ================================== --}}
+                    <div x-show="!isEditing" class="flex items-center gap-2">
+                        
+                        {{-- Tombol EDIT (Selalu ada jika belum FINAL) --}}
+                        @if($session->status !== 'final')
+                        <button type="button" 
+                                @click="isEditing = true"
+                                class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition shadow-md flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            Edit Assessment
+                        </button>
+                        @endif
 
-                    {{-- TOMBOL 2: SAVE (Hanya muncul saat mode EDIT) --}}
-                    <button type="submit" 
-                            form="assessmentForm"
-                            x-show="isEditing"
-                            class="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg transition shadow-md flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                        Save Changes
-                    </button>
+                        {{-- Tombol QUICK APPROVE & FINALIZE (Ungu - Hanya muncul jika SUBMITTED) --}}
+                        @if($session->status === 'submitted')
+                        <button type="submit"
+                                form="quickStatusForm"
+                                name="action_type" 
+                                value="finalize_quick"
+                                onclick="return confirmFinalize(document.getElementById('quickStatusForm'))"
+                                class="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold rounded-lg transition shadow-md flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Approve & Finalize
+                        </button>
+                        @endif
+                        
+                        {{-- Tombol QUICK REVERT TO DRAFT (Tetap Merah) --}}
+                        @if($session->status === 'submitted' || $session->status === 'final')
+                        <button type="submit" 
+                                form="quickStatusForm"
+                                name="action_type" 
+                                value="draft_quick"
+                                title="Send back to teacher"
+                                onclick="return confirmRevert(document.getElementById('quickStatusForm'))"
+                                class="px-3 py-2.5 bg-red-100 text-red-600 hover:bg-red-200 border border-red-200 font-bold rounded-lg transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                        </button>
+                        @endif
 
-                    {{-- TOMBOL 3: CANCEL (Reload halaman untuk reset input) --}}
-                    <a href="{{ route('admin.classes.assessment.detail', array_merge(
-                            ['classId' => $class->id, 'type' => $type], 
-                            request()->except('mode') // <--- Hapus parameter 'mode' agar keluar dari Edit Mode
-                        )) }}"
-                            x-show="isEditing"
-                            class="px-4 py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-bold rounded-lg transition shadow-sm flex items-center justify-center cursor-pointer text-decoration-none">
-                        Cancel
-                    </a>
+                        {{-- Tombol FINALIZED (Indicator jika sudah FINAL) --}}
+                        @if($session->status === 'final')
+                        <span class="px-5 py-2.5 bg-purple-100 text-purple-700 text-sm font-bold rounded-lg border border-purple-200 shadow-sm flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Finalized (Locked)
+                        </span>
+                        @endif
+
+                    </div>
+
+                    {{-- ================================== --}}
+                    {{-- B. ACTIONS SAAT MODE EDIT (isEditing) --}}
+                    {{-- ================================== --}}
+                    <div x-show="isEditing" class="flex items-center gap-2">
+                        
+                        {{-- 1. TOMBOL CANCEL --}}
+                        <a href="{{ route('admin.classes.assessment.detail', ['classId' => $class->id, 'type' => $type]) }}"
+                        class="px-4 py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-bold rounded-lg transition shadow-sm">
+                            Cancel
+                        </a>
+
+                        {{-- 2. TOMBOL SAVE ONLY (WARNA HIJAU) --}}
+                        <button type="submit" 
+                                form="assessmentForm"
+                                name="action_type" 
+                                value="save"
+                                class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg transition shadow-md flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                            Save Only
+                        </button>
+
+                        {{-- 3. TOMBOL APPROVE & FINALIZE (Ungu - Hanya jika status belum final) --}}
+                        @if($session->status !== 'final')
+                        <button type="submit" 
+                                form="assessmentForm"
+                                name="action_type" 
+                                value="finalize" 
+                                onclick="return confirmFinalize(document.getElementById('assessmentForm'))"
+                                class="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold rounded-lg transition shadow-md flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Approve & Finalize
+                        </button>
+                        @endif
+                        
+                        {{-- 4. TOMBOL REVERT TO DRAFT --}}
+                        @if($session->status === 'submitted' || $session->status === 'final')
+                        <button type="submit" 
+                                form="assessmentForm"
+                                name="action_type" 
+                                value="draft"
+                                title="Send back to teacher"
+                                onclick="return confirmRevert(document.getElementById('assessmentForm'))"
+                                class="px-3 py-2.5 bg-red-100 text-red-600 hover:bg-red-200 border border-red-200 font-bold rounded-lg transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                        </button>
+                        @endif
+                    </div>
                 </div>
             </div>
 
@@ -285,15 +365,16 @@
                                             return 'Insufficient';
                                         },
 
+                                        // UPDATE WARNA SESUAI PERMINTAAN
                                         get predicateColor() {
                                             let p = this.predicate;
-                                            if (p === 'Outstanding') return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-                                            if (p === 'Distinction') return 'bg-blue-100 text-blue-700 border-blue-200';
-                                            if (p === 'Credit')      return 'bg-indigo-100 text-indigo-700 border-indigo-200';
-                                            if (p === 'Acceptable')  return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-                                            if (p === 'Unsatisfactory') return 'bg-orange-100 text-orange-700 border-orange-200';
-                                            if (p === 'Insufficient')   return 'bg-red-100 text-red-700 border-red-200';
-                                            return 'bg-gray-100 text-gray-500 border-gray-200';
+                                            if (p === 'Outstanding')    return 'bg-purple-100 text-purple-700 border-purple-200'; // Ungu
+                                            if (p === 'Distinction')    return 'bg-blue-100 text-blue-700 border-blue-200';       // Biru
+                                            if (p === 'Credit')         return 'bg-green-100 text-green-700 border-green-200';     // Hijau
+                                            if (p === 'Acceptable')     return 'bg-yellow-100 text-yellow-700 border-yellow-200';   // Kuning
+                                            if (p === 'Unsatisfactory') return 'bg-red-100 text-red-700 border-red-200';          // Merah
+                                            if (p === 'Insufficient')   return 'bg-gray-100 text-gray-600 border-gray-200';        // Abu
+                                            return 'bg-gray-50 text-gray-400 border-gray-100';
                                         }
                                     }"
                                 >
@@ -333,7 +414,7 @@
                                             class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 @error('grades.'.$student['id'].'.listening') border-red-500 ring-1 ring-red-500 @enderror">
                                     </td>
 
-                                    {{-- SPEAKING CONTENT (Max 50) - Karena total speaking max 100 --}}
+                                    {{-- SPEAKING CONTENT (Max 50) --}}
                                     <td class="px-3 py-3 text-center bg-purple-50/50">
                                         <span x-show="!isEditing" class="font-bold text-purple-700" x-text="s_content || '-'"></span>
                                         <input x-show="isEditing" x-model="s_content" 
@@ -402,13 +483,73 @@
         </div>
     </div>
 
-    {{-- SCRIPTS (SweetAlert2 & Enter Key Navigation) --}}
+    {{-- SCRIPTS (SweetAlert2 & Enter Key Navigation & Confirmation) --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        // --- 1. NEW CONFIRMATION FUNCTIONS ---
+
+        function confirmFinalize(formElement) {
+            Swal.fire({
+                title: 'Approve & Finalize?',
+                text: "Are you sure you want to FINALIZE this assessment? This will lock the grades and set the official status to FINAL.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#9333ea', // Ungu (Purple-600)
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: 'Yes, Finalize!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Mencegah double submit jika form utama sedang dikirim
+                    Swal.fire({
+                        title: 'Processing...',
+                        allowOutsideClick: false,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            Swal.showLoading()
+                        }
+                    });
+                    // Set action_type pada input hidden form yang relevan
+                    formElement.querySelector('input[name="action_type"]').value = formElement.id === 'quickStatusForm' ? 'finalize_quick' : 'finalize';
+                    formElement.submit();
+                }
+            });
+            return false;
+        }
+
+        function confirmRevert(formElement) {
+            Swal.fire({
+                title: 'Revert to Draft?',
+                text: "This action will set the status back to DRAFT. The teacher will be able to edit the grades again.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626', // Merah (Red-600)
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: 'Yes, Revert to Draft'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Processing...',
+                        allowOutsideClick: false,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            Swal.showLoading()
+                        }
+                    });
+                    // Set action_type pada input hidden form yang relevan
+                    formElement.querySelector('input[name="action_type"]').value = formElement.id === 'quickStatusForm' ? 'draft_quick' : 'draft';
+                    formElement.submit();
+                }
+            });
+            return false;
+        }
+
+
+        // --- 2. MAIN DOM CONTENT LOADED ---
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('assessmentForm');
+            const quickForm = document.getElementById('quickStatusForm');
 
-            // 1. Mencegah submit saat Enter ditekan pada input field (Pindah Fokus)
+            // A. Mencegah submit saat Enter ditekan pada input field (Pindah Fokus)
             form.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
                     e.preventDefault(); 
@@ -424,14 +565,14 @@
                 }
             });
 
-            // 2. SweetAlert Notifications (Menggunakan PHP tag eksplisit)
+            // B. SweetAlert Notifications (Menggunakan PHP tag eksplisit)
             
             // --- PHP DATA PASSTHROUGH (Format Anti-VS Code Decorator Error) ---
             const successMessage = <?php echo json_encode(session('success')); ?>;
             const errorMessage   = <?php echo json_encode(session('error')); ?>;
             const validationErrors = <?php echo json_encode($errors->all()); ?>;
 
-            // A. Success
+            // 1. Success
             if (successMessage) {
                 Swal.fire({
                     icon: 'success',
@@ -442,7 +583,7 @@
                 });
             }
 
-            // B. Validation Error (Required fields missing)
+            // 2. Validation Error (Required fields missing)
             if (validationErrors.length > 0) {
                 let errorListHtml = '<div class="text-left text-sm"><p class="mb-2 font-bold">Please check the red fields:</p><ul class="list-disc pl-5 text-red-600">';
                 
@@ -464,7 +605,7 @@
                 });
             }
 
-            // C. General System Error
+            // 3. General System Error
             if (errorMessage) {
                 Swal.fire({
                     icon: 'error',

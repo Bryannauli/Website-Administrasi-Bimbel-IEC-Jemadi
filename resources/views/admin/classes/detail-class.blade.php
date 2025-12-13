@@ -498,7 +498,7 @@
                     </div>
                 </div>
 
-                {{-- 4. ROW 3: ACADEMIC ASSESSMENTS (SAMA) --}}
+                {{-- 4. ROW 3: ACADEMIC ASSESSMENTS --}}
                 <div class="mt-8">
                     <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                         Academic Assessments
@@ -506,26 +506,81 @@
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         
+                        {{-- MID TERM CARD --}}
+                        @php
+                            // Ambil data session Mid Term dari relasi
+                            $midSession = $class->assessmentSessions->where('type', 'mid')->first();
+                            $midStatus = $midSession->status ?? 'draft'; // Default draft jika belum ada
+                            
+                            // Logika Warna Badge
+                            $midColor = match($midStatus) {
+                                'submitted' => 'bg-blue-100 text-blue-700 border-blue-200',
+                                'final'     => 'bg-purple-100 text-purple-700 border-purple-200',
+                                default     => 'bg-gray-100 text-gray-600 border-gray-200',
+                            };
+                        @endphp
                         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden group hover:border-blue-300 hover:shadow-md transition-all">
+                            
+                            {{-- HEADER CARD: Title & Status --}}
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h4 class="text-lg font-bold text-gray-800">Mid Term</h4>
+                                    <p class="text-xs text-gray-400 mt-1">
+                                        {{ $midSession && $midSession->date ? \Carbon\Carbon::parse($midSession->date)->format('d M Y') : 'Date not set' }}
+                                    </p>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border {{ $midColor }}">
+                                    {{ ucfirst($midStatus) }}
+                                </span>
+                            </div>
+
                             <div class="flex items-center gap-3">
                                 <a href="{{ route('admin.classes.assessment.detail', ['classId' => $class->id, 'type' => 'mid']) }}" 
                                 class="flex-1 inline-flex justify-center items-center px-4 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition shadow-blue-200 gap-2">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                    View Grades
+                                    {{ $midStatus == 'draft' ? 'Input Grades' : 'View Grades' }}
                                 </a>
                                 
+                                {{-- Tombol Print (Hanya aktif jika Final/Submitted mungkin?) --}}
                                 <button disabled class="p-2.5 text-gray-400 bg-gray-100 rounded-lg cursor-not-allowed" title="Print Report Card">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                                 </button>
                             </div>
                         </div>
 
+                        {{-- FINAL TERM CARD --}}
+                        @php
+                            // Ambil data session Final Term
+                            $finalSession = $class->assessmentSessions->where('type', 'final')->first();
+                            $finalStatus = $finalSession->status ?? 'draft'; 
+
+                            // Logika Warna Badge
+                            $finalColor = match($finalStatus) {
+                                'submitted' => 'bg-indigo-100 text-indigo-700 border-indigo-200',
+                                'final'     => 'bg-purple-100 text-purple-700 border-purple-200',
+                                default     => 'bg-gray-100 text-gray-600 border-gray-200',
+                            };
+                        @endphp
                         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden group hover:border-indigo-300 hover:shadow-md transition-all">
+                            
+                            {{-- HEADER CARD: Title & Status --}}
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h4 class="text-lg font-bold text-gray-800">Final Term</h4>
+                                    <p class="text-xs text-gray-400 mt-1">
+                                        {{ $finalSession && $finalSession->date ? \Carbon\Carbon::parse($finalSession->date)->format('d M Y') : 'Date not set' }}
+                                    </p>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border {{ $finalColor }}">
+                                    {{ ucfirst($finalStatus) }}
+                                </span>
+                            </div>
+
                             <div class="flex items-center gap-3">
                                 <a href="{{ route('admin.classes.assessment.detail', ['classId' => $class->id, 'type' => 'final']) }}" 
                                 class="flex-1 inline-flex justify-center items-center px-4 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition shadow-indigo-200 gap-2">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                    View Grades
+                                    {{ $finalStatus == 'draft' ? 'Input Grades' : 'View Grades' }}
                                 </a>
                                 <button disabled class="p-2.5 text-gray-400 bg-gray-100 rounded-lg cursor-not-allowed" title="Print Certificate">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
@@ -554,6 +609,33 @@
         </form>
 
     </div> {{-- Penutup Wrapper Utama x-data --}}
+
+    {{-- SWEETALERT FLASH MESSAGE HANDLER --}}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const successMessage = <?php echo json_encode(session('success')); ?>;
+            const errorMessage = <?php echo json_encode(session('error')); ?>;
+
+            if (successMessage) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: successMessage,
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            }
+
+            if (errorMessage) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: errorMessage,
+                });
+            }
+        });
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </x-app-layout>

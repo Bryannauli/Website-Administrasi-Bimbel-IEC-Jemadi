@@ -52,6 +52,11 @@ class ClassModel extends Model
         return $this->hasMany(Schedule::class, 'class_id');
     }
 
+    public function assessmentSessions()
+    {
+        return $this->hasMany(AssessmentSession::class, 'class_id');
+    }
+
     public function logs()
     {
         return $this->hasMany(ClassLog::class, 'class_id');
