@@ -12,10 +12,25 @@ class Schedule extends Model
     protected $fillable = [
         'class_id',
         'day_of_week',
+        'teacher_type',
     ];
 
-    public function classModel()
+    /**
+     * (OPSIONAL) Accessor untuk langsung mengambil data Guru yang bertugas.
+     * Cara pakai: $schedule->assigned_teacher->name
+     */
+    public function getAssignedTeacherAttribute()
     {
-        return $this->belongsTo(ClassModel::class, 'class_id');
+        // Pastikan relasi classModel sudah di-load sebelumnya (Eager Loading)
+        // untuk menghindari N+1 query.
+        if (!$this->relationLoaded('classModel')) {
+            $this->load('classModel.formTeacher', 'classModel.localTeacher');
+        }
+
+        if ($this->teacher_type === 'local') {
+            return $this->classModel->localTeacher;
+        }
+
+        return $this->classModel->formTeacher;
     }
 }

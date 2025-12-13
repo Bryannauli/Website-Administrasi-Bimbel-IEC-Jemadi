@@ -67,7 +67,7 @@ return new class extends Migration
         ");
 
         // ==========================================
-        // 4. View: v_student_attendance (FIXED)
+        // 4. View: v_student_attendance
         // ==========================================
         DB::unprepared("
             CREATE OR REPLACE VIEW v_student_attendance AS
@@ -77,7 +77,7 @@ return new class extends Migration
                 ar.created_at,
                 ar.updated_at,
                 s.date AS session_date,
-                s.class_id,  -- DITAMBAHKAN
+                s.class_id,
                 c.name AS session_name 
             FROM attendance_records ar
             JOIN attendance_sessions s ON ar.attendance_session_id = s.id
@@ -85,9 +85,8 @@ return new class extends Migration
         ");
 
         // ==========================================
-        // 5. View: v_teacher_attendance (FIXED)
+        // 5. View: v_teacher_attendance
         // ==========================================
-        // Perbaikan: Join ke table classes (c) untuk ambil c.name sebagai session_name
         DB::unprepared("
             CREATE OR REPLACE VIEW v_teacher_attendance AS
             SELECT 
@@ -103,6 +102,61 @@ return new class extends Migration
             JOIN classes c ON s.class_id = c.id
             ORDER BY tar.id DESC;
         ");
+
+        // ==========================================
+        // 6. View: v_student_grades (UPDATED - JOIN SPEAKING)
+        // ==========================================
+        DB::unprepared("
+            CREATE OR REPLACE VIEW v_student_grades AS
+            SELECT
+                af.id AS form_id,
+                af.student_id,
+                s.name AS student_name,
+                s.student_number,
+                af.assessment_session_id,
+                asess.type AS assessment_type,
+                asess.date AS assessment_date,
+                asess.class_id,
+                c.name AS class_name,
+                
+                -- Nilai Tertulis Mentah
+                af.vocabulary,
+                af.grammar,
+                af.listening,
+                af.reading,
+                af.spelling,
+                af.speaking, -- Total Speaking (Content + Participation)
+
+                -- Detail Speaking (JOIN)
+                str.content_score AS speaking_content,
+                str.participation_score AS speaking_participation,
+                st.date AS speaking_date,
+                st.topic AS speaking_topic,
+                u.name AS interviewer_name,
+                st.interviewer_id,
+
+                -- Kalkulasi Otomatis via Stored Function
+                f_CalcAssessmentAvg(
+                    af.vocabulary, af.grammar, af.listening, af.reading, af.spelling, af.speaking
+                ) AS final_score,
+                
+                -- Kalkulasi Predikat via Stored Function (Nested)
+                f_GetGrade(
+                    f_CalcAssessmentAvg(
+                        af.vocabulary, af.grammar, af.listening, af.reading, af.spelling, af.speaking
+                    )
+                ) AS grade_text,
+                
+                af.updated_at
+                
+            FROM assessment_forms af
+            JOIN students s ON af.student_id = s.id
+            JOIN assessment_sessions asess ON af.assessment_session_id = asess.id
+            JOIN classes c ON asess.class_id = c.id
+            LEFT JOIN speaking_tests st ON asess.id = st.assessment_session_id
+            LEFT JOIN speaking_test_results str ON st.id = str.speaking_test_id AND af.student_id = str.student_id
+            LEFT JOIN users u ON st.interviewer_id = u.id;
+        ");
     }
 
     /**
@@ -110,6 +164,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        DB::unprepared("DROP VIEW IF EXISTS v_student_grades");
         DB::unprepared("DROP VIEW IF EXISTS v_teacher_attendance");
         DB::unprepared("DROP VIEW IF EXISTS v_student_attendance");
         DB::unprepared("DROP VIEW IF EXISTS v_today_schedule");

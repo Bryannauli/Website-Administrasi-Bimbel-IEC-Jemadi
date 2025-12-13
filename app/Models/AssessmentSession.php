@@ -14,6 +14,7 @@ class AssessmentSession extends Model
         'class_id',
         'date',
         'type',
+        'status', // <--- WAJIB DITAMBAHKAN
     ];
 
     // Relasi ke model kelas
@@ -31,5 +32,15 @@ class AssessmentSession extends Model
     public function logs()
     {
         return $this->hasMany(AssessmentSessionLog::class);
+    }
+
+    /**
+     * Helper untuk cek apakah sesi ini terkunci (tidak bisa diedit guru).
+     * Bisa dipakai di Blade: @if($session->isLocked()) ... @endif
+     */
+    public function isLocked()
+    {
+        // Sesi terkunci jika statusnya 'submitted' (menunggu review) atau 'final' (sudah sah)
+        return in_array($this->status, ['submitted', 'final']);
     }
 }

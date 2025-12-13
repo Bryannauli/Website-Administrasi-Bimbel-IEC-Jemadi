@@ -21,15 +21,15 @@ class AssessmentSeeder extends Seeder
         // 1. Ambil semua kelas yang aktif
         $classes = ClassModel::with(['students', 'formTeacher'])->where('is_active', true)->get();
 
-        // Siapkan cadangan guru
+        // Siapkan cadangan guru (jika local/form teacher tidak ada)
         $fallbackInterviewer = User::where('role', 'teacher')->where('is_active', true)->inRandomOrder()->first();
 
         foreach ($classes as $class) {
             
-            // Tentukan apakah ini kelas khusus yang harus kosong
+            // Tentukan apakah ini kelas khusus yang harus kosong (untuk testing input manual)
             $isEmptyExample = str_contains($class->name, 'Empty Assessment');
 
-            // Tentukan Interviewer:
+            // Tentukan Interviewer: Prioritas Local -> Form -> Fallback
             $interviewerId = $class->local_teacher_id 
                                 ?? $class->form_teacher_id 
                                 ?? ($fallbackInterviewer ? $fallbackInterviewer->id : null);
@@ -39,21 +39,25 @@ class AssessmentSeeder extends Seeder
             foreach ($types as $type) {
                 
                 // =================================================================
-                // 1. PENENTUAN TANGGAL SESI (KRITIS!)
+                // 1. PENENTUAN TANGGAL & STATUS SESI
                 // =================================================================
                 $sessionDate = $isEmptyExample 
-                    ? null // JIKA KELAS KOSONG, DATE = NULL
+                    ? null 
                     : ($type === 'mid' ? Carbon::now()->subMonths(2) : Carbon::now()->subMonth());
                 
                 $speakingDate = $isEmptyExample 
-                    ? null // JIKA KELAS KOSONG, DATE = NULL
+                    ? null 
                     : ($sessionDate ? $sessionDate->copy()->addDays(1) : null);
                 
                 $topic = $isEmptyExample 
-                    ? null // JIKA KELAS KOSONG, TOPIK = NULL
+                    ? null 
                     : ($type === 'mid' ? 'Describe your family' : 'Future Plans');
-                // =================================================================
 
+                // Tentukan Status: 
+                // Jika kosong -> 'draft'
+                // Jika terisi (seeder) -> 'submitted' (siap direview admin)
+                $status = $isEmptyExample ? 'draft' : 'submitted'; 
+                // =================================================================
 
                 // 2. Buat Assessment Session
                 $session = AssessmentSession::firstOrCreate(
@@ -62,7 +66,8 @@ class AssessmentSeeder extends Seeder
                         'type' => $type
                     ],
                     [
-                        'date' => $sessionDate, // Menggunakan variabel yang sudah dikondisikan
+                        'date' => $sessionDate,
+                        'status' => $status, // <--- KOLOM STATUS BARU (ENUM)
                     ]
                 );
 
@@ -70,7 +75,7 @@ class AssessmentSeeder extends Seeder
                 $speakingTest = SpeakingTest::firstOrCreate(
                     ['assessment_session_id' => $session->id],
                     [
-                        'date' => $speakingDate, // Menggunakan variabel yang sudah dikondisikan
+                        'date' => $speakingDate,
                         'topic' => $topic, 
                         'interviewer_id' => $interviewerId,
                     ]
@@ -84,14 +89,14 @@ class AssessmentSeeder extends Seeder
                 }
                 // =================================================================
 
-
                 // 4. Loop semua siswa di kelas tersebut (Hanya berjalan jika TIDAK di-skip)
                 foreach ($class->students as $student) {
                     
                     // A. Generate Nilai Speaking (Detail)
+                    // Max 50 per komponen
                     $contentScore = rand(30, 50); 
                     $participationScore = rand(30, 50);
-                    $totalSpeakingScore = $contentScore + $participationScore;
+                    $totalSpeakingScore = $contentScore + $participationScore; // Total Max 100
 
                     SpeakingTestResult::updateOrCreate(
                         [
@@ -105,6 +110,7 @@ class AssessmentSeeder extends Seeder
                     );
 
                     // B. Buat Assessment Form (Rekap Nilai Semua Skill)
+                    // Max 100 per komponen
                     AssessmentForm::updateOrCreate(
                         [
                             'assessment_session_id' => $session->id,
@@ -116,7 +122,8 @@ class AssessmentSeeder extends Seeder
                             'listening'  => rand(60, 95),
                             'reading'    => rand(60, 95),
                             'spelling'   => rand(60, 95),
-                            'speaking'   => $totalSpeakingScore, 
+                            'speaking'   => $totalSpeakingScore, // Ambil dari total speaking test result
+                            // 'is_submitted' SUDAH DIHAPUS, tidak perlu di-seed lagi.
                         ]
                     );
                 }

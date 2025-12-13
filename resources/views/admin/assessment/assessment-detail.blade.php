@@ -225,6 +225,7 @@
                                     <th class="px-3 py-4 text-center">Reading</th>
                                     <th class="px-3 py-4 text-center">Spelling</th>
                                     <th class="px-4 py-4 text-center bg-blue-50 text-blue-700">Avg. Score</th>
+                                    <th class="px-4 py-4 text-center bg-green-50 text-green-700 rounded-tr-lg">Predicate</th>
                                 </tr>
                             </thead>
                             
@@ -233,7 +234,6 @@
                                 @foreach($studentData as $index => $student)
                                 <tr class="hover:bg-gray-50 transition-colors group"
                                     x-data="{
-                                        // Gunakan old() agar data tidak hilang saat validasi gagal
                                         vocab: '{{ old("grades.{$student['id']}.vocabulary", $student['written']['vocabulary'] ?? '') }}',
                                         grammar: '{{ old("grades.{$student['id']}.grammar", $student['written']['grammar'] ?? '') }}',
                                         listening: '{{ old("grades.{$student['id']}.listening", $student['written']['listening'] ?? '') }}',
@@ -242,7 +242,15 @@
                                         s_content: '{{ old("grades.{$student['id']}.speaking_content", $student['speaking']['content'] ?? '') }}',
                                         s_partic: '{{ old("grades.{$student['id']}.speaking_participation", $student['speaking']['participation'] ?? '') }}',
                                         
-                                        // Hitung Total Speaking
+                                        // FUNGSI BATAS NILAI (UX)
+                                        limit(val, max) {
+                                            if (val === '') return ''; 
+                                            let n = parseInt(val);
+                                            if (n < 0) return 0;
+                                            if (n > max) return max;
+                                            return n;
+                                        },
+
                                         get speakingTotal() {
                                             let c = parseInt(this.s_content) || 0;
                                             let p = parseInt(this.s_partic) || 0;
@@ -250,111 +258,139 @@
                                             return c + p;
                                         },
 
-                                        // Hitung Rata-rata DINAMIS (Ignore empty strings/null)
                                         get average() {
                                             let components = [
-                                                this.vocab, 
-                                                this.grammar, 
-                                                this.listening, 
-                                                this.reading, 
-                                                this.spelling,
+                                                this.vocab, this.grammar, this.listening, this.reading, this.spelling,
                                                 (this.s_content === '' && this.s_partic === '') ? '' : this.speakingTotal
                                             ];
-
-                                            let total = 0;
-                                            let count = 0;
-
+                                            let total = 0; let count = 0;
                                             components.forEach(val => {
                                                 if (val !== '' && val !== null) {
                                                     total += parseInt(val);
                                                     count++;
                                                 }
                                             });
-
                                             if (count === 0) return '-';
                                             return Math.round(total / count);
+                                        },
+
+                                        get predicate() {
+                                            let score = this.average;
+                                            if (score === '-') return '-';
+                                            if (score >= 90) return 'Outstanding';
+                                            if (score >= 80) return 'Distinction';
+                                            if (score >= 70) return 'Credit';
+                                            if (score >= 50) return 'Acceptable';
+                                            if (score >= 40) return 'Unsatisfactory';
+                                            return 'Insufficient';
+                                        },
+
+                                        get predicateColor() {
+                                            let p = this.predicate;
+                                            if (p === 'Outstanding') return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+                                            if (p === 'Distinction') return 'bg-blue-100 text-blue-700 border-blue-200';
+                                            if (p === 'Credit')      return 'bg-indigo-100 text-indigo-700 border-indigo-200';
+                                            if (p === 'Acceptable')  return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+                                            if (p === 'Unsatisfactory') return 'bg-orange-100 text-orange-700 border-orange-200';
+                                            if (p === 'Insufficient')   return 'bg-red-100 text-red-700 border-red-200';
+                                            return 'bg-gray-100 text-gray-500 border-gray-200';
                                         }
                                     }"
                                 >
-                                    {{-- HIDDEN INPUTS --}}
                                     <input type="hidden" name="grades[{{ $student['id'] }}][student_id]" value="{{ $student['id'] }}">
                                     <input type="hidden" name="grades[{{ $student['id'] }}][form_id]" value="{{ $student['written']['form_id'] ?? '' }}">
 
                                     <td class="px-6 py-4 text-center text-gray-500 font-medium">{{ $index + 1 }}</td>
                                     <td class="px-6 py-4 font-bold text-gray-900">{{ $student['name'] }}</td>
                                     
-                                    {{-- VOCABULARY (Wajib) --}}
+                                    {{-- VOCABULARY (Max 100) --}}
                                     <td class="px-3 py-3 text-center border-l">
                                         <span x-show="!isEditing" class="font-medium text-gray-700" x-text="vocab || '-'"></span>
-                                        <input x-show="isEditing" x-model="vocab" type="number" min="0" max="100" 
-                                            name="grades[{{ $student['id'] }}][vocabulary]"
-                                            class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 
-                                            @error('grades.'.$student['id'].'.vocabulary') border-red-500 ring-1 ring-red-500 @enderror">
+                                        <input x-show="isEditing" x-model="vocab" 
+                                            @input="vocab = limit($el.value, 100); $el.value = vocab"
+                                            type="number" min="0" max="100" 
+                                            name="grades[{{ $student['id'] }}][vocabulary]" 
+                                            class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 @error('grades.'.$student['id'].'.vocabulary') border-red-500 ring-1 ring-red-500 @enderror">
                                     </td>
 
-                                    {{-- GRAMMAR (Wajib) --}}
+                                    {{-- GRAMMAR (Max 100) --}}
                                     <td class="px-3 py-3 text-center">
                                         <span x-show="!isEditing" class="font-medium text-gray-700" x-text="grammar || '-'"></span>
-                                        <input x-show="isEditing" x-model="grammar" type="number" min="0" max="100" 
-                                            name="grades[{{ $student['id'] }}][grammar]"
-                                            class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1
-                                            @error('grades.'.$student['id'].'.grammar') border-red-500 ring-1 ring-red-500 @enderror">
+                                        <input x-show="isEditing" x-model="grammar" 
+                                            @input="grammar = limit($el.value, 100); $el.value = grammar"
+                                            type="number" min="0" max="100" 
+                                            name="grades[{{ $student['id'] }}][grammar]" 
+                                            class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 @error('grades.'.$student['id'].'.grammar') border-red-500 ring-1 ring-red-500 @enderror">
                                     </td>
 
-                                    {{-- LISTENING (Wajib) --}}
+                                    {{-- LISTENING (Max 100) --}}
                                     <td class="px-3 py-3 text-center">
                                         <span x-show="!isEditing" class="font-medium text-gray-700" x-text="listening || '-'"></span>
-                                        <input x-show="isEditing" x-model="listening" type="number" min="0" max="100" 
-                                            name="grades[{{ $student['id'] }}][listening]"
-                                            class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1
-                                            @error('grades.'.$student['id'].'.listening') border-red-500 ring-1 ring-red-500 @enderror">
+                                        <input x-show="isEditing" x-model="listening" 
+                                            @input="listening = limit($el.value, 100); $el.value = listening"
+                                            type="number" min="0" max="100" 
+                                            name="grades[{{ $student['id'] }}][listening]" 
+                                            class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 @error('grades.'.$student['id'].'.listening') border-red-500 ring-1 ring-red-500 @enderror">
                                     </td>
 
-                                    {{-- SPEAKING CONTENT (Wajib) --}}
+                                    {{-- SPEAKING CONTENT (Max 50) - Karena total speaking max 100 --}}
                                     <td class="px-3 py-3 text-center bg-purple-50/50">
                                         <span x-show="!isEditing" class="font-bold text-purple-700" x-text="s_content || '-'"></span>
-                                        <input x-show="isEditing" x-model="s_content" type="number" min="0" max="50" 
-                                            name="grades[{{ $student['id'] }}][speaking_content]"
-                                            class="w-14 h-8 text-center border-purple-200 rounded-lg bg-white focus:ring-2 focus:ring-purple-500 text-xs p-1
-                                            @error('grades.'.$student['id'].'.speaking_content') border-red-500 ring-1 ring-red-500 @enderror">
+                                        <input x-show="isEditing" x-model="s_content" 
+                                            @input="s_content = limit($el.value, 50); $el.value = s_content"
+                                            type="number" min="0" max="50" 
+                                            name="grades[{{ $student['id'] }}][speaking_content]" 
+                                            class="w-14 h-8 text-center border-purple-200 rounded-lg bg-white focus:ring-2 focus:ring-purple-500 text-xs p-1 @error('grades.'.$student['id'].'.speaking_content') border-red-500 ring-1 ring-red-500 @enderror">
                                     </td>
 
-                                    {{-- SPEAKING PARTICIPATION (Wajib) --}}
+                                    {{-- SPEAKING PARTICIPATION (Max 50) --}}
                                     <td class="px-3 py-3 text-center bg-purple-50/50">
                                         <span x-show="!isEditing" class="font-bold text-purple-700" x-text="s_partic || '-'"></span>
-                                        <input x-show="isEditing" x-model="s_partic" type="number" min="0" max="50" 
-                                            name="grades[{{ $student['id'] }}][speaking_participation]"
-                                            class="w-14 h-8 text-center border-purple-200 rounded-lg bg-white focus:ring-2 focus:ring-purple-500 text-xs p-1
-                                            @error('grades.'.$student['id'].'.speaking_participation') border-red-500 ring-1 ring-red-500 @enderror">
+                                        <input x-show="isEditing" x-model="s_partic" 
+                                            @input="s_partic = limit($el.value, 50); $el.value = s_partic"
+                                            type="number" min="0" max="50" 
+                                            name="grades[{{ $student['id'] }}][speaking_participation]" 
+                                            class="w-14 h-8 text-center border-purple-200 rounded-lg bg-white focus:ring-2 focus:ring-purple-500 text-xs p-1 @error('grades.'.$student['id'].'.speaking_participation') border-red-500 ring-1 ring-red-500 @enderror">
                                     </td>
 
-                                    {{-- SPEAKING TOTAL --}}
+                                    {{-- TOTAL SPEAKING (Otomatis) --}}
                                     <td class="px-4 py-3 text-center bg-purple-100/50 font-black text-purple-900 border-x">
                                         <span x-text="speakingTotal > 0 ? speakingTotal : '-'"></span>
                                     </td>
 
-                                    {{-- READING (Wajib) --}}
+                                    {{-- READING (Max 100) --}}
                                     <td class="px-3 py-3 text-center border-l">
                                         <span x-show="!isEditing" class="font-medium text-gray-700" x-text="reading || '-'"></span>
-                                        <input x-show="isEditing" x-model="reading" type="number" min="0" max="100" 
-                                            name="grades[{{ $student['id'] }}][reading]"
-                                            class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1
-                                            @error('grades.'.$student['id'].'.reading') border-red-500 ring-1 ring-red-500 @enderror">
+                                        <input x-show="isEditing" x-model="reading" 
+                                            @input="reading = limit($el.value, 100); $el.value = reading"
+                                            type="number" min="0" max="100" 
+                                            name="grades[{{ $student['id'] }}][reading]" 
+                                            class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 @error('grades.'.$student['id'].'.reading') border-red-500 ring-1 ring-red-500 @enderror">
                                     </td>
 
-                                    {{-- SPELLING (OPSIONAL - Boleh Kosong) --}}
+                                    {{-- SPELLING (Max 100) --}}
                                     <td class="px-3 py-3 text-center border-l">
                                         <span x-show="!isEditing" class="font-medium text-gray-700" x-text="spelling || '-'"></span>
-                                        <input x-show="isEditing" x-model="spelling" type="number" min="0" max="100" 
-                                            name="grades[{{ $student['id'] }}][spelling]"
+                                        <input x-show="isEditing" x-model="spelling" 
+                                            @input="spelling = limit($el.value, 100); $el.value = spelling"
+                                            type="number" min="0" max="100" 
+                                            name="grades[{{ $student['id'] }}][spelling]" 
                                             class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1">
                                     </td>
 
-                                    {{-- AVERAGE SCORE --}}
+                                    {{-- AVERAGE --}}
                                     <td class="px-4 py-3 text-center bg-blue-50/30">
                                         <div class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white text-[11px] font-black shadow-md">
                                             <span x-text="average"></span>
                                         </div>
+                                    </td>
+
+                                    {{-- PREDIKAT --}}
+                                    <td class="px-4 py-3 text-center bg-gray-50/30 font-bold text-[10px] uppercase tracking-wide">
+                                        <span class="px-2 py-1 rounded-md border transition-all duration-300"
+                                            :class="predicateColor" 
+                                            x-text="predicate">
+                                        </span>
                                     </td>
                                 </tr>
                                 @endforeach

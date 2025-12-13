@@ -69,7 +69,6 @@ return new class extends Migration
         // ==========================================
         // 4. PROCEDURE: Class Attendance Stats (Untuk Modal Detail Kelas)
         // ==========================================
-        // Ini adalah prosedur yang kita perbaiki tadi (dengan s.is_active & alias student_id)
         DB::unprepared("
             DROP PROCEDURE IF EXISTS p_get_class_attendance_stats;
             CREATE PROCEDURE p_get_class_attendance_stats (IN classId INT)
@@ -93,9 +92,8 @@ return new class extends Migration
         ");
 
         // ==========================================
-        // 5. PROCEDURE: Student Global Stats (BARU)
+        // 5. PROCEDURE: Student Global Stats
         // ==========================================
-        // Menghitung total seluruh siswa, aktif, dan non-aktif (Mirip Dashboard Stats)
         DB::unprepared('
             DROP PROCEDURE IF EXISTS p_get_student_global_stats;
             CREATE PROCEDURE p_get_student_global_stats(
@@ -109,10 +107,74 @@ return new class extends Migration
                 SELECT COUNT(*) INTO total_inactive FROM students WHERE is_active = 0 AND deleted_at IS NULL;
             END
         ');
+
+        // ==========================================
+        // 6. PROCEDURE: p_UpdateStudentGrade (FIXED: NO is_submitted)
+        // ==========================================
+        DB::unprepared('
+            DROP PROCEDURE IF EXISTS p_UpdateStudentGrade;
+            CREATE PROCEDURE p_UpdateStudentGrade(
+                IN p_session_id INT,
+                IN p_student_id INT,
+                IN p_form_id INT,          
+                IN p_speaking_test_id INT,
+                
+                IN p_vocab INT,
+                IN p_grammar INT,
+                IN p_listening INT,
+                IN p_reading INT,
+                IN p_spelling INT,
+                
+                IN p_s_content INT,
+                IN p_s_partic INT
+            )
+            BEGIN
+                DECLARE total_speaking INT;
+                
+                DECLARE EXIT HANDLER FOR SQLEXCEPTION
+                BEGIN
+                    ROLLBACK;
+                    RESIGNAL;
+                END;
+
+                START TRANSACTION;
+                
+                -- 1. Simpan Detail Speaking
+                INSERT INTO speaking_test_results (speaking_test_id, student_id, content_score, participation_score)
+                VALUES (p_speaking_test_id, p_student_id, p_s_content, p_s_partic)
+                ON DUPLICATE KEY UPDATE
+                    content_score = p_s_content,
+                    participation_score = p_s_partic;
+                
+                -- Hitung Total Speaking
+                SET total_speaking = p_s_content + p_s_partic;
+
+                -- 2. Simpan Nilai Tertulis (TANPA kolom is_submitted)
+                IF EXISTS (SELECT 1 FROM assessment_forms WHERE student_id = p_student_id AND assessment_session_id = p_session_id) THEN
+                    -- UPDATE Existing Record
+                    UPDATE assessment_forms
+                    SET
+                        vocabulary = p_vocab,
+                        grammar = p_grammar,
+                        listening = p_listening,
+                        reading = p_reading,
+                        spelling = p_spelling,
+                        speaking = total_speaking
+                    WHERE student_id = p_student_id AND assessment_session_id = p_session_id;
+                ELSE
+                    -- INSERT New Record
+                    INSERT INTO assessment_forms (student_id, assessment_session_id, vocabulary, grammar, listening, reading, spelling, speaking)
+                    VALUES (p_student_id, p_session_id, p_vocab, p_grammar, p_listening, p_reading, p_spelling, total_speaking);
+                END IF;
+                    
+                COMMIT;
+            END
+        ');
     }
 
     public function down(): void
     {
+        DB::unprepared('DROP PROCEDURE IF EXISTS p_UpdateStudentGrade');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_GetDashboardStats');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_GetAttendanceStats');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_get_attendance_summary');

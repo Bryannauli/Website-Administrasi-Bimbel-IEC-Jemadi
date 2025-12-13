@@ -20,6 +20,7 @@ return new class extends Migration
 
             $table->enum('type', ['mid', 'final']);
             $table->date('date')->nullable();
+            $table->enum('status', ['draft', 'submitted', 'final'])->default('draft');
 
             $table->timestamps();
             $table->unique(['class_id', 'type']);

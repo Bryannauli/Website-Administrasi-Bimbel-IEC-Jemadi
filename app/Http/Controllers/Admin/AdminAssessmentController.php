@@ -20,15 +20,13 @@ class AdminAssessmentController extends Controller
      */
     public function index(Request $request)
     {
-        // 1. Inisialisasi Query dengan relasi classModel
+        // Query dasar dengan relasi classModel
         $query = AssessmentSession::with(['classModel' => function($q) {
-            // Pastikan 'name' dipilih agar bisa diakses untuk filtering
             $q->select('id', 'name', 'category', 'academic_year', 'is_active'); 
         }]);
 
-        // 2. Logika Filter Berdasarkan Request
-
-        // A. Filter Search (BARU)
+        // --- FILTERING LOGIC ---
+        
         if ($request->filled('search')) {
             $searchTerm = $request->search;
             $query->whereHas('classModel', function($q) use ($searchTerm) {
@@ -36,56 +34,48 @@ class AdminAssessmentController extends Controller
             });
         }
         
-        // B. Filter Academic Year (Existing)
         if ($request->filled('academic_year')) {
             $query->whereHas('classModel', function($q) use ($request) {
                 $q->where('academic_year', $request->academic_year);
             });
         }
 
-        // C. Filter Category (Existing)
         if ($request->filled('category')) {
             $query->whereHas('classModel', function($q) use ($request) {
                 $q->where('category', $request->category);
             });
         }
 
-        // D. Filter Exam Type (Existing)
         if ($request->filled('type')) {
             $query->where('type', $request->type);
         }
 
-        // E. Filter Class ID (BARU)
         if ($request->filled('class_id')) {
             $query->where('class_id', $request->class_id);
         }
 
-        // F. Filter Class Status (BARU - Default: Active)
-        $statusFilter = $request->get('class_status', 'active'); // Default ke 'active'
-        if ($statusFilter != '') { // Jika bukan 'All Status'
+        $statusFilter = $request->get('class_status', 'active');
+        if ($statusFilter != '') {
             $isActive = $statusFilter === 'active';
             $query->whereHas('classModel', function($q) use ($isActive) {
                 $q->where('is_active', $isActive);
             });
         }
         
-        // 3. Eksekusi Query dengan Pagination
         $assessments = $query->orderBy('date', 'desc')->paginate(10);
         $assessments->appends($request->all());
 
-        // 4. Data untuk Dropdown Filter
+        // Data untuk Dropdown Filter
         $categories = ['pre_level', 'level', 'step', 'private'];
         $years = ClassModel::select('academic_year')->distinct()->pluck('academic_year')->sortDesc();
         $types = ['mid', 'final'];
-        
-        // Ambil daftar kelas untuk dropdown filter
         $classes = ClassModel::select('id', 'name')->orderBy('name', 'asc')->get();
 
         return view('admin.assessment.assessment', compact('assessments', 'categories', 'years', 'types', 'classes'));
     }
     
     /**
-     * Menampilkan form input nilai dan Speaking Test untuk kelas tertentu.
+     * Menampilkan form input nilai (Detail View)
      */
     public function detail(Request $request, $classId, $type)
     {
@@ -93,42 +83,55 @@ class AdminAssessmentController extends Controller
             abort(404);
         }
 
-        // Load data kelas beserta Form Teacher, Local Teacher, dan Siswa Aktif
+        // 1. Load data Kelas & Siswa Aktif
         $class = ClassModel::with([
             'students' => function($query) { $query->where('is_active', true); }, 
             'localTeacher', 
             'formTeacher' 
         ])->findOrFail($classId);
 
-        // Jika sesi sudah ada (karena fitur pre-create di AdminClassController), maka aman.
-        // Jika belum ada (safety net), session akan dibuat dengan date = NULL.
+        // 2. First or Create Session
         $session = AssessmentSession::firstOrCreate(
             ['class_id' => $classId, 'type' => $type],
-            ['date' => null] // date diset NULL (kosong) jika sesi baru dibuat
+            ['date' => null]
         );
 
         $allTeachers = User::where('role', 'teacher')->where('is_active', true)->orderBy('name', 'asc')->get();
 
-        $forms = AssessmentForm::where('assessment_session_id', $session->id)->get()->keyBy('student_id');
+        // 3. AMBIL SEMUA GRADES DARI DATABASE VIEW (v_student_grades)
+        // Ini menggantikan AssessmentForm::where(...) dan join manual
+        $gradesFromView = DB::table('v_student_grades')
+            ->where('class_id', $classId)
+            ->where('assessment_type', $type)
+            ->get()
+            ->keyBy('student_id');
 
-        $speakingTest = SpeakingTest::with(['results', 'interviewer'])->where('assessment_session_id', $session->id)->first();
+        // 4. AMBIL INFO SPEAKING TEST UTAMA (Interviewer, Tanggal, Topik)
+        // Walaupun detail speaking ada di view, kita tetap perlu data ini untuk form config
+        $speakingTest = SpeakingTest::with(['interviewer'])
+            ->where('assessment_session_id', $session->id)
+            ->first();
         
-        $speakingResults = $speakingTest ? $speakingTest->results->keyBy('student_id') : collect();
         $currentInterviewerId = $speakingTest->interviewer_id ?? $class->local_teacher_id;
 
-        $studentData = $class->students->map(function ($student) use ($forms, $speakingResults) {
-            $written = $forms->get($student->id);
-            $speaking = $speakingResults->get($student->id);
-            $totalSpeakingScore = ($speaking->content_score ?? 0) + ($speaking->participation_score ?? 0);
+        // 5. MAPPING DATA SISWA
+        $studentData = $class->students->map(function ($student) use ($gradesFromView, $speakingTest) {
+            
+            // Ambil data nilai dari View (jika ada)
+            $gradeRecord = $gradesFromView->get($student->id);
 
-            // Mengambil rata-rata dari Model AssessmentForm jika data sudah ada
-            $avgScore = $written ? $written->averageScore() : null;
+            // Jika ada nilai, gunakan data dari View. Jika tidak, semua null/default.
+            $written = $gradeRecord;
+            $speaking = $gradeRecord;
+
+            // Hitung total speaking untuk keperluan Alpine (jika record ada)
+            $totalSpeakingScore = ($speaking->speaking_content ?? 0) + ($speaking->speaking_participation ?? 0);
 
             return [
                 'id' => $student->id,
                 'name' => $student->name,
                 'written' => [
-                    'form_id' => $written->id ?? null,
+                    'form_id' => $written->form_id ?? null,
                     'vocabulary' => $written->vocabulary ?? null,
                     'grammar' => $written->grammar ?? null,
                     'listening' => $written->listening ?? null,
@@ -136,11 +139,14 @@ class AdminAssessmentController extends Controller
                     'spelling' => $written->spelling ?? null,
                 ],
                 'speaking' => [
-                    'content' => $speaking->content_score ?? null,
-                    'participation' => $speaking->participation_score ?? null,
-                    'total' => $totalSpeakingScore,
+                    // Ambil detail speaking dari view (speaking_content, speaking_participation)
+                    'content' => $speaking->speaking_content ?? null,
+                    'participation' => $speaking->speaking_participation ?? null,
+                    'total' => $totalSpeakingScore, // Diisi untuk kompatibilitas Alpine
                 ],
-                'avg_score' => $avgScore // Menggunakan hasil dari Model (seharusnya sudah diubah ke dynamic/fixed divisor)
+                // Nilai Rata-rata & Predikat dari View (sudah dihitung oleh Stored Function)
+                'avg_score' => $written->final_score ?? null,
+                'grade_text' => $written->grade_text ?? '-',
             ];
         });
         
@@ -148,12 +154,10 @@ class AdminAssessmentController extends Controller
     }
 
     /**
-     * Menyimpan atau memperbarui semua nilai (Tertulis dan Speaking)
-     * Parameter disesuaikan dengan Route (classId, type)
+     * Menyimpan/Update Nilai
      */
     public function storeOrUpdateGrades(Request $request, $classId, $type)
     {
-        // 1. Cari Session berdasarkan ClassID dan Type (sesuai Route baru)
         $session = AssessmentSession::where('class_id', $classId)
             ->where('type', $type)
             ->firstOrFail();
@@ -165,16 +169,16 @@ class AdminAssessmentController extends Controller
             'topic' => 'nullable|string|max:255',
             'grades' => 'required|array',
             
-            // WAJIB ISI (Core Skills)
+            // WAJIB (Core Skills)
             'grades.*.vocabulary' => 'required|integer|between:0,100',
             'grades.*.grammar'    => 'required|integer|between:0,100',
             'grades.*.listening'  => 'required|integer|between:0,100',
             'grades.*.reading'    => 'required|integer|between:0,100',
 
-            // OPSIONAL (Boleh Kosong)
+            // OPSIONAL (Spelling Boleh Null)
             'grades.*.spelling'   => 'nullable|integer|between:0,100',
 
-            // WAJIB ISI (Speaking Components)
+            // WAJIB (Speaking Components)
             'grades.*.speaking_content'      => 'required|integer|between:0,50',
             'grades.*.speaking_participation'=> 'required|integer|between:0,50',
             
@@ -182,7 +186,7 @@ class AdminAssessmentController extends Controller
             'grades.*.form_id' => 'nullable', 
         ];
 
-        // Custom Messages untuk mengatasi notasi grades.*.* yang tidak user-friendly
+        // Custom Messages agar error "grades.1.listening" jadi lebih enak dibaca
         $messages = [
             'grades.*.vocabulary.required' => 'Vocabulary field is required.',
             'grades.*.grammar.required' => 'Grammar field is required.',
@@ -190,18 +194,21 @@ class AdminAssessmentController extends Controller
             'grades.*.reading.required' => 'Reading field is required.',
             'grades.*.speaking_content.required' => 'Speaking Content field is required.',
             'grades.*.speaking_participation.required' => 'Speaking Participation field is required.',
+            
+            // Tambahan untuk range angka (optional, untuk kerapian)
+            'grades.*.vocabulary.between' => 'Vocabulary must be between 0 and 100.',
+            'grades.*.speaking_content.between' => 'Speaking Content must be between 0 and 50.',
         ];
 
-        // Validasi dengan custom messages
+        // Jalankan Validasi
         $validatedData = $request->validate($rules, $messages);
         $grades = $validatedData['grades'];
 
-        DB::beginTransaction();
         try {
-            // Update Info Sesi
+            // A. Update Info Sesi
             $session->update(['date' => $validatedData['written_date']]);
 
-            // Update Info Speaking Test
+            // B. Update Info Speaking Test
             $speakingTest = SpeakingTest::updateOrCreate(
                 ['assessment_session_id' => $session->id],
                 [
@@ -211,58 +218,43 @@ class AdminAssessmentController extends Controller
                 ]
             );
 
-            // Loop Simpan Nilai
-            foreach ($grades as $grade) {
-                $studentId = $grade['student_id'];
-                
-                // 1. Simpan Nilai Speaking (Detail)
-                $speakingResult = SpeakingTestResult::updateOrCreate(
-                    [
-                        'speaking_test_id' => $speakingTest->id,
-                        'student_id' => $studentId,
-                    ],
-                    [
-                        'content_score' => $grade['speaking_content'],
-                        'participation_score' => $grade['speaking_participation'],
-                    ]
-                );
-                
-                // Hitung total speaking untuk dimasukkan ke AssessmentForm
-                $totalSpeaking = $speakingResult->totalScore();
+            $speakingTestId = $speakingTest->id;
+            $sessionId = $session->id;
 
-                // 2. Simpan Nilai Tertulis & Total Speaking
-                $assessmentForm = AssessmentForm::updateOrCreate(
-                    [
-                        // Jika form_id ada, gunakan itu. Jika tidak, akan dibuat baru.
-                        'id' => $grade['form_id'] ?? null, 
-                    ], 
-                    [
-                        'student_id' => $studentId,
-                        'assessment_session_id' => $session->id,
-                        'vocabulary' => $grade['vocabulary'],
-                        'grammar' => $grade['grammar'],
-                        'listening' => $grade['listening'],
-                        'reading' => $grade['reading'],
-                        'spelling' => $grade['spelling'] ?? null, // Spelling nullable
-                        'speaking' => $totalSpeaking, 
-                        'is_submitted' => true,
-                    ]
-                );
+            // C. LOOP DAN PANGGIL STORED PROCEDURE
+            foreach ($grades as $grade) {
+                
+                // Panggil Stored Procedure untuk mengurus INSERT/UPDATE/TRANSACTION SATU SISWA
+                // Prosedur ini sekarang ada di file terpusat 'create_stored_procedures.php'
+                DB::statement('CALL p_UpdateStudentGrade(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+                    $sessionId,
+                    $grade['student_id'],
+                    $grade['form_id'] ?? null, // form_id (Gunakan '?? null' untuk record baru)
+                    $speakingTestId,
+
+                    $grade['vocabulary'],
+                    $grade['grammar'],
+                    $grade['listening'],
+                    $grade['reading'],
+                    $grade['spelling'] ?? null,
+
+                    $grade['speaking_content'],
+                    $grade['speaking_participation'],
+                ]);
             }
             
-            DB::commit();
-
-            // Redirect spesifik ke route detail (menghapus parameter '?mode=edit')
             return redirect()->route('admin.classes.assessment.detail', [
                 'classId' => $classId,
                 'type' => $type
-            ])->with('success', 'Grades updated successfully!');
+            ])->with('success', 'Grades updated successfully! (via Stored Procedure)');
 
         } catch (\Exception $e) {
-            DB::rollBack();
+            // Jika ada error (termasuk trigger database), PHP akan menangkapnya di sini.
             Log::error("Grade update failed for class {$classId} type {$type}: " . $e->getMessage());
-            // Jika error, gunakan back() agar inputan tidak hilang
-            return back()->with('error', 'Failed to save grades: System Error.')->withInput();
+            
+            return back()
+                ->with('error', 'Error Detail: ' . $e->getMessage())
+                ->withInput();
         }
     }
 }
