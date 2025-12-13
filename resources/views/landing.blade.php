@@ -7,12 +7,13 @@
     
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
+
 <body class="font-sans antialiased overflow-x-hidden">
 
     <!-- =================================== -->
     <!-- == BAGIAN ATAS (GRADIENT HERO) == -->
     <!-- =================================== -->
-    <div class="relative bg-gradient-to-br from-red-100 to-blue-100 overflow-hidden">
+    <div class="relative bg-gradient-to-br pb-10 from-red-100 to-blue-100 overflow-hidden">
         
         {{-- Dekorasi blur --}}
         <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-72 h-72 bg-blue-200 rounded-full opacity-30 blur-3xl"></div>
@@ -27,32 +28,78 @@
         {{-- Konten utama dengan lebar terbatas --}}
         <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             
-            <header class="py-6">
-                <nav class="flex justify-between items-center">
-                    <div class="flex items-center space-x-2">
-                        <img src="{{ asset('images/aims.png') }}" alt="AIMS Logo" class="h-10 w-10">
-                        <img src="{{ asset('images/logo.png') }}" alt="IEC Logo" class="h-10">
-                    </div>
+         <header class="sticky top-3 z-50  ">
+      <div class="w-full">
+        <nav x-data="{ open: false }" class="flex justify-between items-center h-16">
 
-                    <div class="hidden md:flex items-center space-x-10">
-                        <div class="flex items-center space-x-10">
-                            <a href="#" class="text-gray-700 hover:text-brand-blue font-medium">Home</a>
-                            <a href="#" class="text-gray-700 hover:text-brand-blue font-medium">About Us</a>
-                            <a href="#" class="text-gray-700 hover:text-brand-blue font-medium">Services</a>
-                        </div>
+            <!-- Logo -->
+            <div class="flex items-center space-x-2">
+                <img src="{{ asset('images/aims.png') }}" class="h-9 w-9">
+                <img src="{{ asset('images/logo.png') }}" class="h-9">
+            </div>
 
-                        <div class="flex items-center space-x-6"> 
-                            @if (Route::has('login')) @auth 
-                                <a href="{{ url('/dashboard') }}" class="bg-brand-blue hover:bg-opacity-90 text-white font-bold py-2 px-8 rounded-lg shadow-md transition duration-300"> Dashboard </a>
-                            @else 
-                                <a href="{{ route('login') }}" class="bg-brand-blue hover:bg-opacity-90 text-white font-bold py-2 px-8 rounded-lg shadow-md transition duration-300"> Login </a>
-                        
-                                @if (Route::has('register')) <a href="{{ route('register') }}" class="text-gray-700 hover:text-brand-blue font-medium"> Register </a>
-                                @endif @endauth @endif 
-                        </div>
-                    </div>
-                </nav>
-            </header>
+            <!-- MENU DESKTOP -->
+            <div class="hidden md:flex items-center space-x-10">
+                <a href="#" class="font-medium text-gray-700 hover:text-brand-blue">Home</a>
+                <a href="#" class="font-medium text-gray-700 hover:text-brand-blue">About Us</a>
+                <a href="#" class="font-medium text-gray-700 hover:text-brand-blue">Services</a>
+
+                @auth
+                    <a href="{{ url('/dashboard') }}"
+                       class="bg-brand-blue text-white px-6 py-2 rounded-lg font-bold">
+                        Dashboard
+                    </a>
+                @else
+                    <a href="{{ route('login') }}"
+                       class="bg-brand-blue text-white px-6 py-2 rounded-lg font-bold">
+                        Login
+                    </a>
+                    <a href="{{ route('register') }}"
+                       class="text-brand-blue font-bold">
+                        Register
+                    </a>
+                @endauth
+            </div>
+
+            <!-- HAMBURGER -->
+            <button @click="open = !open" class="md:hidden">
+                <svg class="w-7 h-7 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
+
+            <!-- MENU MOBILE -->
+            <div x-show="open"
+                 x-transition
+                 @click.outside="open = false"
+                 class="absolute top-16 left-0 w-full bg-gradient-to-br from-red-100 to-blue-100 shadow-lg md:hidden">
+                <div class="flex flex-col p-6 space-y-4">
+                    <a href="#" class="font-medium text-gray-700">Home</a>
+                    <a href="#" class="font-medium text-gray-700">About Us</a>
+                    <a href="#" class="font-medium text-gray-700">Services</a>
+
+                    @auth
+                        <a href="{{ url('/dashboard') }}"
+                           class="bg-brand-blue text-white text-center py-2 rounded-lg font-bold">
+                            Dashboard
+                        </a>
+                    @else
+                        <a href="{{ route('login') }}"
+                           class="bg-brand-blue text-white text-center py-2 rounded-lg font-bold">
+                            Login
+                        </a>
+                        <a href="{{ route('register') }}"
+                           class="border border-brand-blue text-brand-blue text-center py-2 rounded-lg font-bold">
+                            Register
+                        </a>
+                    @endauth
+                </div>
+            </div>
+
+        </nav>
+    </div>
+</header>
 
             <main class="py-10 md:py-16">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-start">
