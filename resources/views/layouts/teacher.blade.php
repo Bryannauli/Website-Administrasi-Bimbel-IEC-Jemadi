@@ -25,11 +25,11 @@
        x-transition:leave-end="-translate-x-full"
        class="w-64 bg-gradient-to-br from-red-100 to-blue-100 shadow-lg fixed h-full overflow-y-auto z-20">
 
-        {{-- TAMBAHKAN TOMBOL X (CLOSE) DISINI --}}
         <button @click="sidebarOpen = false" class="absolute top-4 right-4 text-gray-500 hover:text-red-500 transition focus:outline-none z-50">
             <i class="fas fa-times text-lg"></i>
-        </button>           
-         <!-- Logo -->
+        </button> 
+
+        <!-- Logo -->
             <div class="p-6">
                 <div class="flex items-center space-x-3">
                     <img src="/images/aims.png" alt="AIMS" class="h-10">
@@ -37,45 +37,16 @@
                 </div>
             </div>
 
-            <!-- Navigation -->
+        <!-- Navigation -->
             <nav class="px-4 space-y-1">
-                <!-- Home Dropdown -->
-                <div x-data="{ open: true }">
-                    <button @click="open = !open" class="w-full flex items-center justify-between px-4 py-3 text-gray-700 hover:bg-white/50 rounded-lg transition">
-                        <div class="flex items-center space-x-3">
-                            <i class="fas fa-home"></i>
-                            <span>Home</span>
-                        </div>
-                        <i class="fas fa-chevron-down text-xs" :class="{ 'rotate-180': open }"></i>
-                    </button>
-                    <div x-show="open" class="ml-4 mt-1 space-y-1">
-                        <a href="{{ route('teacher.dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-white/50 rounded-lg {{ request()->routeIs('teacher.dashboard') ? 'bg-white text-blue-600' : '' }}">
-                            Dashboard
-                        </a>
-                        <!-- <a href="{{ route('teacher.analytics') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-white/50 rounded-lg {{ request()->routeIs('teacher.analytics') ? 'bg-white text-blue-600' : '' }}">
-                            Analytics
-                        </a> -->
-                    </div>
-                </div>
-
-                <!-- Students Dropdown -->
-                <!-- <div x-data="{ open: false }">
-                    <button @click="open = !open" class="w-full flex items-center justify-between px-4 py-3 text-gray-700 hover:bg-white/50 rounded-lg transition">
-                        <div class="flex items-center space-x-3">
-                            <i class="fas fa-user-graduate"></i>
-                            <span>Students</span>
-                        </div>
-                        <i class="fas fa-chevron-down text-xs" :class="{ 'rotate-180': open }"></i>
-                    </button>
-                    <div x-show="open" class="ml-4 mt-1 space-y-1">
-                        <a href="{{ route('teacher.students.marks') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-white/50 rounded-lg">
-                            Students Marks
-                        </a>
-                        <a href="{{ route('teacher.students.attendance') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-white/50 rounded-lg">
-                            Attendance
-                        </a>
-                    </div>
-                </div> -->
+                
+                <!-- Dashboard -->
+                <a href="{{ route('teacher.dashboard') }}" 
+                   class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition
+                   {{ request()->routeIs('teacher.dashboard') ? 'bg-white text-gray-700 shadow-sm' : 'text-gray-700 hover:bg-white/50' }}">
+                    <i class="fas fa-home w-5 text-center"></i> 
+                    <span>Dashboard</span>
+                </a>
 
                 <!-- Class Schedule -->
                 <a href="{{ route('teacher.classes.index') }}" 
@@ -84,40 +55,17 @@
                     <i class="fas fa-calendar-alt w-5 text-center"></i> 
                     <span>Class Schedule</span>
                 </a>
-
-                <!-- Teachers Dropdown -->
-                <!-- <div x-data="{ open: {{ request()->routeIs('teacher.classes.*') || request()->routeIs('teacher.teachers.*') ? 'true' : 'false' }} }">
-                    <button @click="open = !open" class="w-full flex items-center justify-between px-4 py-3 text-gray-700 hover:bg-white/50 rounded-lg transition {{ request()->routeIs('teacher.classes.*') || request()->routeIs('teacher.teachers.*') ? 'bg-blue-100' : '' }}">
-                        <div class="flex items-center space-x-3">
-                            <i class="fas fa-chalkboard-teacher"></i>
-                            <span>Teachers</span>
-                        </div>
-                        <i class="fas fa-chevron-down text-xs" :class="{ 'rotate-180': open }"></i>
-                    </button>
-                    <div x-show="open" class="ml-4 mt-1 space-y-1">
-                        <a href="{{ route('teacher.classes.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-white/50 rounded-lg {{ request()->routeIs('teacher.classes.*') ? 'bg-white text-blue-600' : '' }}">
-                            Classes
-                        </a>
-                        <a href="{{ route('teacher.teachers.attendance') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-white/50 rounded-lg {{ request()->routeIs('teacher.teachers.attendance') ? 'bg-white text-blue-600' : '' }}">
-                            Attendance
-                        </a>
-                    </div>
-                </div> -->
             </nav>
-
-
-        </aside>
+    </aside>
 
         <!-- Main Content -->   
             <main class="flex-1 transition-all duration-300" :class="sidebarOpen ? 'ml-64' : 'ml-0'">
                 <header class="bg-white shadow-sm sticky top-0 z-30">
                 <div class="px-6 py-4 flex items-center justify-between">
                     <div class="flex items-center space-x-4">
-                        {{-- TAMBAHKAN TOMBOL HAMBURGER DISINI (Muncul saat sidebar tertutup) --}}
                         <button x-show="!sidebarOpen" @click="sidebarOpen = true" class="text-gray-500 hover:text-blue-600 focus:outline-none transition mr-2">
                             <i class="fas fa-bars text-xl"></i>
                         </button>
-                        
                         @yield('breadcrumb')
                     </div>
 
@@ -131,7 +79,7 @@
                             <button @click="open = !open" @click.outside="open = false" class="flex items-center space-x-3 focus:outline-none hover:bg-gray-50 p-2 rounded-lg transition">
                                 <img src="https://ui-avatars.com/api/?name={{ Auth::user()->name ?? 'Teacher' }}&background=8B5CF6&color=fff" class="w-10 h-10 rounded-full object-cover">
                                 <div class="hidden md:block text-left">
-                                    <p class="font-semibold text-sm text-gray-800">{{ Auth::user()->name ?? 'Geonwoo' }}</p>
+                                    <p class="font-semibold text-sm text-gray-800">{{ Auth::user()->name}}</p>
                                     <p class="text-xs text-gray-500">{{ ucfirst(Auth::user()->role ?? 'Teacher') }}</p>
                                 </div>
                                 <i class="fas fa-chevron-down text-xs text-gray-400 transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
@@ -161,7 +109,7 @@
                                 </form>
                             </div>
                         </div>
-                        </div>
+                    </div>
                 </div>
             </header>
 
