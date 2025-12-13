@@ -250,53 +250,18 @@ class AdminClassController extends Controller
 
         $lastSession = $teachingLogs->first();
 
-        // 4. Buat Matrix Absensi & Statistik
-        $studentStats = [];
-        $attendanceMatrix = []; // Array untuk lookup cepat: [student_id][session_id] = status
+        // 4. Panggil Stored Procedure untuk mengambil data statistik
+            $studentStats = DB::select('CALL sp_get_class_attendance_stats(?)', [$id]);
+            
+            // DB::select mengembalikan array of objects, siap digunakan di view
 
-        // Pre-fill Matrix
-        foreach ($teachingLogs as $session) {
-            foreach ($session->records as $record) {
-                $attendanceMatrix[$record->student_id][$session->id] = $record->status;
-            }
-        }
-        
-        foreach ($class->students as $student) {
-            // Hitung statistik ringkas untuk kolom Total %
-            // Kita hitung manual dari data matrix/teachingLogs yang ada agar sinkron
-            $stats = ['present' => 0, 'total' => 0];
-
+            // ... (Logika pembuatan attendanceMatrix jika masih dibutuhkan untuk tampilan detail per sesi) ...
+            $attendanceMatrix = []; 
             foreach ($teachingLogs as $session) {
-                $status = $attendanceMatrix[$student->id][$session->id] ?? null;
-                if ($status) {
-                    $stats['total']++;
-                    if (in_array($status, ['present', 'late'])) {
-                        $stats['present']++;
-                    }
+                foreach ($session->records as $record) {
+                    $attendanceMatrix[$record->student_id][$session->id] = $record->status;
                 }
             }
-
-            $percentage = $stats['total'] > 0 
-                ? round(($stats['present'] / $stats['total']) * 100) 
-                : 0;
-
-            $studentStats[] = (object) [
-                'id' => $student->id, // PENTING: ID diperlukan untuk kunci Matrix
-                'name' => $student->name,
-                'student_number' => $student->student_number,
-                'is_active' => $student->is_active,
-                'percentage' => $percentage
-            ];
-        }
-
-        // Sortir berdasarkan persentase kehadiran terendah
-        $studentStats = collect($studentStats)->sortBy('percentage')->values();
-
-        $categories = ['pre_level', 'level', 'step', 'private'];
-        $years = ClassModel::select('academic_year')->distinct()->pluck('academic_year')->sortDesc();
-        $teachers = User::where('is_teacher', true)
-            ->where('is_active', true)
-            ->orderBy('name', 'asc')->get();
 
         return view('admin.classes.detail-class', compact(
             'class', 
