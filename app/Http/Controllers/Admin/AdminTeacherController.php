@@ -97,13 +97,13 @@ class AdminTeacherController extends Controller
 
 
     public function create()
-{
-    // Ambil semua data kelas untuk dropdown
-    $classes = ClassModel::all(); 
+    {
+        // Ambil semua data kelas untuk dropdown
+        $classes = ClassModel::all(); 
 
-    // Kirim data $classes ke view
-    return view('admin.teacher.add', compact('classes'));
-}
+        // Kirim data $classes ke view
+        return view('admin.teacher.add', compact('classes'));
+    }
 
     public function store(Request $request)
     {
@@ -162,7 +162,7 @@ class AdminTeacherController extends Controller
         // 5. Redirect kembali dengan pesan sukses
         return redirect()->route('admin.teacher.index')->with('success', 'Teacher added successfully!');
     }
-  public function show($id)
+    public function show($id)
     {
         // 1. Ambil Data Guru (TETAP DARI DATABASE)
         // Kita butuh ini agar Nama, ID, Foto, dan Email tetap asli
