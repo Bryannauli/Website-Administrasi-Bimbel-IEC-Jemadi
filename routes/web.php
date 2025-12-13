@@ -95,7 +95,7 @@ Route::middleware(['auth', 'verified', 'admin'])
         Route::post('/teachers', [AdminTeacherController::class, 'store'])->name('teacher.store');
         Route::get('/teachers/{id}', [AdminTeacherController::class, 'show'])->name('teacher.show');
         Route::put('/teachers/{teacher}', [AdminTeacherController::class, 'update'])->name('teacher.update');
-        Route::delete('/teachers/{teacher}', [AdminTeacherController::class, 'destroy'])->name('teacher.destroy');
+        Route::put('teachers/{teacher}/toggle-status', [AdminTeacherController::class, 'toggleStatus'])->name('teachers.toggle-status');
 
         /* =====================================================================
         | TEACHER ATTENDANCE RECORD

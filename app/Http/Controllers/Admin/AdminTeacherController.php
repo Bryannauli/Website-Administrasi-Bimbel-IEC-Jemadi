@@ -317,20 +317,16 @@ public function update(Request $request, User $teacher)
                          ->with('success', 'Data guru berhasil diperbarui!');
     }
 
-    public function destroy(User $teacher)
+    public function toggleStatus(User $teacher)
     {
-        // 1. Cek status saat ini (Opsional, tapi baik untuk mencegah request berulang)
-        if ($teacher->is_active === 0) {
-            return redirect()->route('admin.teacher.index')->with('error', 'Guru sudah nonaktif.');
-        }
+        // Toggle status: Jika 1 menjadi 0, jika 0 menjadi 1
+        $newStatus = $teacher->is_active == 1 ? 0 : 1;
+        $statusText = $newStatus == 1 ? 'Aktif' : 'Nonaktif';
 
-        // 2. Lakukan Soft Delete: Update kolom is_active menjadi 0
         $teacher->update([
-            'is_active' => 0,
+            'is_active' => $newStatus,
         ]);
 
-        // 3. Redirect kembali ke halaman index dengan pesan sukses
-        return redirect()->route('admin.teacher.index')
-                         ->with('success', 'Guru berhasil dinonaktifkan (Status diubah menjadi Inactive).');
+        return back()->with('success', "Status guru {$teacher->name} berhasil diubah menjadi {$statusText}.");
     }
 }
