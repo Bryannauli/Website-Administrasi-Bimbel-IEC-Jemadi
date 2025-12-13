@@ -147,7 +147,7 @@
                     </form>
                 </div>
 
-                {{-- TABLE CONTENT --}}
+{{-- TABLE CONTENT --}}
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse min-w-max">
                         <thead class="bg-gray-50 text-xs text-gray-500 font-bold uppercase border-b border-gray-200 tracking-wider">
@@ -155,10 +155,11 @@
                                 <th class="px-6 py-4 w-16 whitespace-nowrap text-center font-bold">No</th>
                                 <th class="px-6 py-4 whitespace-nowrap font-bold">Category</th>
                                 <th class="px-6 py-4 whitespace-nowrap font-bold">Class Name</th>
-                                <th class="px-6 py-4 whitespace-nowrap text-center font-bold">Year</th> 
+                                <th class="px-6 py-4 whitespace-nowrap text-center font-bold">Class Status</th> {{-- KOLOM BARU --}}
+                                <th class="px-6 py-4 whitespace-nowrap text-center font-bold">Year</th>
                                 <th class="px-6 py-4 whitespace-nowrap text-center font-bold">Exam Date</th>
                                 <th class="px-6 py-4 whitespace-nowrap text-center font-bold">Type</th>
-                                <th class="px-6 py-4 whitespace-nowrap text-center font-bold">Status</th> 
+                                <th class="px-6 py-4 whitespace-nowrap text-center font-bold">Progress</th> {{-- UBAH LABEL JADI PROGRESS AGAR BEDA --}}
                                 <th class="px-6 py-4 whitespace-nowrap text-center font-bold w-32">Action</th>
                             </tr>
                         </thead>
@@ -169,57 +170,58 @@
                                     {{ $assessments->firstItem() + $index }}
                                 </td>
                                 
+                                {{-- CATEGORY (Semua Biru) --}}
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    @php
-                                        // LOGIKA WARNA KATEGORI BARU
-                                        $categoryClass = match($assessment->classModel->category ?? '') {
-                                            'pre_level' => 'bg-emerald-100 text-emerald-800', // Hijau
-                                            'level'     => 'bg-amber-100 text-amber-800',     // Kuning
-                                            'step'      => 'bg-blue-100 text-blue-800',       // Biru
-                                            'private'   => 'bg-gray-100 text-gray-600',       // Abu-abu
-                                            default     => 'bg-gray-100 text-gray-600',
-                                        };
-                                    @endphp
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider {{ $categoryClass }}">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200">
                                         {{ str_replace('_', ' ', $assessment->classModel->category ?? '-') }}
                                     </span>
                                 </td>
                                 
+                                {{-- CLASS NAME --}}
                                 <td class="px-6 py-4 font-semibold text-gray-800 whitespace-nowrap">
                                     {{ $assessment->classModel->name ?? '-' }}
-                                    @if($assessment->classModel && !$assessment->classModel->is_active)
-                                    <span class="text-[9px] text-red-600 ml-1">(Inactive)</span>
+                                </td>
+
+                                {{-- CLASS STATUS (Kolom Baru) --}}
+                                <td class="px-6 py-4 text-center whitespace-nowrap">
+                                    @if($assessment->classModel && $assessment->classModel->is_active)
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
+                                            Active
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500 border border-gray-200">
+                                            Inactive
+                                        </span>
                                     @endif
                                 </td>
 
-                                <td class="px-6 py-4 text-gray-600 font-medium whitespace-nowrap text-center">
-                                    <span class="inline-block bg-gray-50 text-gray-600 border border-gray-200 px-2 py-0.5 rounded-full text-[10px] font-bold w-fit">
-                                        {{ $assessment->classModel->academic_year ?? '-' }}
-                                    </span>
+                                {{-- YEAR --}}
+                                <td class="px-6 py-4 text-gray-600 font-bold text-xs whitespace-nowrap text-center">
+                                    {{ $assessment->classModel->academic_year ?? '-' }}
                                 </td>
 
+                                {{-- EXAM DATE --}}
                                 <td class="px-6 py-4 text-center text-gray-600 font-medium whitespace-nowrap">
                                     {{ $assessment->date ? \Carbon\Carbon::parse($assessment->date)->format('d M Y') : '-' }}
                                 </td>
                                 
+                                {{-- TYPE --}}
                                 <td class="px-6 py-4 text-center whitespace-nowrap">
                                     <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest
-                                        {{ $assessment->type == 'final' ? 'bg-indigo-100 text-indigo-700' : 'bg-green-100 text-green-700' }}">
+                                        {{ $assessment->type == 'final' ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200' }}">
                                         {{ ucfirst($assessment->type) }}
                                     </span>
                                 </td>
 
-                                {{-- Status Column dengan Badge PILL (Konsisten Rounded) --}}
+                                {{-- PROGRESS (Assessment Status) --}}
                                 <td class="px-6 py-4 text-center whitespace-nowrap">
                                     @php
-                                        // Tentukan Warna Badge Status
                                         $statusColor = match($assessment->status) {
-                                            'submitted' => 'bg-blue-100 text-blue-700 ring-1 ring-blue-500/20', 
-                                            'final'     => 'bg-purple-100 text-purple-700 ring-1 ring-purple-500/20', 
-                                            default     => 'bg-gray-100 text-gray-600', 
+                                            'submitted' => 'bg-blue-100 text-blue-700 border-blue-200 ring-1 ring-blue-500/20', 
+                                            'final'     => 'bg-purple-100 text-purple-700 border-purple-200 ring-1 ring-purple-500/20', 
+                                            default     => 'bg-gray-100 text-gray-600 border-gray-200', 
                                         };
                                         
-                                        // Tentukan Ikon SVG
                                         $statusIcon = match($assessment->status) {
                                             'submitted' => '<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
                                             'final'     => '<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
@@ -233,6 +235,7 @@
                                     </span>
                                 </td>
 
+                                {{-- ACTION --}}
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
                                     <div class="flex items-center justify-center gap-3">
                                         <a href="{{ route('admin.classes.assessment.detail', ['classId' => $assessment->class_id, 'type' => $assessment->type, 'from' => 'assessment']) }}" 
@@ -243,7 +246,6 @@
                                             </svg>
                                         </a>
                                         
-                                        {{-- Tombol Edit: Hanya aktif jika status BUKAN final --}}
                                         @if($assessment->status !== 'final')
                                         <a href="{{ route('admin.classes.assessment.detail', ['classId' => $assessment->class_id, 'type' => $assessment->type, 'from' => 'assessment', 'mode' => 'edit']) }}" 
                                            class="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Edit Session">
@@ -259,7 +261,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="8" class="px-6 py-12 text-center text-gray-400 italic">No assessment sessions found for current filters.</td>
+                                <td colspan="9" class="px-6 py-12 text-center text-gray-400 italic">No assessment sessions found for current filters.</td>
                             </tr>
                             @endforelse
                         </tbody>

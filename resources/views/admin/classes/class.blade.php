@@ -256,30 +256,30 @@
                             @forelse($classes as $index => $class)
                                 <tr class="hover:bg-gray-50 transition-colors group">
                                     {{-- No --}}
-                                    <td class="px-6 py-5 text-center text-gray-500 font-medium">{{ $classes->firstItem() + $index }}</td>
+                                    <td class="px-6 py-4 text-center text-gray-500 font-medium">{{ $classes->firstItem() + $index }}</td>
                                     
                                     {{-- Category --}}
-                                    <td class="px-6 py-5 text-gray-600 capitalize">
+                                    <td class="px-6 py-4 text-gray-600 capitalize">
                                         {{ str_replace('_', ' ', $class->category ?? '-') }}
                                     </td>
                                     
                                     {{-- Class Name --}}
-                                    <td class="px-6 py-5 font-medium text-gray-900 text-base">
+                                    <td class="px-6 py-4 font-medium text-gray-900 text-base">
                                         {{ $class->name }}
                                     </td>
                                     
                                     {{-- Academic Year --}}
-                                    <td class="px-6 py-5 text-gray-600 font-medium whitespace-nowrap text-center">
+                                    <td class="px-6 py-4 text-gray-600 font-medium whitespace-nowrap text-center">
                                         <span class="inline-block bg-gray-50 text-gray-600 border border-gray-200 px-2 py-0.5 rounded-full text-[10px] font-bold w-fit">
                                             {{ $class->academic_year }}
                                         </span>
                                     </td>
                                     
                                     {{-- Classroom --}}
-                                    <td class="px-6 py-5 text-gray-500 font-medium whitespace-nowrap">{{ $class->classroom }}</td>
+                                    <td class="px-6 py-4 text-gray-500 font-medium whitespace-nowrap">{{ $class->classroom }}</td>
                                     
                                     {{-- Schedule (Update Tampilan: Hari | Tipe) --}}
-                                    <td class="px-6 py-5">
+                                    <td class="px-6 py-4">
                                         <div class="flex flex-col gap-1.5">
                                             <div class="flex flex-wrap gap-1">
                                                 @forelse($class->schedules as $schedule)
@@ -300,7 +300,7 @@
                                     </td>
 
                                     {{-- Teacher --}}
-                                    <td class="px-6 py-5 text-xs whitespace-nowrap">
+                                    <td class="px-6 py-4 text-xs whitespace-nowrap">
                                         <div class="flex flex-col gap-1">
                                             <div class="flex items-center gap-1.5">
                                                 <span class="text-gray-400 font-bold uppercase text-[10px] w-10">FORM:</span>
@@ -314,7 +314,7 @@
                                     </td>
 
                                     {{-- Status --}}
-                                    <td class="px-6 py-5 text-center">
+                                    <td class="px-6 py-4 text-center">
                                         @if($class->is_active)
                                             <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200">Active</span>
                                         @else
@@ -323,7 +323,7 @@
                                     </td>
 
                                     {{-- Action Buttons --}}
-                                    <td class="px-6 py-5 text-center">
+                                    <td class="px-6 py-4 text-center">
                                         <div class="flex items-center justify-center gap-3">
                                             {{-- Detail --}}
                                             <a href="{{ route('admin.classes.detailclass', $class->id) }}" 
