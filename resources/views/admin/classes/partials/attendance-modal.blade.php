@@ -64,9 +64,9 @@
                                         {{-- MODIFIKASI: Nama Guru --}}
                                         @php
                                             // Ambil record guru pertama di sesi ini
-                                            $teacherName = $session->teacherRecords->first()->teacher->name ?? '-';
+                                            $teacherName = $session->teacher->name ?? '-';
                                             // Ambil kata pertama saja agar tidak terlalu panjang (misal: "Budi Santoso" jadi "Budi")
-                                            $shortName = explode(' ', trim($teacherName))[0];
+                                            $shortName = ($teacherName !== '-') ? explode(' ', trim($teacherName))[0] : '-';
                                         @endphp
                                         <div class="mt-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 text-[9px] border border-blue-100 truncate max-w-[70px]" title="{{ $teacherName }}">
                                             {{ $shortName }}

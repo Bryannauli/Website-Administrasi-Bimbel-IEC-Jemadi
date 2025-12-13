@@ -343,10 +343,10 @@
                                 @endif
                             </div>
 
-                            @php $lastTeacherRecord = $lastSession ? $lastSession->teacherRecords->first() : null; @endphp
+                            @php $lastTeacher = $lastSession ? $lastSession->teacher : null; @endphp
 
-                            @if($lastTeacherRecord && $lastTeacherRecord->teacher)
-                                <h3 class="text-lg font-bold truncate" title="{{ $lastTeacherRecord->teacher->name }}">{{ $lastTeacherRecord->teacher->name }}</h3>
+                            @if($lastTeacher)
+                                <h3 class="text-lg font-bold truncate" title="{{ $lastTeacher->name }}">{{ $lastTeacher->name }}</h3>
                                 <div class="mt-3 bg-blue-800 bg-opacity-40 p-3 rounded-lg border border-blue-500 border-opacity-30">
                                     <p class="text-blue-50 text-xs italic line-clamp-3">"{{ $lastSession->comment ?? 'No teaching notes provided.' }}"</p>
                                 </div>

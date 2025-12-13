@@ -286,7 +286,7 @@ class AdminClassController extends Controller
 
         // 3. History Sesi (Columns)
         $teachingLogs = \App\Models\ClassSession::where('class_id', $id)
-            ->with(['teacherRecords.teacher', 'records'])
+            ->with(['teacher', 'records'])
             ->orderBy('date', 'desc')
             ->get();
 
