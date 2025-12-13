@@ -1,26 +1,24 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\AssessmentController; // Controller Lama (Global Assessment)
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 // use App\Http\Controllers\AssessmentFormController; // Tidak Terpakai
 
 // Admin Controllers
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Admin\AdminAssessmentController; // Controller Baru (Manage Grades per Class)
+use App\Http\Controllers\Admin\AdminClassController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminStudentController;
-use App\Http\Controllers\Admin\AdminClassController;
 use App\Http\Controllers\Admin\AdminTeacherController;
-use App\Http\Controllers\Admin\AdminAssessmentController; // Controller Baru (Manage Grades per Class)
+
 use App\Http\Controllers\TeacherAttendanceRecordController;
 
 // Teacher Controllers
-use App\Http\Controllers\Teacher\DashboardTeacherController;
-use App\Http\Controllers\Teacher\ClassTeacherController;
-use App\Http\Controllers\Teacher\StudentTeacherController;
-use App\Http\Controllers\Teacher\AttendanceController;
-use App\Http\Controllers\Teacher\TeacherController;
-
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Teacher\TeacherAttendanceController;
+use App\Http\Controllers\Teacher\TeacherAssessmentController;
+use App\Http\Controllers\Teacher\TeacherClassController;
+use App\Http\Controllers\Teacher\TeacherDashboardController;
 
 
 /* ROOT DAN DASHBOARD */
@@ -121,37 +119,44 @@ Route::middleware(['auth', 'verified', 'admin'])
 |  TEACHER ROUTES (USER GURU)
 ============================================================================ */
 Route::prefix('teacher')->name('teacher.')->middleware(['auth'])->group(function () {
+
     /* Dashboard */
-    Route::get('/dashboard', [DashboardTeacherController::class, 'index'])->name('dashboard');
-    Route::get('/analytics', [DashboardTeacherController::class, 'analytics'])->name('analytics');
-
-    /* Classes */
-    Route::prefix('classes')->name('classes.')->group(function () {
-        Route::get('/', [ClassTeacherController::class, 'index'])->name('index');
-        Route::get('/{id}', [ClassTeacherController::class, 'show'])->name('show');
-        Route::get('/{id}/detail', [ClassTeacherController::class, 'detail'])->name('detail');
-        Route::post('/store', [ClassTeacherController::class, 'store'])->name('store');
-
-        /* Session */
-        Route::get('/{classId}/session/{sessionId}', [ClassTeacherController::class, 'sessionDetail'])->name('session.detail');
-        Route::post('/{classId}/session/store', [ClassTeacherController::class, 'storeSession'])->name('session.store');
-        Route::put('/{classId}/session/{sessionId}', [ClassTeacherController::class, 'updateSession'])->name('session.update');
-        Route::post('/{id}/assessment', [ClassTeacherController::class, 'storeAssessment'])->name('assessment.store');
-        Route::get('/{classId}/assessment/{assessmentId}', [ClassTeacherController::class, 'assessmentDetail'])->name('assessment.detail');
-        Route::put('/{classId}/assessment/{assessmentId}', [ClassTeacherController::class, 'updateAssessmentMarks'])->name('assessment.update');
-    });
-
-    /* Attendance */
-    Route::prefix('attendance')->name('attendance.')->group(function () {
-        Route::post('/submit', [AttendanceController::class, 'submit'])->name('submit');
-        Route::put('/{id}/update', [AttendanceController::class, 'update'])->name('update');
-        Route::get('/export', [AttendanceController::class, 'export'])->name('export');
-    });
-
+    Route::get('/dashboard', [TeacherDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/analytics', [TeacherDashboardController::class, 'analytics'])->name('analytics');
+    
     /* Schedule */
     Route::prefix('schedule')->name('schedule.')->group(function () {
-        Route::get('/my', [DashboardTeacherController::class, 'mySchedule'])->name('my');
+        Route::get('/my', [TeacherDashboardController::class, 'mySchedule'])->name('my');
     });
+
+    /* 3. Classes Management */
+    Route::prefix('classes')->name('classes.')->group(function () {
+        
+        // --- A. Class List & Detail (TeacherClassController) ---
+        Route::get('/', [TeacherClassController::class, 'index'])->name('index');
+        Route::get('/{id}/detail', [TeacherClassController::class, 'detail'])->name('detail');
+        // Route::get('/{id}', [TeacherClassController::class, 'show'])->name('show'); // Opsional: jika detail dan show beda halaman
+
+
+        // --- B. Attendance / Absensi (TeacherAttendanceController) ---
+        // Membuat sesi absen baru (URL: /teacher/classes/{id}/session/store)
+        Route::post('/{id}/session/store', [TeacherAttendanceController::class, 'storeSession'])->name('session.store');
+        
+        // Detail & Update Absen (URL: /teacher/classes/{classId}/session/{sessionId})
+        Route::get('/{classId}/session/{sessionId}', [TeacherAttendanceController::class, 'sessionDetail'])->name('session.detail');
+        Route::put('/{classId}/session/{sessionId}', [TeacherAttendanceController::class, 'updateSession'])->name('session.update');
+
+
+        // --- C. Assessment / Penilaian (TeacherAssessmentController) ---
+        // Membuat sesi nilai baru (Jika ada fiturnya)
+        Route::post('/{id}/assessment', [TeacherAssessmentController::class, 'storeAssessment'])->name('assessment.store');
+
+        // Input & Update Nilai (URL: /teacher/classes/{classId}/assessment/{assessmentId})
+        Route::get('/{classId}/assessment/{assessmentId}', [TeacherAssessmentController::class, 'assessmentDetail'])->name('assessment.detail');
+        Route::put('/{classId}/assessment/{assessmentId}', [TeacherAssessmentController::class, 'updateAssessmentMarks'])->name('assessment.update');
+
+    });
+
 });
 
 /* ============================================================================
