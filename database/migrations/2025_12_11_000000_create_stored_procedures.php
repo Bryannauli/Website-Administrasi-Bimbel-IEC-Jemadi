@@ -10,7 +10,6 @@ return new class extends Migration
         // ==========================================
         // 1. PROCEDURE: Dashboard Stats
         // ==========================================
-        // Menghitung total siswa, guru, dan kelas untuk Card Dashboard
         DB::unprepared('
             DROP PROCEDURE IF EXISTS p_GetDashboardStats;
             CREATE PROCEDURE p_GetDashboardStats(
@@ -28,7 +27,6 @@ return new class extends Migration
         // ==========================================
         // 2. PROCEDURE: Attendance Stats (Global/Class)
         // ==========================================
-        // Menghitung persentase kehadiran berdasarkan tanggal tertentu
         DB::unprepared("
             DROP PROCEDURE IF EXISTS p_GetAttendanceStats;
             CREATE PROCEDURE p_GetAttendanceStats(IN date_filter DATE)
@@ -46,9 +44,8 @@ return new class extends Migration
         ");
 
         // ==========================================
-        // 3. PROCEDURE: Student Attendance Summary
+        // 3. PROCEDURE: Student Attendance Summary (Per Siswa)
         // ==========================================
-        // Update: Hanya menghitung absensi yang sesuai dengan class_id siswa saat ini
         DB::unprepared("
             DROP PROCEDURE IF EXISTS p_get_attendance_summary;
             CREATE PROCEDURE p_get_attendance_summary (IN studentIdIn INT)
@@ -65,7 +62,33 @@ return new class extends Migration
                 JOIN attendance_sessions s ON ar.attendance_session_id = s.id
                 JOIN students stu ON ar.student_id = stu.id
                 WHERE ar.student_id = studentIdIn
-                    AND s.class_id = stu.class_id; -- FILTER KUNCI: Hanya sesi kelas saat ini
+                    AND s.class_id = stu.class_id; 
+            END
+        ");
+
+        // ==========================================
+        // 4. PROCEDURE: Class Attendance Stats (Untuk Modal Detail Kelas)
+        // ==========================================
+        // Ini adalah prosedur yang kita perbaiki tadi (dengan s.is_active & alias student_id)
+        DB::unprepared("
+            DROP PROCEDURE IF EXISTS p_get_class_attendance_stats;
+            CREATE PROCEDURE p_get_class_attendance_stats (IN classId INT)
+            BEGIN
+                SELECT 
+                    s.id AS student_id,
+                    s.name,
+                    s.student_number,
+                    s.is_active, 
+                    COUNT(ar.id) AS total_sessions_recorded,
+                    SUM(CASE WHEN ar.status IN ('present', 'late') THEN 1 ELSE 0 END) AS total_present,
+                    ROUND(
+                        (SUM(CASE WHEN ar.status IN ('present', 'late') THEN 1 ELSE 0 END) / COUNT(ar.id)) * 100
+                    ) AS percentage
+                FROM students s
+                LEFT JOIN attendance_records ar ON s.id = ar.student_id
+                WHERE s.class_id = classId
+                GROUP BY s.id, s.name, s.student_number, s.is_active
+                ORDER BY percentage ASC;
             END
         ");
     }
@@ -75,5 +98,6 @@ return new class extends Migration
         DB::unprepared('DROP PROCEDURE IF EXISTS p_GetDashboardStats');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_GetAttendanceStats');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_get_attendance_summary');
+        DB::unprepared('DROP PROCEDURE IF EXISTS p_get_class_attendance_stats');
     }
 };

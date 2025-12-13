@@ -37,7 +37,7 @@
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Academic Year</label>
                                 <select name="academic_year" x-model="editForm.academic_year" class="w-full border-gray-300 rounded-lg shadow-sm @error('academic_year') border-red-500 @enderror">
-                                    <option value="2025">2025</option><option value="2026">2026</option>
+                                    @foreach($years as $year) <option value="{{ $year }}">{{ $year }}</option> @endforeach
                                 </select>
                                 @error('academic_year') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                             </div>
@@ -80,18 +80,40 @@
                             </div>
                         </div>
 
+                        {{-- SCHEDULE DAYS & TEACHER TYPE (MODIFIED SECTION) --}}
                         <div class="md:col-span-2">
-                            <label class="block text-sm font-bold text-gray-700 mb-2 @error('days') text-red-500 @enderror">Schedule Days <span class="text-red-500">*</span></label>
-                            <div class="flex flex-wrap gap-3">
+                            <label class="block text-sm font-bold text-gray-700 mb-3 @error('days') text-red-500 @enderror">Schedule & Teacher Assignment <span class="text-red-500">*</span></label>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 @foreach(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as $day)
-                                    <label class="inline-flex items-center cursor-pointer bg-white border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition">
-                                        {{-- Checkbox days --}}
-                                        <input type="checkbox" name="days[]" value="{{ $day }}" :checked="editForm.days.includes('{{ $day }}')" x-model="editForm.days" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                                        <span class="ml-2 text-gray-700 text-sm font-medium">{{ $day }}</span>
-                                    </label>
+                                    <div class="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                                        :class="editForm.days.includes('{{ $day }}') ? 'bg-blue-50 border-blue-200' : ''">
+                                        
+                                        <div class="flex items-center justify-between mb-2">
+                                            <label class="inline-flex items-center cursor-pointer">
+                                                {{-- Checkbox Hari --}}
+                                                <input type="checkbox" name="days[]" value="{{ $day }}" 
+                                                    :checked="editForm.days.includes('{{ $day }}')" 
+                                                    x-model="editForm.days" 
+                                                    class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                                                <span class="ml-2 text-gray-700 text-sm font-bold">{{ $day }}</span>
+                                            </label>
+                                        </div>
+
+                                        {{-- Dropdown Tipe Guru (Hanya muncul jika hari dicentang) --}}
+                                        <div x-show="editForm.days.includes('{{ $day }}')" x-transition class="mt-2 pl-6">
+                                            <select name="teacher_types[{{ $day }}]" 
+                                                    class="block w-full text-xs border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-1.5"
+                                                    x-model="editForm.teacher_types['{{ $day }}']">
+                                                <option value="form">Form Teacher</option>
+                                                <option value="local">Local Teacher</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                 @endforeach
                             </div>
                             @error('days') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                            {{-- Catatan: Error untuk teacher_types.* akan muncul di bawah sini --}}
                         </div>
 
                         <div class="md:col-span-2 flex justify-between items-end">
@@ -115,7 +137,6 @@
                     </div>
                     
                     <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
-                        {{-- CANCEL LOGIC: Refresh halaman jika ada error --}}
                         <button type="button" @click="closeModal('showEditModal')" class="px-5 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition">Cancel</button>
                         <button type="submit" class="px-5 py-2.5 bg-blue-700 text-white font-medium rounded-lg hover:bg-blue-800 shadow-sm transition">Update Class</button>
                     </div>

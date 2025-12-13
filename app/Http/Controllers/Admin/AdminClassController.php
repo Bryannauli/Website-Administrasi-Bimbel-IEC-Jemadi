@@ -9,7 +9,7 @@ use App\Models\User; // Import Model User untuk ambil data guru
 use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class AdminClassController extends Controller
 {
@@ -107,17 +107,14 @@ class AdminClassController extends Controller
             'start_month' => 'required|string',
             'end_month' => 'required|string',
             'academic_year' => 'required',
-            
-            // Guru bersifat Opsional (Nullable)
             'form_teacher_id' => 'nullable|exists:users,id',
             'local_teacher_id' => 'nullable|exists:users,id',
-            
             'start_time' => 'required', 
             'end_time' => 'required',
-            
-            // Validasi Array Hari (Checkbox)
             'days' => 'required|array',
             'days.*' => 'string|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
+            // Validasi teacher_types (opsional tapi disarankan)
+            'teacher_types' => 'nullable|array',
         ]);
 
         // 2. Simpan Data Kelas Utama
@@ -132,18 +129,25 @@ class AdminClassController extends Controller
             'local_teacher_id' => $request->local_teacher_id,
             'start_time' => $request->start_time,
             'end_time' => $request->end_time,
-            'is_active' => true, // Default Active
+            'is_active' => true,
         ]);
 
-        // 3. Simpan Jadwal Hari ke Tabel Schedules
+        // 3. Simpan Jadwal Hari ke Tabel Schedules beserta Tipe Guru
+        // Ambil data teacher_types dari request, default array kosong jika tidak ada
+        $teacherTypes = $request->input('teacher_types', []);
+
         foreach ($request->days as $day) {
+            // Cek tipe guru untuk hari tersebut (default 'form')
+            $type = $teacherTypes[$day] ?? 'form';
+
             Schedule::create([
                 'class_id' => $class->id,
                 'day_of_week' => $day,
+                'teacher_type' => $type, // Simpan ke database
             ]);
         }
 
-        return redirect()->route('admin.classes.index')->with('success', 'Class updated successfully!');
+        return redirect()->route('admin.classes.index')->with('success', 'Class created successfully!');
     }
 
     /**
@@ -155,7 +159,7 @@ class AdminClassController extends Controller
 
         try {
             // Validasi
-            $data = $request->validate([
+            $request->validate([
                 'name' => 'required|string|max:100',
                 'classroom' => 'required|string|max:50',
                 'form_teacher_id' => 'nullable|exists:users,id',
@@ -165,6 +169,7 @@ class AdminClassController extends Controller
                 'start_month' => 'required|string',
                 'end_month' => 'required|string',
                 'academic_year' => 'required',
+                'teacher_types' => 'nullable|array',
             ]);
         
             // Update Data Utama
@@ -177,13 +182,8 @@ class AdminClassController extends Controller
                 'academic_year' => $request->academic_year,
                 'form_teacher_id' => $request->form_teacher_id,
                 'local_teacher_id' => $request->local_teacher_id,
-                
-                // Handle jika nama field di form beda (time_start vs start_time)
                 'start_time' => $request->start_time ?? $class->start_time,
                 'end_time' => $request->end_time ?? $class->end_time,
-                
-                // Perbaikan kecil: Pastikan 'is_active' dihandle dari request,
-                // atau gunakan nilai yang sudah ada jika tidak ada di request.
                 'is_active' => $request->status == 'active' ? true : false,
             ]);
         
@@ -191,28 +191,28 @@ class AdminClassController extends Controller
             $class->schedules()->delete(); 
         
             if ($request->has('days')) {
+                $teacherTypes = $request->input('teacher_types', []);
+
                 foreach ($request->days as $day) {
+                    $type = $teacherTypes[$day] ?? 'form';
+                    
                     Schedule::create([
                         'class_id' => $class->id,
                         'day_of_week' => $day,
+                        'teacher_type' => $type, // Simpan ke database
                     ]);
                 }
             }
         
-            // Perbaikan: Ganti pesan success
             return redirect()->route('admin.classes.index')->with('success', 'Class updated successfully!');
 
         } catch (ValidationException $e) {
-            // TANGKAP KEGAGALAN VALIDASI
             return back()
                 ->withErrors($e->errors())
-                // Penting: Kirim 'id' lama agar Alpine JS bisa menyusun updateUrl
                 ->withInput($request->all() + ['id' => $id]) 
-                ->with('edit_failed', true); // FLAG UTAMA UNTUK EDIT MODAL
+                ->with('edit_failed', true); 
                 
         } catch (\Throwable $e) {
-            // Tangani kegagalan lainnya
-            Log::error('Class update failed: '.$e->getMessage());
             return back()
                 ->withInput($request->all() + ['id' => $id])
                 ->with('error', 'Update failed: ' . $e->getMessage())
@@ -251,17 +251,22 @@ class AdminClassController extends Controller
         $lastSession = $teachingLogs->first();
 
         // 4. Panggil Stored Procedure untuk mengambil data statistik
-            $studentStats = DB::select('CALL sp_get_class_attendance_stats(?)', [$id]);
-            
-            // DB::select mengembalikan array of objects, siap digunakan di view
-
-            // ... (Logika pembuatan attendanceMatrix jika masih dibutuhkan untuk tampilan detail per sesi) ...
-            $attendanceMatrix = []; 
-            foreach ($teachingLogs as $session) {
-                foreach ($session->records as $record) {
-                    $attendanceMatrix[$record->student_id][$session->id] = $record->status;
-                }
+        $studentStats = DB::select('CALL p_get_class_attendance_stats(?)', [$id]);
+        
+        $attendanceMatrix = []; 
+        foreach ($teachingLogs as $session) {
+            foreach ($session->records as $record) {
+                $attendanceMatrix[$record->student_id][$session->id] = $record->status;
             }
+        }
+
+        // ==========================================
+        // PERBAIKAN: DEFINISIKAN DATA PENDUKUNG FORM
+        // ==========================================
+        // Data ini diperlukan untuk modal edit kelas di halaman detail
+        $categories = ['pre_level', 'level', 'step', 'private'];
+        $years = ClassModel::select('academic_year')->distinct()->pluck('academic_year')->sortDesc();
+        $teachers = User::where('is_teacher', true)->orderBy('name', 'asc')->get();
 
         return view('admin.classes.detail-class', compact(
             'class', 
@@ -269,10 +274,10 @@ class AdminClassController extends Controller
             'teachingLogs', 
             'lastSession',
             'studentStats',
-            'attendanceMatrix', // Kirim matrix ke view
-            'categories', // DITAMBAHKAN
-            'years', // DITAMBAHKAN
-            'teachers' // DITAMBAHKAN
+            'attendanceMatrix',
+            'categories', // Sekarang variabel ini sudah didefinisikan
+            'years',      // Sekarang variabel ini sudah didefinisikan
+            'teachers'    // Sekarang variabel ini sudah didefinisikan
         ));
     }
 

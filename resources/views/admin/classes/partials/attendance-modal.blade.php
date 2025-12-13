@@ -97,7 +97,7 @@
                                 {{-- Loop Status Per Tanggal --}}
                                 @foreach($teachingLogs as $session)
                                     @php
-                                        $status = $attendanceMatrix[$stat->id][$session->id] ?? '-';
+                                        $status = $attendanceMatrix[$stat->student_id][$session->id] ?? '-';
                                         
                                         $cellContent = match($status) {
                                             'present' => '<span class="inline-flex w-6 h-6 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm" title="Present">

@@ -14,14 +14,14 @@ class ClassSeeder extends Seeder
         // 1. Ambil semua data guru
         $teachers = User::where('role', 'teacher')->get();
 
-        // Pastikan minimal ada 2 guru untuk diacak (untuk form & local)
+        // Pastikan minimal ada 2 guru untuk diacak
         if ($teachers->count() == 0) {
             $this->command->info('Tidak ada guru ditemukan. Jalankan TeacherSeeder dulu!');
             return;
         }
 
-        // --- KELAS 1: Level 1 (Senin & Rabu) ---
-        // Acak 2 guru berbeda
+        // --- KELAS 1: Level 5 (Senin & Rabu) ---
+        // Skenario: Senin (Form Teacher), Rabu (Local Teacher)
         $t1_form = $teachers->random(); 
         $t1_local = $teachers->where('id', '!=', $t1_form->id)->random() ?? $teachers->random();
 
@@ -39,15 +39,22 @@ class ClassSeeder extends Seeder
             'is_active'      => true,
         ]);
         
-        // Jadwal Kelas 1
-        Schedule::create(['class_id' => $class1->id, 'day_of_week' => 'Monday']);
-        Schedule::create(['class_id' => $class1->id, 'day_of_week' => 'Wednesday']);
+        // UPDATE DISINI: Menambahkan teacher_type
+        Schedule::create([
+            'class_id' => $class1->id, 
+            'day_of_week' => 'Monday', 
+            'teacher_type' => 'form' // Senin diajar Form Teacher
+        ]);
+        Schedule::create([
+            'class_id' => $class1->id, 
+            'day_of_week' => 'Wednesday', 
+            'teacher_type' => 'local' // Rabu diajar Local Teacher
+        ]);
 
 
-        // --- KELAS 2: Pre-Level (Selasa & Kamis) ---
-        // Acak guru lagi
+        // --- KELAS 2: Pre-Level 5 (Selasa & Kamis) ---
+        // Skenario: Form Teacher mengajar kedua hari (misal Local Teacher hanya pendamping/jarang)
         $t2_form = $teachers->random();
-        // Local teacher boleh null atau random (di sini kita buat random)
         $t2_local = $teachers->where('id', '!=', $t2_form->id)->random();
 
         $class2 = ClassModel::create([
@@ -64,13 +71,21 @@ class ClassSeeder extends Seeder
             'is_active'      => true,
         ]);
 
-        // Jadwal Kelas 2
-        Schedule::create(['class_id' => $class2->id, 'day_of_week' => 'Tuesday']);
-        Schedule::create(['class_id' => $class2->id, 'day_of_week' => 'Thursday']);
+        Schedule::create([
+            'class_id' => $class2->id, 
+            'day_of_week' => 'Tuesday', 
+            'teacher_type' => 'form'
+        ]);
+        Schedule::create([
+            'class_id' => $class2->id, 
+            'day_of_week' => 'Thursday', 
+            'teacher_type' => 'local' // Ganti ke local agar variatif
+        ]);
 
 
-        // --- KELAS 3: Step (Jumat & Sabtu) ---
-        // Acak guru lagi
+        // --- KELAS 3: Step 2 (Jumat & Sabtu) ---
+        // Skenario: HANYA punya Form Teacher (Local Teacher null)
+        // Maka jadwalnya WAJIB 'form' semua.
         $t3_form = $teachers->random();
         
         $class3 = ClassModel::create([
@@ -78,7 +93,7 @@ class ClassSeeder extends Seeder
             'name'           => 'Step 2',
             'classroom'      => 'China',
             'form_teacher_id'=> $t3_form->id,
-            'local_teacher_id' => null, // Contoh kalau kelas ini cuma punya 1 guru
+            'local_teacher_id' => null, // Tidak ada local teacher
             'start_time'     => '16:00:00',
             'end_time'       => '18:00:00',
             'start_month'    => 'January',
@@ -87,8 +102,15 @@ class ClassSeeder extends Seeder
             'is_active'      => true,
         ]);
 
-        // Jadwal Kelas 3
-        Schedule::create(['class_id' => $class3->id, 'day_of_week' => 'Friday']);
-        Schedule::create(['class_id' => $class3->id, 'day_of_week' => 'Saturday']);
+        Schedule::create([
+            'class_id' => $class3->id, 
+            'day_of_week' => 'Friday', 
+            'teacher_type' => 'form'
+        ]);
+        Schedule::create([
+            'class_id' => $class3->id, 
+            'day_of_week' => 'Saturday', 
+            'teacher_type' => 'form'
+        ]);
     }
 }

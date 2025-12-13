@@ -11,7 +11,7 @@
         showAssignTeacherModal: false,
         assignTeacherRole: '',
 
-        // 2. STATE FORM DATA
+        // 2. STATE FORM DATA (Diperbarui untuk teacher_types)
         editForm: {
             name: '{{ addslashes($class->name) }}',
             category: '{{ $class->category }}',
@@ -28,6 +28,12 @@
                     '{{ $schedule->day_of_week }}',
                 @endforeach
             ],
+            // LOGIKA BARU: Buat objek teacher_types saat load
+            teacher_types: {
+                @foreach($class->schedules as $schedule)
+                    '{{ $schedule->day_of_week }}': '{{ $schedule->teacher_type }}',
+                @endforeach
+            },
             status: '{{ $class->is_active ? 'active' : 'inactive' }}',
         },
 
@@ -124,12 +130,10 @@
                 confirmButtonText: 'Yes, Remove'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Gunakan ID kelas dari variabel yang sudah ada (classId)
                     const url = `{{ route('admin.classes.unassignTeacher', ['class' => ':classId', 'type' => ':type']) }}`
                                 .replace(':classId', this.classId)
                                 .replace(':type', type);
                     
-                    // Buat form dinamis untuk mengirim PATCH request
                     const form = document.createElement('form');
                     form.method = 'POST';
                     form.action = url;
@@ -181,7 +185,7 @@
                 </ol>
             </nav>
 
-            {{-- HEADER TITLE & BUTTON --}}
+            {{-- HEADER TITLE & BUTTON (GRADIENT BIRU-INDIGO) --}}
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent inline-block">
                     Class: {{ $class->name ?? 'Detail' }}
@@ -213,13 +217,20 @@
                                             {{ \Carbon\Carbon::parse($class->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($class->end_time)->format('H:i') }}
                                         </span>
                                         <span class="text-gray-300">|</span>
-                                        <span>
-                                            @if($class->schedules->isNotEmpty())
-                                                {{ $class->schedules->pluck('day_of_week')->implode(', ') }}
-                                            @else
-                                                No Schedule
-                                            @endif
-                                        </span>
+                                        {{-- TAMPILAN BARU: Hari dan Tipe Guru --}}
+                                        <div class="flex flex-wrap gap-1">
+                                            @forelse($class->schedules as $schedule)
+                                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border 
+                                                    {{ $schedule->teacher_type == 'form' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-purple-100 text-purple-700 border-purple-200' }}">
+                                                    {{ substr($schedule->day_of_week, 0, 3) }} 
+                                                    <span class="mx-0.5 opacity-50">|</span> 
+                                                    {{ $schedule->teacher_type == 'form' ? 'F' : 'L' }}
+                                                </span>
+                                            @empty
+                                                <span class="text-gray-400 italic text-sm">No Schedule</span>
+                                            @endforelse
+                                        </div>
+                                        {{-- END TAMPILAN BARU --}}
                                     </div>
                                     <div class="flex items-center gap-2 text-sm text-gray-500">
                                         <span>{{ $class->classroom ?? 'No Classroom' }}</span>
@@ -254,7 +265,6 @@
                             <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
                                 Teachers Assigned
                             </h3>
-                            {{-- Tombol 'Manage Assignments' sudah dihapus dari sini --}}
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -320,7 +330,7 @@
                         </div>
                     </div>
 
-                    {{-- B. TEACHER ATTENDANCE --}}
+                    {{-- B. TEACHER ATTENDANCE (SAMA) --}}
                     <div class="lg:col-span-1 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg shadow-blue-200 p-6 text-white flex flex-col justify-between relative overflow-hidden">
                         <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
                         <div>
@@ -356,7 +366,7 @@
                 {{-- 3. ROW 2: STUDENTS & STUDENT ATTENDANCE --}}
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     
-                    {{-- C. LIST STUDENTS TABLE --}}
+                    {{-- C. LIST STUDENTS TABLE (SAMA) --}}
                     <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col min-h-[400px]">
                         <div class="flex justify-between items-center mb-5">
                             <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
@@ -390,12 +400,10 @@
                                         <td class="px-4 py-3 text-gray-400 text-xs">{{ $index + 1 }}</td>
                                         <td class="px-4 py-3 font-mono text-xs text-gray-500">{{ $student->student_number }}</td>
                                         
-                                        {{-- NAMA: Jika Inactive dicoret --}}
                                         <td class="px-4 py-3 font-medium transition-colors {{ $student->is_active ? 'text-gray-900 group-hover:text-blue-600' : 'text-red-800 line-through decoration-red-500' }}">
                                             {{ $student->name }}
                                         </td>
                                         
-                                        {{-- STATUS BADGE --}}
                                         <td class="px-4 py-3">
                                             @if($student->is_active)
                                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">Active</span>
@@ -407,13 +415,11 @@
                                         <td class="px-4 py-3 text-center">
                                             <div class="flex items-center justify-center gap-2">
                                                 
-                                                {{-- 1. View Profile --}}
                                                 <a href="{{ route('admin.student.detail', ['id' => $student->id, 'ref' => 'class', 'class_id' => $class->id]) }}" 
                                                 class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="View Profile">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                                 </a>
 
-                                                {{-- 2. Toggle Status (SweetAlert) --}}
                                                 <button type="button" 
                                                     @click="confirmToggleStatus({{ $student->id }}, {{ $student->is_active ? 'true' : 'false' }})"
                                                     class="p-1.5 rounded transition-colors {{ $student->is_active ? 'text-gray-400 hover:text-red-600 hover:bg-red-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50' }}"
@@ -426,7 +432,6 @@
                                                     @endif
                                                 </button>
 
-                                                {{-- 3. Unassign / Remove (Only Form Hidden, Trigger by Alpine) --}}
                                                 <form id="remove-student-{{ $student->id }}" action="{{ route('admin.classes.unassignStudent', $student->id) }}" method="POST" style="display: none;">
                                                     @csrf @method('PATCH')
                                                 </form>
@@ -449,7 +454,7 @@
                         </div>
                     </div>
 
-                    {{-- D. STUDENT ATTENDANCE --}}
+                    {{-- D. STUDENT ATTENDANCE (SAMA) --}}
                     <div class="lg:col-span-1 bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col h-full">
                         <div class="flex justify-between items-center mb-4">
                             <div><h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Attendance</h4><h3 class="text-xl font-bold text-gray-800">Last Session</h3></div>
@@ -493,7 +498,7 @@
                     </div>
                 </div>
 
-                {{-- 4. ROW 3: ACADEMIC ASSESSMENTS --}}
+                {{-- 4. ROW 3: ACADEMIC ASSESSMENTS (SAMA) --}}
                 <div class="mt-8">
                     <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                         Academic Assessments
@@ -501,25 +506,20 @@
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         
-                        {{-- A. MID TERM EXAM CARD --}}
                         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden group hover:border-blue-300 hover:shadow-md transition-all">
                             <div class="flex items-center gap-3">
-                                {{-- Tombol View & Manage Grades --}}
                                 <a href="{{ route('admin.classes.assessment.detail', ['classId' => $class->id, 'type' => 'mid']) }}" 
                                 class="flex-1 inline-flex justify-center items-center px-4 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition shadow-blue-200 gap-2">
-                                    {{-- Ikon Mata untuk kesan Memantau --}}
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                     View Grades
                                 </a>
                                 
-                                {{-- Tombol Print (tetap ada untuk monitoring hasil akhir) --}}
                                 <button disabled class="p-2.5 text-gray-400 bg-gray-100 rounded-lg cursor-not-allowed" title="Print Report Card">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                                 </button>
                             </div>
                         </div>
 
-                        {{-- B. FINAL TERM EXAM CARD --}}
                         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden group hover:border-indigo-300 hover:shadow-md transition-all">
                             <div class="flex items-center gap-3">
                                 <a href="{{ route('admin.classes.assessment.detail', ['classId' => $class->id, 'type' => 'final']) }}" 

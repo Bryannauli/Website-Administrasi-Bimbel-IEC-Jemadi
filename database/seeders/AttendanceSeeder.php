@@ -16,9 +16,9 @@ class AttendanceSeeder extends Seeder
     {
         // 1. Tentukan Rentang Waktu (1 Bulan ke belakang s/d Hari Ini)
         $startDate = Carbon::now()->subMonth();
-        $endDate   = Carbon::now(); // Hari ini
+        $endDate   = Carbon::now(); 
 
-        // 2. Ambil Kelas Aktif
+        // 2. Ambil Kelas Aktif beserta jadwal dan siswa aktif
         $classes = ClassModel::with(['schedules', 'students' => function($q) {
             $q->where('is_active', true);
         }])->where('is_active', true)->get();
@@ -37,15 +37,15 @@ class AttendanceSeeder extends Seeder
 
                 foreach ($classes as $class) {
                     
-                    // A. CEK JADWAL HARI
-                    $hasSchedule = $class->schedules->contains('day_of_week', $dayName);
+                    // A. CEK JADWAL HARI (DIPERBARUI)
+                    // Kita cari objek schedule spesifik untuk hari ini agar bisa baca 'teacher_type'
+                    $schedule = $class->schedules->firstWhere('day_of_week', $dayName);
 
-                    if ($hasSchedule) {
+                    if ($schedule) {
 
-                        // --- LOGIKA BARU: CEK JAM (REALISTIS) ---
-                        // Jika hari ini, tapi jam kelas belum mulai, JANGAN buat absen.
+                        // --- CEK JAM ---
+                        // Jika hari ini, tapi jam kelas belum mulai, skip.
                         if ($isToday && $class->start_time > $currentTime) {
-                            // Skip kelas ini karena belum waktunya
                             continue; 
                         }
 
@@ -55,9 +55,8 @@ class AttendanceSeeder extends Seeder
                             'date'     => $date->format('Y-m-d'),
                         ]);
 
-                        // C. BUAT ABSENSI SISWA
+                        // C. BUAT ABSENSI SISWA (Tetap sama)
                         foreach ($class->students as $student) {
-                            // Probabilitas status (biar data variatif)
                             $rand = rand(1, 100);
                             if ($rand <= 85) $status = 'present';
                             elseif ($rand <= 90) $status = 'late';
@@ -76,8 +75,22 @@ class AttendanceSeeder extends Seeder
                             );
                         }
 
-                        // D. BUAT ABSENSI GURU
-                        $teacherId = $class->form_teacher_id ?? $class->local_teacher_id;
+                        // D. BUAT ABSENSI GURU (LOGIKA BARU SESUAI JADWAL)
+                        $teacherId = null;
+
+                        // Cek siapa yang bertugas hari ini berdasarkan jadwal
+                        if ($schedule->teacher_type === 'form') {
+                            $teacherId = $class->form_teacher_id;
+                        } elseif ($schedule->teacher_type === 'local') {
+                            $teacherId = $class->local_teacher_id;
+                        }
+
+                        // Fallback: Jika guru yang ditugaskan kosong (misal local belum diassign),
+                        // coba ambil guru yang tersedia saja agar seeder tidak error/kosong.
+                        if (!$teacherId) {
+                            $teacherId = $class->form_teacher_id ?? $class->local_teacher_id;
+                        }
+
                         if ($teacherId) {
                             TeacherAttendanceRecord::updateOrCreate(
                                 [
@@ -86,7 +99,7 @@ class AttendanceSeeder extends Seeder
                                 ],
                                 [
                                     'status'  => 'present',
-                                    'comment' => 'Teaching material for ' . $dayName,
+                                    'comment' => 'Teaching material for ' . $dayName . ' (' . ucfirst($schedule->teacher_type) . ' Session)',
                                 ]
                             );
                         }
@@ -95,7 +108,7 @@ class AttendanceSeeder extends Seeder
             }
 
             DB::commit();
-            $this->command->info('Attendance data seeded successfully (Time adjusted)!');
+            $this->command->info('Attendance data seeded successfully (Synced with Teacher Schedule)!');
 
         } catch (\Exception $e) {
             DB::rollBack();

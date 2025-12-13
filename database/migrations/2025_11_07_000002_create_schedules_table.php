@@ -14,6 +14,7 @@ return new class extends Migration
             $table->enum('day_of_week', [
                 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
             ])->index();
+            $table->enum('teacher_type', ['form', 'local'])->default('form');
             $table->timestamps();
         });
     }
