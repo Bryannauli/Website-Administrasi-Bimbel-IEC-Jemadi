@@ -316,4 +316,21 @@ public function update(Request $request, User $teacher)
         return redirect()->route('admin.teacher.show', $teacher->id)
                          ->with('success', 'Data guru berhasil diperbarui!');
     }
+
+    public function destroy(User $teacher)
+    {
+        // 1. Cek status saat ini (Opsional, tapi baik untuk mencegah request berulang)
+        if ($teacher->is_active === 0) {
+            return redirect()->route('admin.teacher.index')->with('error', 'Guru sudah nonaktif.');
+        }
+
+        // 2. Lakukan Soft Delete: Update kolom is_active menjadi 0
+        $teacher->update([
+            'is_active' => 0,
+        ]);
+
+        // 3. Redirect kembali ke halaman index dengan pesan sukses
+        return redirect()->route('admin.teacher.index')
+                         ->with('success', 'Guru berhasil dinonaktifkan (Status diubah menjadi Inactive).');
+    }
 }

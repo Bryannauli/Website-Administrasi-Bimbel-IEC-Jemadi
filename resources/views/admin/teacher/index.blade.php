@@ -2,7 +2,57 @@
     <x-slot name="header"></x-slot>
 
     {{-- KONTEN UTAMA (Background Biru Muda - Sama persis dengan Student) --}}
-    <div x-data="{ isAddModalOpen: false }" class="py-6 bg-[#F3F4FF] min-h-screen font-sans">
+    <div x-data="{ 
+        isAddModalOpen: false, 
+        showEditModal: false,
+        showDeleteModal: false,
+        editForm: {
+            id: '',
+            name: '',
+            username: '',
+            email: '',
+            phone: '',
+            type: '',
+            status: '',
+            address: ''
+        },
+        updateUrl: '',
+        deleteUrl: '',
+        deleteName: '',
+        
+        // Fungsi untuk memuat data guru ke form edit
+        loadEditModal(teacher) {
+            // ... (Kode loadEditModal yang sudah ada) ...
+            this.editForm.id = teacher.id;
+            this.editForm.name = teacher.name;
+            this.editForm.username = teacher.username;
+            this.editForm.email = teacher.email;
+            this.editForm.phone = teacher.phone ?? '';
+            this.editForm.type = teacher.type;
+            this.editForm.status = teacher.is_active ? '1' : '0';
+            this.editForm.address = teacher.address ?? '';
+            this.updateUrl = `/admin/teachers/${teacher.id}`;
+            
+            this.showEditModal = true;
+        },
+
+        // Fungsi BARU untuk memuat data guru ke modal delete
+        loadDeleteModal(teacher) {
+            this.deleteName = teacher.name;
+            this.deleteUrl = `/admin/teachers/${teacher.id}`; // Gunakan route DELETE
+            this.showDeleteModal = true;
+        },
+        
+        // Fungsi closeModal yang diperlukan oleh partial
+        closeModal(modalVar) {
+            this[modalVar] = false;
+            // Opsional: Reset URL jika ada error/query string
+            if (window.location.search.includes('error')) {
+                window.location.href = window.location.href.split('?')[0]; 
+            }
+        }
+    }" class="py-6 bg-[#F3F4FF] min-h-screen font-sans">
+
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
             {{-- 1. BREADCRUMB --}}
@@ -31,40 +81,40 @@
             </div>
 
           {{-- 3. STATS CARD (Compact Version) --}}
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-blue-600 p-4 mb-8 max-w-sm">
-    <div class="flex items-center justify-between gap-4">
-        
-        {{-- Kiri: Total Utama --}}
-        <div>
-            <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Total Teachers</h3>
-            <p class="text-3xl font-bold text-gray-900 leading-none">
-                {{ number_format($totalTeachers ?? 0) }}
-            </p>
-        </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-blue-600 p-4 mb-8 max-w-sm">
+                <div class="flex items-center justify-between gap-4">
+                    
+                    {{-- Kiri: Total Utama --}}
+                    <div>
+                        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Total Teachers</h3>
+                        <p class="text-3xl font-bold text-gray-900 leading-none">
+                            {{ number_format($totalTeachers ?? 0) }}
+                        </p>
+                    </div>
 
-        {{-- Kanan: Active & Inactive (Atas Bawah lebih Rapat) --}}
-        <div class="flex flex-col gap-1.5">
-            {{-- Active --}}
-            <div class="flex items-center justify-between gap-3 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-md border border-blue-100 min-w-[110px]">
-                <div class="flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-                    <span class="text-[10px] font-bold uppercase">Active</span>
+                    {{-- Kanan: Active & Inactive (Atas Bawah lebih Rapat) --}}
+                    <div class="flex flex-col gap-1.5">
+                        {{-- Active --}}
+                        <div class="flex items-center justify-between gap-3 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-md border border-blue-100 min-w-[110px]">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                                <span class="text-[10px] font-bold uppercase">Active</span>
+                            </div>
+                            <span class="text-sm font-bold">{{ number_format($totalActive ?? 0) }}</span>
+                        </div>
+
+                        {{-- Inactive --}}
+                        <div class="flex items-center justify-between gap-3 px-2.5 py-1 bg-red-50 text-red-700 rounded-md border border-red-100 min-w-[110px]">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>
+                                <span class="text-[10px] font-bold uppercase">Inactive</span>
+                            </div>
+                            <span class="text-sm font-bold">{{ number_format($totalInactive ?? 0) }}</span>
+                        </div>
+                    </div>
+
                 </div>
-                <span class="text-sm font-bold">{{ number_format($totalActive ?? 0) }}</span>
             </div>
-
-            {{-- Inactive --}}
-            <div class="flex items-center justify-between gap-3 px-2.5 py-1 bg-red-50 text-red-700 rounded-md border border-red-100 min-w-[110px]">
-                <div class="flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>
-                    <span class="text-[10px] font-bold uppercase">Inactive</span>
-                </div>
-                <span class="text-sm font-bold">{{ number_format($totalInactive ?? 0) }}</span>
-            </div>
-        </div>
-
-    </div>
-</div>
             {{-- 4. TABLE SECTION CONTAINER --}}
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
 
@@ -225,12 +275,24 @@
                                             </a>
 
                                             {{-- Edit --}}
-                                            <button class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Edit">
+                                            <button @click="loadEditModal({
+                                                id: '{{ $teacher->id }}',
+                                                name: '{{ addslashes($teacher->name) }}',
+                                                username: '{{ $teacher->username }}',
+                                                email: '{{ $teacher->email }}',
+                                                phone: '{{ $teacher->phone }}',
+                                                type: '{{ $teacher->type }}',
+                                                is_active: {{ $teacher->is_active ?? 'true' }},
+                                                address: '{{ preg_replace( "/\r|\n/", " ", addslashes($teacher->address ?? '') ) }}'
+                                            })" class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Edit">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                             </button>
 
                                             {{-- Delete --}}
-                                            <button class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                                            <button @click="loadDeleteModal({
+                                                id: '{{ $teacher->id }}',
+                                                name: '{{ addslashes($teacher->name) }}'
+                                            })" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Deactivate">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                             </button>
                                         </div>
@@ -457,4 +519,6 @@
             </div>
         </div>
     </div>
+    @include('admin.teacher.partials.teacher-edit-modal')
+    @include('admin.teacher.partials.teacher-delete-modal')
 </x-app-layout>
