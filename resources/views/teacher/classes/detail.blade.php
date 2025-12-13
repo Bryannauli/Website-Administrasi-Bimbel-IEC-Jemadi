@@ -263,98 +263,100 @@
     </div>
     </div>
 
-</div>
+        <div x-show="openModal" **x-cloak**
+            class="fixed inset-0 z-50 overflow-y-auto" 
+            @keydown.escape.window="openModal = false">
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div class="fixed inset-0 bg-black opacity-50" @click="openModal = false"></div>
+                
+                <div class="relative bg-white rounded-xl shadow-xl max-w-lg w-full p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-xl font-bold text-gray-800">Add Attendance Session</h3>
+                        <button @click="openModal = false" class="text-gray-400 hover:text-gray-600 transition">
+                            <i class="fas fa-times text-lg"></i>
+                        </button>
+                    </div>
 
-<div x-data="{ openModal: false }" @keydown.escape="openModal = false">
-    <div x-show="openModal" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
-        <div class="flex items-center justify-center min-h-screen px-4">
-            <div class="fixed inset-0 bg-black opacity-50" @click="openModal = false"></div>
-            
-            <div class="relative bg-white rounded-xl shadow-xl max-w-lg w-full p-6 animate-fade-in-down">
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-xl font-bold text-gray-800">Add Attendance Session</h3>
-                    <button @click="openModal = false" class="text-gray-400 hover:text-gray-600 transition">
-                        <i class="fas fa-times text-lg"></i>
-                    </button>
+                    <form action="{{ route('teacher.classes.session.store', $class->id) }}" method="POST">
+                        @csrf
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                                <input type="date" name="date" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ date('Y-m-d') }}">
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                                    <input type="time" name="start_time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ \Carbon\Carbon::parse($class->start_time)->format('H:i') }}">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+                                    <input type="time" name="end_time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ \Carbon\Carbon::parse($class->end_time)->format('H:i') }}">
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-500 italic">*Times are preset based on class schedule but can be adjusted.</p>
+                        </div>
+
+                        <div class="mt-6 flex justify-end space-x-3">
+                            <button type="button" @click="openModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                                Cancel
+                            </button>
+                            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-200">
+                                Create Session
+                            </button>
+                        </div>
+                    </form>
                 </div>
-
-                <form action="{{ route('teacher.classes.session.store', $class->id) }}" method="POST">
-                    @csrf
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                            <input type="date" name="date" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ date('Y-m-d') }}">
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                                <input type="time" name="start_time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ \Carbon\Carbon::parse($class->start_time)->format('H:i') }}">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                                <input type="time" name="end_time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ \Carbon\Carbon::parse($class->end_time)->format('H:i') }}">
-                            </div>
-                        </div>
-                        <p class="text-xs text-gray-500 italic">*Times are preset based on class schedule but can be adjusted.</p>
-                    </div>
-
-                    <div class="mt-6 flex justify-end space-x-3">
-                        <button type="button" @click="openModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
-                            Cancel
-                        </button>
-                        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-200">
-                            Create Session
-                        </button>
-                    </div>
-                </form>
             </div>
         </div>
     </div>
-</div>
 
-<div x-data="{ openAssessmentModal: false }" @keydown.escape="openAssessmentModal = false">
-    <div x-show="openAssessmentModal" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
-        <div class="flex items-center justify-center min-h-screen px-4">
-            <div class="fixed inset-0 bg-black opacity-50" @click="openAssessmentModal = false"></div>
-            
-            <div class="relative bg-white rounded-xl shadow-xl max-w-lg w-full p-6 animate-fade-in-down">
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-xl font-bold text-gray-800">Add New Assessment</h3>
-                    <button @click="openAssessmentModal = false" class="text-gray-400 hover:text-gray-600 transition">
-                        <i class="fas fa-times text-lg"></i>
-                    </button>
+        <div x-show="openAssessmentModal" **x-cloak**
+            class="fixed inset-0 z-50 overflow-y-auto" 
+            @keydown.escape.window="openAssessmentModal = false">
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div class="fixed inset-0 bg-black opacity-50" @click="openAssessmentModal = false"></div>
+                
+                <div class="relative bg-white rounded-xl shadow-xl max-w-lg w-full p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-xl font-bold text-gray-800">Add New Assessment</h3>
+                        <button @click="openAssessmentModal = false" class="text-gray-400 hover:text-gray-600 transition">
+                            <i class="fas fa-times text-lg"></i>
+                        </button>
+                    </div>
+
+                    <form action="{{ route('teacher.classes.assessment.store', $class->id) }}" method="POST">
+                        @csrf
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Assessment Type</label>
+                                <select name="type" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                    <option value="" disabled selected>Select Type</option>
+                                    <option value="mid">Mid Term Exam</option>
+                                    <option value="final">Final Exam</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                                <input type="date" name="date" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            </div>
+                        </div>
+
+                        <div class="mt-6 flex justify-end space-x-3">
+                            <button type="button" @click="openAssessmentModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                                Cancel
+                            </button>
+                            <button type="submit" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition shadow-lg shadow-purple-200">
+                                Create Assessment
+                            </button>
+                        </div>
+                    </form>
                 </div>
-
-                <form action="{{ route('teacher.classes.assessment.store', $class->id) }}" method="POST">
-                    @csrf
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Assessment Type</label>
-                            <select name="type" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-                                <option value="" disabled selected>Select Type</option>
-                                <option value="mid">Mid Term Exam</option>
-                                <option value="final">Final Exam</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                            <input type="date" name="date" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-                        </div>
-                    </div>
-
-                    <div class="mt-6 flex justify-end space-x-3">
-                        <button type="button" @click="openAssessmentModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
-                            Cancel
-                        </button>
-                        <button type="submit" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition shadow-lg shadow-purple-200">
-                            Create Assessment
-                        </button>
-                    </div>
-                </form>
             </div>
         </div>
     </div>
+
 </div>
 @endsection
