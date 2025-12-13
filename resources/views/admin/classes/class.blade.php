@@ -244,6 +244,7 @@
                                 <th class="px-6 py-4 w-16 whitespace-nowrap text-center">No</th>
                                 <th class="px-6 py-4 whitespace-nowrap">Category</th>
                                 <th class="px-6 py-4 whitespace-nowrap">Class Name</th>
+                                <th class="px-6 py-4 whitespace-nowrap">Academic Year</th> {{-- KOLOM BARU --}}
                                 <th class="px-6 py-4 whitespace-nowrap">Classroom</th>
                                 <th class="px-6 py-4 whitespace-nowrap">Schedule</th>
                                 <th class="px-6 py-4 whitespace-nowrap">Teacher</th>
@@ -265,6 +266,13 @@
                                     {{-- Class Name --}}
                                     <td class="px-6 py-5 font-medium text-gray-900 text-base">
                                         {{ $class->name }}
+                                    </td>
+                                    
+                                    {{-- Academic Year --}}
+                                    <td class="px-6 py-5 text-gray-600 font-medium whitespace-nowrap text-center">
+                                        <span class="inline-block bg-gray-50 text-gray-600 border border-gray-200 px-2 py-0.5 rounded-full text-[10px] font-bold w-fit">
+                                            {{ $class->academic_year }}
+                                        </span>
                                     </td>
                                     
                                     {{-- Classroom --}}
@@ -346,7 +354,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="px-6 py-10 text-center text-gray-500">
+                                    <td colspan="9" class="px-6 py-10 text-center text-gray-500"> {{-- Ubah colspan jadi 9 --}}
                                         No classes found.
                                     </td>
                                 </tr>

@@ -20,13 +20,14 @@ class AdminAssessmentController extends Controller
      */
     public function index(Request $request)
     {
-        // Query dasar dengan relasi classModel
+        // 1. Query dasar dengan Eager Loading
         $query = AssessmentSession::with(['classModel' => function($q) {
             $q->select('id', 'name', 'category', 'academic_year', 'is_active'); 
         }]);
 
         // --- FILTERING LOGIC ---
         
+        // Search by Class Name
         if ($request->filled('search')) {
             $searchTerm = $request->search;
             $query->whereHas('classModel', function($q) use ($searchTerm) {
@@ -34,26 +35,36 @@ class AdminAssessmentController extends Controller
             });
         }
         
+        // Filter by Academic Year
         if ($request->filled('academic_year')) {
             $query->whereHas('classModel', function($q) use ($request) {
                 $q->where('academic_year', $request->academic_year);
             });
         }
 
+        // Filter by Category (Level/Step/etc)
         if ($request->filled('category')) {
             $query->whereHas('classModel', function($q) use ($request) {
                 $q->where('category', $request->category);
             });
         }
 
+        // Filter by Exam Type (Mid/Final)
         if ($request->filled('type')) {
             $query->where('type', $request->type);
         }
 
+        // Filter by Class ID
         if ($request->filled('class_id')) {
             $query->where('class_id', $request->class_id);
         }
 
+        // --- [BARU] Filter by Assessment Status (Draft/Submitted/Final) ---
+        if ($request->filled('assessment_status')) {
+            $query->where('status', $request->assessment_status);
+        }
+
+        // Filter by Class Active Status
         $statusFilter = $request->get('class_status', 'active');
         if ($statusFilter != '') {
             $isActive = $statusFilter === 'active';
@@ -62,16 +73,20 @@ class AdminAssessmentController extends Controller
             });
         }
         
+        // 2. Pagination & Sorting
         $assessments = $query->orderBy('date', 'desc')->paginate(10);
         $assessments->appends($request->all());
 
-        // Data untuk Dropdown Filter
+        // 3. Data Pendukung untuk Dropdown Filter
         $categories = ['pre_level', 'level', 'step', 'private'];
         $years = ClassModel::select('academic_year')->distinct()->pluck('academic_year')->sortDesc();
         $types = ['mid', 'final'];
         $classes = ClassModel::select('id', 'name')->orderBy('name', 'asc')->get();
+        
+        // [BARU] Opsi Status untuk Dropdown
+        $statuses = ['draft', 'submitted', 'final'];
 
-        return view('admin.assessment.assessment', compact('assessments', 'categories', 'years', 'types', 'classes'));
+        return view('admin.assessment.assessment', compact('assessments', 'categories', 'years', 'types', 'classes', 'statuses'));
     }
     
     /**
