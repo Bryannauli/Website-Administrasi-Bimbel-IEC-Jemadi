@@ -29,6 +29,7 @@ class ClassTeacherController extends Controller
         return view('teacher.classes.index', compact('classes'));
     }
 
+    // Detail halaman kelas
     public function detail(Request $request, $id)
     {
         $class = ClassModel::with('schedules')->findOrFail($id);
@@ -54,12 +55,7 @@ class ClassTeacherController extends Controller
         return view('teacher.classes.detail', compact('class', 'students', 'attendanceSessions', 'assessments'));
     }
 
-    // public function detail($id)
-    // {
-    //     // Redirect ke show atau gunakan view terpisah
-    //     return view('teacher.classes.detail');
-    // }
-
+    // Menyimpan sesi absensi baru
     public function storeSession(Request $request, $id)
     {
         $request->validate([
@@ -80,7 +76,8 @@ class ClassTeacherController extends Controller
             ->with('success', 'New attendance session created!');
     }
 
-public function sessionDetail($classId, $sessionId)
+    // Menampilkan halaman detail sesi absensi
+    public function sessionDetail($classId, $sessionId)
     {
         // 1. Ambil data Kelas dan Sesi
         $class = ClassModel::findOrFail($classId);
@@ -113,9 +110,7 @@ public function sessionDetail($classId, $sessionId)
         return view('teacher.classes.session-attandance', compact('class', 'session', 'students'));
     }
 
-    /**
-     * Memproses pembaruan absensi sesi.
-     */
+    // Menyimpan atau memperbarui data absensi untuk sesi tertentu
     public function updateSession(Request $request, $classId, $sessionId)
     {
         $request->validate([
@@ -158,7 +153,7 @@ public function sessionDetail($classId, $sessionId)
         }
     }
 
-    // 1. Menampilkan Halaman Input Nilai
+    // Menampilkan Halaman Input Nilai
     public function assessmentDetail($classId, $assessmentId)
     {
         $class = ClassModel::findOrFail($classId);
@@ -183,7 +178,7 @@ public function sessionDetail($classId, $sessionId)
         return view('teacher.classes.assessment-marks', compact('class', 'assessment', 'students'));
     }
 
-    // 2. Menyimpan Nilai (Per Skill)
+    // Menyimpan Nilai (Per Skill)
     public function updateAssessmentMarks(Request $request, $classId, $assessmentId)
     {
         // Validasi input (pastikan angka 0-100)

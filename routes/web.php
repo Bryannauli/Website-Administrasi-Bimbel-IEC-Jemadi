@@ -141,23 +141,6 @@ Route::prefix('teacher')->name('teacher.')->middleware(['auth'])->group(function
         Route::put('/{classId}/assessment/{assessmentId}', [ClassTeacherController::class, 'updateAssessmentMarks'])->name('assessment.update');
     });
 
-    /* Students */
-    Route::prefix('students')->name('students.')->group(function () {
-        Route::get('/', [StudentTeacherController::class, 'index'])->name('index');
-        Route::get('/{id}', [StudentTeacherController::class, 'show'])->name('show');
-        Route::get('/marks', [StudentTeacherController::class, 'marks'])->name('marks');
-        Route::get('/attendance', [StudentTeacherController::class, 'attendance'])->name('attendance');
-        Route::post('/{id}/assessment', [StudentTeacherController::class, 'storeAssessment'])->name('assessment.store');
-    });
-
-    /* Teacher (User Guru melihat sesama guru) */
-    Route::prefix('teachers')->name('teachers.')->group(function () {
-        Route::get('/', [TeacherController::class, 'index'])->name('index');
-        Route::get('/{id}', [TeacherController::class, 'show'])->name('show');
-        Route::get('/attendance', [TeacherController::class, 'attendance'])->name('attendance');
-        Route::get('/attendance/{classId}', [TeacherController::class, 'classAttendance'])->name('attendance.class');
-    });
-
     /* Attendance */
     Route::prefix('attendance')->name('attendance.')->group(function () {
         Route::post('/submit', [AttendanceController::class, 'submit'])->name('submit');
