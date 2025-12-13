@@ -1,39 +1,75 @@
-PHP
-
 <?php
+// ---------------------------------------------------------
+// 1. DATA DUMMY & PREPARATION
+// ---------------------------------------------------------
 
-// TeacherAdminController.php - Dummy data untuk attendance (sesuai controller sebelumnya)
-$teacher->status = $teacher->is_active ?? 0;
+// Pastikan properti tambahan tersedia
+$teacher->status = $teacher->is_active ?? $teacher->status ?? 0;
 $teacher->photo = $teacher->profile_photo_path ?? null;
 
-// Ganti data attendance dengan format yang sesuai dengan view blade Anda
+// Dummy Attendance Records
 $attendance_records = collect([
-    (object)['date' => now()->subDays(1)->format('Y-m-d'), 'status' => 'present'],
-    (object)['date' => now()->subDays(2)->format('Y-m-d'), 'status' => 'late'],
-    (object)['date' => now()->subDays(3)->format('Y-m-d'), 'status' => 'absent'],
-    (object)['date' => now()->subDays(4)->format('Y-m-d'), 'status' => 'present'],
-    (object)['date' => now()->subDays(5)->format('Y-m-d'), 'status' => 'sick'],
+    (object)['date' => now()->subDays(1)->format('Y-m-d'), 'status' => 'present', 'check_in' => '07:15', 'check_out' => '16:00'],
+    (object)['date' => now()->subDays(2)->format('Y-m-d'), 'status' => 'late', 'check_in' => '08:10', 'check_out' => '16:00'],
+    (object)['date' => now()->subDays(3)->format('Y-m-d'), 'status' => 'absent', 'check_in' => '-', 'check_out' => '-'],
+    (object)['date' => now()->subDays(4)->format('Y-m-d'), 'status' => 'present', 'check_in' => '07:20', 'check_out' => '16:05'],
+    (object)['date' => now()->subDays(5)->format('Y-m-d'), 'status' => 'sick', 'check_in' => '-', 'check_out' => '-'],
+    (object)['date' => now()->subDays(6)->format('Y-m-d'), 'status' => 'present', 'check_in' => '07:10', 'check_out' => '16:00'],
 ]);
 
+// 2. HITUNG STATISTIK
+$totalDays = $attendance_records->count();
+$summary = [
+    'present'    => $attendance_records->where('status', 'present')->count(),
+    'late'       => $attendance_records->where('status', 'late')->count(),
+    'absent'     => $attendance_records->where('status', 'absent')->count(),
+    'sick'       => $attendance_records->where('status', 'sick')->count(),
+    'permission' => $attendance_records->where('status', 'permission')->count(),
+];
 ?>
 
 <x-app-layout>
     <x-slot name="header"></x-slot>
 
-    {{-- KONTEN UTAMA (Bungkus dengan x-data untuk Alpine) --}}
-    <div x-data="{ isEditModalOpen: false }" class="py-6 bg-[#F3F4FF] min-h-screen font-sans">
+    {{-- WRAPPER UTAMA DENGAN ALPINE JS --}}
+    <div class="py-6" x-data="{ 
+        // 1. STATE MODAL
+        showEditModal: {{ $errors->any() ? 'true' : 'false' }},
+        
+        // 2. STATE FORM DATA (Pre-filled Data Guru)
+        editForm: {
+            name: '{{ addslashes($teacher->name) }}',
+            username: '{{ $teacher->username }}',
+            email: '{{ $teacher->email }}',
+            phone: '{{ $teacher->phone ?? '' }}',
+            type: '{{ $teacher->type }}',
+            status: '{{ $teacher->status }}',
+            address: '{{ preg_replace( "/\r|\n/", " ", addslashes($teacher->address ?? '') ) }}'
+        },
+
+        // URL Update Only (Delete dihapus)
+        updateUrl: '{{ route('admin.teacher.update', $teacher->id) }}',
+
+        closeModal(modalVar) {
+            if ({{ $errors->any() ? 'true' : 'false' }}) {
+                window.location.href = window.location.href.split('?')[0]; 
+            } else {
+                this[modalVar] = false;
+            }
+        }
+    }">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-            {{-- 1. BREADCRUMB --}}
+            {{-- BREADCRUMB --}}
             <nav class="flex mb-5" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-3">
                     <li class="inline-flex items-center">
                         <a href="{{ route('dashboard') }}" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600">
                             <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
-                            Home
+                            Dashboard
                         </a>
                     </li>
-                    <li class="inline-flex items-center">
+                    <li>
                         <div class="flex items-center">
                             <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
                             <a href="{{ route('admin.teacher.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Teachers</a>
@@ -42,255 +78,277 @@ $attendance_records = collect([
                     <li aria-current="page">
                         <div class="flex items-center">
                             <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                            <span class="ml-1 text-sm font-medium text-gray-900 md:ml-2">{{ $teacher->name }}</span>
+                            <span class="ml-1 text-sm font-medium text-gray-900 md:ml-2 truncate max-w-[150px] md:max-w-xs">{{ $teacher->name }}</span>
                         </div>
                     </li>
                 </ol>
             </nav>
 
-            {{-- 2. HEADER DETAIL & ACTION BUTTONS --}}
-            <div class="flex items-center justify-between mb-8">
-                <h1 class="text-3xl font-bold text-gray-800">
-                    Teacher Details: <span class="text-blue-600">{{ $teacher->name }}</span>
-                </h1>
+            {{-- HEADER TITLE & BUTTON --}}
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold bg-gradient-to-b from-blue-500 to-red-500 bg-clip-text text-transparent inline-block">
+                    Teacher Profile
+                </h2>
                 
-                {{-- Edit Button (MODAL TRIGGER) --}}
-                <button @click="isEditModalOpen = true" 
-                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors shadow-sm">
+                {{-- TRIGGER EDIT MODAL --}}
+                <button @click="showEditModal = true" 
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                     Edit Teacher
                 </button>
             </div>
 
-            {{-- 3. CARD DETAIL --}}
-            <div class="bg-white rounded-[20px] shadow-sm border border-gray-100 p-6 mb-8">
-                <div class="grid grid-cols-2 gap-4 text-gray-700">
-                    <p><strong>ID:</strong> {{ $teacher->id }}</p>
-                    <p><strong>Username:</strong> {{ $teacher->username }}</p>
-                    <p><strong>Email:</strong> {{ $teacher->email }}</p>
-                    <p><strong>Phone:</strong> {{ $teacher->phone }}</p>
-                    <p><strong>Type:</strong> {{ $teacher->type }}</p>
-                    <p><strong>Status:</strong> 
-                        <span class="font-semibold {{ $teacher->status == 1 ? 'text-green-600' : 'text-red-600' }}">
-                            {{ $teacher->status == 1 ? 'Active' : 'Inactive' }}
-                        </span>
-                    </p>
-                    <p class="col-span-2"><strong>Address:</strong> {{ $teacher->address ?? '-' }}</p>
-                    
-                    {{-- Asumsi Anda memiliki path foto --}}
-                    @if($teacher->photo)
-                        <div class="col-span-2">
-                            <strong>Photo:</strong>
-                            <img src="{{ asset('storage/' . $teacher->photo) }}" alt="Profile Photo" class="w-20 h-20 rounded-full object-cover mt-2">
+            {{-- 1. INFO CARD UTAMA --}}
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8 relative overflow-hidden z-0">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -mr-8 -mt-8"></div>
+                <div class="flex flex-col md:flex-row items-center justify-between relative gap-6">
+                    <div class="flex items-center gap-6">
+                        <img src="https://ui-avatars.com/api/?name={{ urlencode($teacher->name) }}&background=2563EB&color=fff&size=128&bold=true"
+                            alt="{{ $teacher->name }}" class="w-20 h-20 md:w-24 md:h-24 rounded-full border-4 border-white shadow-md bg-white">
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900">{{ $teacher->name }}</h1>
+                            <p class="text-gray-500 font-medium">NIP/ID: {{  $teacher->id }}</p>
+                            
+                            {{-- Badges --}}
+                            <div class="flex items-center gap-2 mt-2">
+                                @if($teacher->status == 1)
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">Active</span>
+                                @else
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-500 border border-gray-200">Inactive</span>
+                                @endif
+
+                                <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider border border-blue-100">
+                                     @php
+                                            $isForm = \App\Models\ClassModel::where('form_teacher_id', $teacher->id)->exists();
+                                            $isLocal = \App\Models\ClassModel::where('local_teacher_id', $teacher->id)->exists();
+                                        @endphp
+
+                                        @if($isForm)
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ">Form Teacher</span>
+                                        @elseif($isLocal)
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ">Local Teacher</span>
+                                        @else
+                                            <span class="text-gray-400">-</span>
+                                        @endif
+                                </span>
+                            </div>
                         </div>
-                    @endif
+                    </div>
+                    <div class="text-right hidden md:block">
+                        <p class="text-sm text-gray-500">Joined Date</p>
+                        <p class="text-lg font-semibold text-gray-800">{{ $teacher->created_at->format('d M Y') }}</p>
+                    </div>
                 </div>
             </div>
-            
-            {{-- 4. ATTENDANCE HISTORY --}}
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">Attendance History</h2>
-            <div class="bg-white rounded-[20px] shadow-sm border border-gray-100 p-6">
-                @if(isset($attendance_records) && $attendance_records->count())
-                    <ul class="space-y-3">
-                        @foreach($attendance_records as $record)
-                            <li class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                <span class="font-medium text-gray-700">{{ \Carbon\Carbon::parse($record->date)->format('d M Y') }}</span>
-                                <div class="flex items-center gap-2 text-sm font-semibold 
-                                    @if($record->status == 'present') text-green-600 
-                                    @elseif($record->status == 'late') text-yellow-600 
-                                    @elseif($record->status == 'absent') text-red-600 
-                                    @endif">
-                                    {{ Str::ucfirst($record->status) }}
-                                    
-                                    @if($record->status == 'present')
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                    @elseif($record->status == 'late') 
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                    @elseif($record->status == 'absent') 
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                    @else 
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                    @endif
-                                </div>
-                            </li>
-                        @endforeach
-                    </ul>
-                @else
-                    <div class="w-full text-center py-8 text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">No attendance history available.</div>
-                @endif
-            </div>
 
-        </div>
-
-        {{-- MODAL SECTION: EDIT TEACHER (SUDAH DIPERBAIKI) --}}
-        <div x-show="isEditModalOpen" 
-            x-transition:enter="ease-out duration-300" 
-            x-transition:enter-start="opacity-0" 
-            x-transition:enter-end="opacity-100" 
-            x-transition:leave="ease-in duration-200" 
-            x-transition:leave-start="opacity-100" 
-            x-transition:leave-end="opacity-0"
-            class="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50"> 
-            
-            <div class="flex items-center justify-center min-h-screen p-4" @click.outside="isEditModalOpen = false">
+            {{-- 2. GRID INFO & STATS --}}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
                 
-                <div x-show="isEditModalOpen"
-                    x-transition:enter="ease-out duration-300"
-                    x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                    x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-                    x-transition:leave="ease-in duration-200"
-                    x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
-                    x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                    class="bg-white rounded-[20px] shadow-2xl w-full max-w-4xl p-8 transform transition-all mx-auto relative">
+                {{-- Kiri: Biodata --}}
+                <div class="lg:col-span-1 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-fit">
+                    <h3 class="text-lg font-bold text-gray-800 mb-6 border-b pb-2">Contact Info</h3>
+                    <div class="space-y-4">
+                        <div><p class="text-xs text-gray-400 uppercase tracking-wide font-semibold">Email</p><p class="text-sm font-medium text-gray-800">{{ $teacher->email }}</p></div>
+                        <div><p class="text-xs text-gray-400 uppercase tracking-wide font-semibold">Username</p><p class="text-sm font-medium text-gray-800">{{ $teacher->username }}</p></div>
+                        <div><p class="text-xs text-gray-400 uppercase tracking-wide font-semibold">Phone</p><p class="text-sm font-medium text-gray-800">{{ $teacher->phone ?? '-' }}</p></div>
+                        <div><p class="text-xs text-gray-400 uppercase tracking-wide font-semibold">Address</p><p class="text-sm font-medium text-gray-800">{{ $teacher->address ?? '-' }}</p></div>
+                    </div>
+                </div>
+
+                {{-- Kanan: Statistik Absensi --}}
+                <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-bold text-gray-800">Attendance Overview</h3>
+                        <div class="text-sm text-gray-500 bg-gray-50 px-3 py-1 rounded-lg">Last 30 Days</div>
+                    </div>
                     
-                    {{-- Tombol Close Modal --}}
-                    <button type="button" @click="isEditModalOpen = false" 
-                            class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 focus:outline-none z-10">
-                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
+                    {{-- Kotak Angka --}}
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+                        <div class="p-4 rounded-xl bg-blue-50 border border-blue-100 text-center"><p class="text-xs text-blue-600 font-bold uppercase mb-1">Present</p><p class="text-2xl font-bold text-blue-700">{{ $summary['present'] }}</p></div>
+                        <div class="p-4 rounded-xl bg-yellow-50 border border-yellow-100 text-center"><p class="text-xs text-yellow-600 font-bold uppercase mb-1">Late</p><p class="text-2xl font-bold text-yellow-700">{{ $summary['late'] }}</p></div>
+                        <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-100 text-center"><p class="text-xs text-emerald-600 font-bold uppercase mb-1">Permit</p><p class="text-2xl font-bold text-emerald-700">{{ $summary['permission'] }}</p></div>
+                        <div class="p-4 rounded-xl bg-purple-50 border border-purple-100 text-center"><p class="text-xs text-purple-600 font-bold uppercase mb-1">Sick</p><p class="text-2xl font-bold text-purple-700">{{ $summary['sick'] }}</p></div>
+                        <div class="p-4 rounded-xl bg-red-50 border border-red-100 text-center"><p class="text-xs text-red-600 font-bold uppercase mb-1">Absent</p><p class="text-2xl font-bold text-red-700">{{ $summary['absent'] }}</p></div>
+                    </div>
+
+                    {{-- Chart Pie --}}
+                    <div class="flex-1 flex items-center justify-center py-4">
+                        @php
+                            $total = $totalDays > 0 ? $totalDays : 1;
+                            $pPresent = ($summary['present'] / $total) * 100;
+                            $pLate = ($summary['late'] / $total) * 100;
+                            $pPermission = ($summary['permission'] / $total) * 100;
+                            $pSick = ($summary['sick'] / $total) * 100;
+                            $stop1 = $pPresent; $stop2 = $stop1 + $pLate; $stop3 = $stop2 + $pPermission; $stop4 = $stop3 + $pSick;
+                            $attendanceRate = $totalDays > 0 ? round((($summary['present'] + $summary['late']) / $totalDays) * 100) : 0;
+                            $chartAttribute = 'style="background: conic-gradient(#2563eb 0% ' . $stop1 . '%, #eab308 ' . $stop1 . '% ' . $stop2 . '%, #10b981 ' . $stop2 . '% ' . $stop3 . '%, #9333ea ' . $stop3 . '% ' . $stop4 . '%, #dc2626 ' . $stop4 . '% 100%);"';
+                        @endphp
+                        <div class="flex flex-col items-center">
+                            <div class="relative w-48 h-48 rounded-full shadow-inner" {!! $chartAttribute !!}>
+                                <div class="absolute inset-0 m-5 bg-white rounded-full flex flex-col items-center justify-center shadow-sm">
+                                    <span class="text-gray-400 text-xs font-semibold uppercase">Rate</span>
+                                    <span class="text-4xl font-extrabold text-gray-800">{{ $attendanceRate }}%</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-6 text-xs text-gray-500 uppercase font-bold">
+                                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span> Present</span>
+                                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-yellow-500"></span> Late</span>
+                                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Permit</span>
+                                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-purple-600"></span> Sick</span>
+                                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-600"></span> Absent</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- 3. TIMELINE ABSENSI --}}
+            <div class="mb-10">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-800">Recent Attendance History</h3>
+                    <span class="text-xs text-gray-400">&larr; Scroll left for earliest</span>
+                </div>
+                
+                <div id="attendance-timeline" class="flex overflow-x-auto gap-4 pb-4 custom-scrollbar scroll-smooth" style="scrollbar-width: thin;">
+                    @forelse ($attendance_records as $record)
+                        @php
+                            $theme = match($record->status) {
+                                'present'    => ['bg' => 'bg-blue-600', 'text' => 'text-white', 'border' => 'border-blue-200'],
+                                'late'       => ['bg' => 'bg-yellow-500', 'text' => 'text-white', 'border' => 'border-yellow-200'],
+                                'permission' => ['bg' => 'bg-emerald-600', 'text' => 'text-white', 'border' => 'border-emerald-200'],
+                                'sick'       => ['bg' => 'bg-purple-600', 'text' => 'text-white', 'border' => 'border-purple-200'],
+                                'absent'     => ['bg' => 'bg-red-600', 'text' => 'text-white', 'border' => 'border-red-200'],
+                                default      => ['bg' => 'bg-gray-400', 'text' => 'text-white', 'border' => 'border-gray-200'],
+                            };
+                            $textLabel = match($record->status) {
+                                'present' => 'text-blue-700', 'late' => 'text-yellow-700', 'permission' => 'text-emerald-700',
+                                'sick' => 'text-purple-700', 'absent' => 'text-red-700', default => 'text-gray-600'
+                            };
+                        @endphp
+                        <div class="min-w-[140px] bg-white border {{ $theme['border'] }} rounded-xl p-4 flex flex-col items-center justify-center shadow-sm hover:shadow-md transition-shadow flex-shrink-0">
+                            <span class="text-xs text-gray-400 font-semibold uppercase mb-1">
+                                {{ \Carbon\Carbon::parse($record->date)->format('D, d M') }}
+                            </span>
+                            
+                            <span class="text-lg font-bold {{ $textLabel }} mb-2">{{ ucfirst($record->status) }}</span>
+                            
+                            <div class="w-8 h-8 rounded-full {{ $theme['bg'] }} flex items-center justify-center {{ $theme['text'] }} mb-2">
+                                @if($record->status == 'present') <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                @elseif($record->status == 'late') <span class="font-bold text-xs">L</span>
+                                @elseif($record->status == 'absent') <span class="font-bold text-xs">A</span>
+                                @elseif($record->status == 'permission') <span class="font-bold text-xs">P</span>
+                                @elseif($record->status == 'sick') <span class="font-bold text-xs">S</span>
+                                @else <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                @endif
+                            </div>
+                            
+                            {{-- Check In/Out Time --}}
+                            <div class="text-[10px] text-gray-500 text-center leading-tight">
+                                <div>IN: {{ $record->check_in ?? '-' }}</div>
+                                <div>OUT: {{ $record->check_out ?? '-' }}</div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="w-full text-center py-8 text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">No attendance history available.</div>
+                    @endforelse
+                </div>
+            </div>
+
+        </div>
+
+        {{-- 
+            ===========================================
+            MODAL EDIT TEACHER
+            (Tanpa Tombol Delete)
+            ===========================================
+        --}}
+        <div x-show="showEditModal" 
+            x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" 
+            x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+            class="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 backdrop-blur-sm"
+            style="display: none;">
+            
+            <div class="flex items-center justify-center min-h-screen p-4" @click.outside="closeModal('showEditModal')">
+                <div x-show="showEditModal"
+                    x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                    x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                    class="bg-white rounded-[20px] shadow-2xl w-full max-w-4xl p-8 transform transition-all relative">
                     
-                    <h2 class="text-2xl font-bold text-gray-900 mb-6">Edit Teacher: {{ $teacher->name }}</h2>
+                    <button type="button" @click="closeModal('showEditModal')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 focus:outline-none"><svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
                     
-                    {{-- Form Start --}}
-                    <form action="{{ route('admin.teacher.update', $teacher->id) }}" method="POST" enctype="multipart/form-data">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">Edit Teacher</h2>
+                    
+                    <form :action="updateUrl" method="POST" enctype="multipart/form-data">
                         @csrf
-                        @method('PUT') {{-- PENTING: Untuk Update data --}}
+                        @method('PUT')
 
-                        <h3 class="text-xl font-bold text-gray-800 mb-6 pb-4 border-b border-gray-100">Teacher Information</h3>
-
-                        {{-- Grid Layout untuk Field --}}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-
-                            {{-- 1. Name & Username (Pre-filled) --}}
+                            {{-- Name --}}
                             <div class="space-y-2">
-                                <label for="name" class="text-sm font-semibold text-gray-700">Full Name <span class="text-red-500">*</span></label>
-                                <input type="text" name="name" id="name" required placeholder="e.g. Richard Lim"
-                                    value="{{ old('name', $teacher->name) }}"
-                                    class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200 transition duration-200 outline-none text-gray-700 placeholder-gray-400">
+                                <label class="text-sm font-semibold text-gray-700">Full Name <span class="text-red-500">*</span></label>
+                                <input type="text" name="name" x-model="editForm.name" class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-blue-200 focus:bg-white transition" required>
                             </div>
-
+                            {{-- Username --}}
                             <div class="space-y-2">
-                                <label for="username" class="text-sm font-semibold text-gray-700">Username <span class="text-red-500">*</span></label>
-                                <input type="text" name="username" id="username" required placeholder="e.g. Richardlim7"
-                                    value="{{ old('username', $teacher->username) }}"
-                                    class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200 transition duration-200 outline-none text-gray-700 placeholder-gray-400">
+                                <label class="text-sm font-semibold text-gray-700">Username <span class="text-red-500">*</span></label>
+                                <input type="text" name="username" x-model="editForm.username" class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-blue-200 focus:bg-white transition" required>
                             </div>
-
-                            {{-- 2. Email & Phone (Pre-filled) --}}
+                            {{-- Email --}}
                             <div class="space-y-2">
-                                <label for="email" class="text-sm font-semibold text-gray-700">Email Address <span class="text-red-500">*</span></label>
-                                <input type="email" name="email" id="email" required placeholder="e.g. teacher@school.com"
-                                    value="{{ old('email', $teacher->email) }}"
-                                    class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200 transition duration-200 outline-none text-gray-700 placeholder-gray-400">
+                                <label class="text-sm font-semibold text-gray-700">Email Address <span class="text-red-500">*</span></label>
+                                <input type="email" name="email" x-model="editForm.email" class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-blue-200 focus:bg-white transition" required>
                             </div>
-
+                            {{-- Phone --}}
                             <div class="space-y-2">
-                                <label for="phone" class="text-sm font-semibold text-gray-700">Phone Number <span class="text-red-500">*</span></label>
-                                <input type="tel" name="phone" id="phone" required placeholder="e.g. 08123456789"
-                                    value="{{ old('phone', $teacher->phone) }}"
-                                    class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200 transition duration-200 outline-none text-gray-700 placeholder-gray-400">
+                                <label class="text-sm font-semibold text-gray-700">Phone Number</label>
+                                <input type="tel" name="phone" x-model="editForm.phone" class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-blue-200 focus:bg-white transition">
                             </div>
-
-                            {{-- 3. Password (Optional) --}}
+                            {{-- Password (Optional) --}}
                             <div class="space-y-2">
-                                <label for="password" class="text-sm font-semibold text-gray-700">New Password</label>
-                                
-                                <div class="relative" x-data="{ show: false }">
-                                    <input 
-                                        :type="show ? 'text' : 'password'" 
-                                        name="password" 
-                                        id="password" 
-                                        placeholder="••••••••"
-                                        class="w-full px-4 py-3 pr-12 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200 transition duration-200 outline-none text-gray-700 placeholder-gray-400"
-                                    >
-                                    
-                                    <button type="button" @click="show = !show" 
-                                        class="absolute inset-y-0 right-0 px-4 flex items-center text-gray-400 hover:text-blue-600 focus:outline-none transition-colors"
-                                        title="Toggle Password Visibility">
-                                        
-                                        <svg x-show="!show" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                        </svg>
-
-                                        <svg x-show="show" style="display: none;" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a10.05 10.05 0 011.574-2.59M5.38 5.38a10.056 10.056 0 016.62-2.38c4.478 0 8.268 2.943 9.542 7a10.05 10.05 0 01-2.033 3.51M15 12a3 3 0 00-3-3m-1.5 7.5a3 3 0 01-3-3 3 3 0 013-3m6.75-4.5L5.25 19.5" />
-                                        </svg>
-                                    </button>
-                                </div>
-                                <p class="text-xs text-gray-500 italic">Kosongkan jika tidak ingin mengganti password.</p>
+                                <label class="text-sm font-semibold text-gray-700">New Password <span class="text-gray-400 font-normal">(Optional)</span></label>
+                                <input type="password" name="password" placeholder="Leave blank to keep current" class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-blue-200 focus:bg-white transition">
                             </div>
-
-                            {{-- 4. Type & Status Dropdowns (Selected) --}}
+                            {{-- Type --}}
                             <div class="space-y-2">
-                                <label for="type" class="text-sm font-semibold text-gray-700">Teacher Type <span class="text-red-500">*</span></label>
-                                <select name="type" id="type" required
-                                    class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200 transition duration-200 outline-none text-gray-700 cursor-pointer appearance-none">
-                                    <option value="">Select Type</option>
-                                    <option value="Form Teacher" {{ old('type', $teacher->type) == 'Form Teacher' ? 'selected' : '' }}>Form Teacher</option>
-                                    <option value="Local Teacher" {{ old('type', $teacher->type) == 'Local Teacher' ? 'selected' : '' }}>Local Teacher</option>
+                                <label class="text-sm font-semibold text-gray-700">Teacher Type <span class="text-red-500">*</span></label>
+                                <select name="type" x-model="editForm.type" class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-blue-200 focus:bg-white transition">
+                                    <option value="Form Teacher">Form Teacher</option>
+                                    <option value="Local Teacher">Local Teacher</option>
                                 </select>
                             </div>
-
+                            {{-- Status --}}
                             <div class="space-y-2">
-                                <label for="status" class="text-sm font-semibold text-gray-700">Status <span class="text-red-500">*</span></label>
-                                {{-- Field status ini mengacu ke $teacher->status dari model Anda --}}
-                                <select name="status" id="status" required
-                                    class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200 transition duration-200 outline-none text-gray-700 cursor-pointer appearance-none">
-                                    <option value="1" {{ old('status', $teacher->status) == 1 ? 'selected' : '' }}>Active</option>
-                                    <option value="0" {{ old('status', $teacher->status) == 0 ? 'selected' : '' }}>Inactive</option>
+                                <label class="text-sm font-semibold text-gray-700">Status <span class="text-red-500">*</span></label>
+                                <select name="status" x-model="editForm.status" class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-blue-200 focus:bg-white transition">
+                                    <option value="1">Active</option>
+                                    <option value="0">Inactive</option>
                                 </select>
                             </div>
-
-                            {{-- 5. Address (Pre-filled) --}}
+                            {{-- Address --}}
                             <div class="space-y-2 md:col-span-2">
-                                <label for="address" class="text-sm font-semibold text-gray-700"> Address</label>
-                                <textarea name="address" id="address" rows="3" placeholder="Enter full address here..."
-                                    class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200 transition duration-200 outline-none text-gray-700 placeholder-gray-400 resize-none">{{ old('address', $teacher->address) }}</textarea>
+                                <label class="text-sm font-semibold text-gray-700">Address</label>
+                                <textarea name="address" x-model="editForm.address" rows="3" class="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-blue-200 focus:bg-white transition resize-none"></textarea>
                             </div>
-
-                            {{-- 6. Photo Upload --}}
-                            <div class="space-y-2 md:col-span-2">
-                                <span class="text-sm font-semibold text-gray-700">Profile Photo</span>
-                                <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl bg-gray-50 hover:bg-blue-50 hover:border-blue-300 transition group cursor-pointer relative">
-                                    <div class="space-y-2 text-center">
-                                        <svg class="mx-auto h-12 w-12 text-gray-400 group-hover:text-blue-500 transition" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                                        </svg>
-                                        <div class="flex text-sm text-gray-600 justify-center">
-                                            <label for="photo" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500 px-2">
-                                                <span>Upload a file</span>
-                                                <input id="photo" name="photo" type="file" class="sr-only" accept="image/*">
-                                            </label>
-                                            <p class="pl-1">or drag and drop</p>
-                                        </div>
-                                        <p class="text-xs text-gray-500">
-                                            PNG, JPG, GIF up to 2MB. Kosongkan jika tidak ingin mengubah.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-                        {{-- End Grid Layout --}}
-
-                        {{-- Action Buttons --}}
-                        <div class="flex items-center justify-end gap-4 pt-6 border-t border-gray-100">
-                            <button type="button" @click="isEditModalOpen = false"
-                                class="px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition focus:outline-none focus:ring-2 focus:ring-gray-300">
-                                Cancel
-                            </button>
-                            <button type="submit"
-                                class="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-xl hover:from-green-700 hover:to-green-800 transition shadow-lg shadow-green-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
-                                Update Teacher
-                            </button>
                         </div>
 
+                        {{-- Footer: HANYA TOMBOL CANCEL & UPDATE (TOMBOL DELETE DIHAPUS) --}}
+                        <div class="flex items-center justify-end pt-6 border-t border-gray-100">
+                            <div class="flex gap-4">
+                                <button type="button" @click="closeModal('showEditModal')" class="px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition">Cancel</button>
+                                <button type="submit" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-200">Update Teacher</button>
+                            </div>
+                        </div>
                     </form>
-                    {{-- Form End --}}
-
+                </div>
             </div>
         </div>
+
     </div>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const container = document.getElementById('attendance-timeline');
+            if(container) container.scrollLeft = 0; 
+        });
+    </script>
 </x-app-layout>
