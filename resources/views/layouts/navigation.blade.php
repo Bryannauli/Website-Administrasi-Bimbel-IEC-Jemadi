@@ -91,15 +91,15 @@ $subInactiveClasses = 'text-gray-700 hover:bg-blue-100 hover:text-blue-700';
             </div>
         </div>
 
-        {{-- 4. TEACHERS (DROPDOWN - TETAP) --}}
-        <div x-data="{ open: {{ request()->routeIs('teachers.*') ? 'true' : 'false' }} }">
+{{-- 4. TEACHERS (DROPDOWN - FIXED) --}}
+        <div x-data="{ open: {{ request()->routeIs('admin.teacher.*') ? 'true' : 'false' }} }">
             <button @click="open = !open"
                 class="group flex items-center justify-between w-full px-3 py-2 text-sm font-medium rounded-md !no-underline
-               {{ request()->routeIs('teachers.*') ? $activeClasses : $inactiveClasses }}">
+                {{ request()->routeIs('admin.teacher.*') ? $activeClasses : $inactiveClasses }}">
 
                 <span class="flex items-center">
                     <svg class="mr-3 h-6 w-6 flex-shrink-0
-                       {{ request()->routeIs('teachers.*') ? $activeClassesIcon : $inactiveClassesIcon }}"
+                        {{ request()->routeIs('admin.teacher.*') ? $activeClassesIcon : $inactiveClassesIcon }}"
                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -114,17 +114,17 @@ $subInactiveClasses = 'text-gray-700 hover:bg-blue-100 hover:text-blue-700';
                 </svg>
             </button>
 
+            {{-- SATU WRAPPER UNTUK SEMUA SUB-MENU --}}
             <div x-show="open" x-transition class="mt-2 space-y-1">
                 <a href="{{ route('admin.teacher.index') }}"
                     class="block px-4 py-2 ml-4 rounded-md text-sm font-medium transition-colors duration-150
-                  {{ request()->routeIs('teachers.index') ? $subActiveClasses : $subInactiveClasses }}">
+                    {{ request()->routeIs('admin.teacher.index') ? $subActiveClasses : $subInactiveClasses }}">
                     All Teachers
                 </a>
-            </div>
-             <div x-show="open" x-transition class="mt-2 space-y-1">
+                
                 <a href="{{ route('admin.teacher.attendance') }}"
                     class="block px-4 py-2 ml-4 rounded-md text-sm font-medium transition-colors duration-150
-                  {{ request()->routeIs('admin.teacher.attendance') ? $subActiveClasses : $subInactiveClasses }}">
+                    {{ request()->routeIs('admin.teacher.attendance') ? $subActiveClasses : $subInactiveClasses }}">
                     Attendance
                 </a>
             </div>

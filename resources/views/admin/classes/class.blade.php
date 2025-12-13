@@ -147,7 +147,7 @@
             
             {{-- Title --}}
             <div class="mb-8">
-                <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent inline-block">
+                <h1 class="text-3xl font-bold bg-gradient-to-b from-blue-500 to-red-500 bg-clip-text text-transparent inline-block">
                     Classes Management
                 </h1>
                 <p class="text-gray-500 text-sm mt-1">Manage and monitor all active and inactive classes.</p>

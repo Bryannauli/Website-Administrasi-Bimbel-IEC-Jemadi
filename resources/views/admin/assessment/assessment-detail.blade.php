@@ -52,7 +52,7 @@
             {{-- 2. HEADER HALAMAN (GRADIENT BIRU-INDIGO) --}}
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                 <div>
-                    <h2 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                    <h2 class="text-3xl font-bold bg-gradient-to-b from-blue-500 to-red-500 bg-clip-text text-transparent">
                         Assessment Details: {{ ucfirst($type) }}
                     </h2>
                     <p class="text-gray-500 text-sm mt-1">Class: <span class="font-bold text-gray-800">{{ $class->name }}</span></p>
@@ -113,7 +113,7 @@
                 {{-- READ-ONLY SUMMARY (2 ROWS) --}}
                 <div x-show="!isEditing" class="space-y-4 mb-8" x-transition>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3">
+                        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 border-l-4 border-l-yellow-600">
                             <div class="p-2.5 bg-yellow-50 text-yellow-600 rounded-xl"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h-4v-6h-2v6H7v-6H5v6H3m14 0h-4v-6h-2v6H7v-6H5v6H3M12 4a4 4 0 11-8 0 4 4 0 018 0zm4 0a4 4 0 11-8 0 4 4 0 018 0z" /></svg></div>
                             <div><p class="text-[10px] font-bold text-gray-400 uppercase">Form Teacher</p><p class="text-sm font-bold text-gray-800">{{ $class->formTeacher->name ?? 'Not Assigned' }}</p></div>
                         </div>
@@ -128,11 +128,11 @@
                             <div class="p-2.5 bg-purple-50/80 text-purple-700 rounded-xl"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg></div>
                             <div><p class="text-[10px] font-bold text-gray-400 uppercase">Speaking Date</p><p class="text-sm font-bold text-gray-800">{{ \Carbon\Carbon::parse($speakingTest->date ?? now())->format('d F Y') }}</p></div>
                         </div>
-                        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3">
+                        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 border-l-4 border-l-green-700">
                             <div class="p-2.5 bg-green-50/80 text-green-700 rounded-xl"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg></div>
                             <div><p class="text-[10px] font-bold text-gray-400 uppercase">Speaking Interviewer</p><p class="text-sm font-bold text-gray-800">{{ $speakingTest->interviewer->name ?? 'Not Set' }}</p></div>
                         </div>
-                        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3">
+                        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 border-l-4 border-l-orange-700">
                             <div class="p-2.5 bg-orange-50/80 text-orange-700 rounded-xl"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></div>
                             <div><p class="text-[10px] font-bold text-gray-400 uppercase">Speaking Topic</p><p class="text-sm font-bold text-gray-800">{{ $speakingTest->topic ?? '-' }}</p></div>
                         </div>

@@ -17,7 +17,7 @@
         updateUrl: '',
         deleteUrl: '',
         
-        // Data Form Edit (Menggunakan data 'old' hanya jika error edit terjadi)
+        // Data Form Edit
         editForm: {
             id: null,
             student_number: '',
@@ -29,7 +29,7 @@
             class_id: ''
         },
 
-        // 1. FUNGSI UNTUK MENGISI FORM SAAT HALAMAN DIMUAT ULANG KARENA ERROR EDIT
+        // 1. INIT FUNCTION
         init() {
             if (this.isEditFailed) {
                 this.editForm = {
@@ -42,13 +42,12 @@
                     is_active: {{ old('is_active') == 1 ? 'true' : 'false' }},
                     class_id: '{{ old('class_id') }}'
                 };
-                // Pastikan URL di set agar form edit bisa disubmit saat reload
                 this.updateUrl = '{{ route('admin.student.update', ':id') }}'.replace(':id', this.editForm.id);
                 this.deleteUrl = '{{ route('admin.student.delete', ':id') }}'.replace(':id', this.editForm.id);
             }
         },
 
-        // 2. FUNGSI UTAMA PENUTUP MODAL (Diakses oleh semua tombol close)
+        // 2. CLOSE MODAL
         closeModal(modalVar) {
             if (this.hasError) {
                 window.location.href = window.location.href.split('?')[0]; 
@@ -57,10 +56,8 @@
             }
         },
 
-        // 3. FUNGSI UNTUK MEMBUKA MODAL EDIT (Saat klik tombol edit di tabel)
+        // 3. OPEN EDIT MODAL
         openEditModal(student) {
-            // Saat diklik dari tabel, kita SELALU menimpa data old() jika ada, 
-            // karena user sudah memilih siswa baru.
             this.editForm = {
                 id: student.id,
                 student_number: student.student_number,
@@ -78,28 +75,11 @@
             this.showEditModal = true;
         },
 
-        // 4. Konfirmasi Delete
-        confirmDelete() {
-            Swal.fire({
-                title: 'Are you sure?',
-                text: 'This student will be moved to trash (Soft Delete).',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#EF4444',
-                cancelButtonColor: '#6B7280',
-                confirmButtonText: 'Yes, Delete'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    document.getElementById('delete-student-form').submit();
-                }
-            });
-        },
-
-        // 5. Konfirmasi Toggle Status (BARU)
+        // 4. CONFIRM TOGGLE STATUS
         confirmToggleStatus(studentId, isActive) {
             const action = isActive ? 'DEACTIVATE' : 'ACTIVATE';
             const statusText = isActive ? 'inactive' : 'active';
-            const iconColor = isActive ? '#EF4444' : '#10B981'; // Red for Deactivate, Green for Activate
+            const iconColor = isActive ? '#EF4444' : '#10B981'; 
 
             Swal.fire({
                 title: `${action} Student?`,
@@ -111,10 +91,8 @@
                 confirmButtonText: `Yes, ${action}`
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Submit form PATCH secara dinamis
                     const form = document.getElementById('toggleStatusForm');
                     const url = '{{ route('admin.student.toggleStatus', ':id') }}'.replace(':id', studentId);
-                    
                     form.action = url;
                     form.submit();
                 }
@@ -142,12 +120,50 @@
             </nav>
 
             {{-- TITLE --}}
-            <div class="mb-8">
-                <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent inline-block">
+            <div class="mb-6">
+                <h1 class="text-3xl font-bold bg-gradient-to-b from-blue-500 to-red-500 bg-clip-text text-transparent inline-block">
                     Students Data
                 </h1>
                 <p class="text-gray-500 text-sm mt-1">Manage all active and inactive student records.</p>
             </div>
+
+            {{-- STATS CARD (NEW ADDITION) --}}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-blue-600 p-4 mb-8 max-w-sm">
+                <div class="flex items-center justify-between gap-4">
+                    
+                    {{-- Kiri: Total Utama --}}
+                    <div>
+                        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-0.5">Total Students</h3>
+                        {{-- Pastikan variabel $totalStudents dikirim dari Controller, atau gunakan count($students) sementara --}}
+                        <p class="text-3xl font-bold text-gray-900 leading-none">
+                            {{ number_format($students->total() ?? 0) }}
+                        </p>
+                    </div>
+
+                    {{-- Kanan: Active & Inactive --}}
+                    {{-- Note: Idealnya hitungan Active/Inactive dikirim dari Controller agar akurat (tidak terkena pagination) --}}
+                    <div class="flex flex-col gap-1.5">
+                        <div class="flex items-center justify-between gap-3 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-md border border-blue-100 min-w-[110px]">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                                <span class="text-[10px] font-bold uppercase">Active</span>
+                            </div>
+                            {{-- Placeholder Value (Ganti dengan $totalActive dari Controller) --}}
+                            <span class="text-sm font-bold">{{ number_format($totalActive ?? 0) }}</span>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-3 px-2.5 py-1 bg-red-50 text-red-700 rounded-md border border-red-100 min-w-[110px]">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>
+                                <span class="text-[10px] font-bold uppercase">Inactive</span>
+                            </div>
+                            {{-- Placeholder Value (Ganti dengan $totalInactive dari Controller) --}}
+                            <span class="text-sm font-bold">{{ number_format($totalInactive ?? 0) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {{-- END STATS CARD --}}
 
             {{-- TABLE SECTION --}}
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -303,7 +319,6 @@
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                             </button>
 
-                                            {{-- TOMBOL TOGGLE STATUS BARU (Memanggil SweetAlert) --}}
                                             <button type="button" 
                                                 @click="confirmToggleStatus({{ $student->id }}, {{ $student->is_active ? 'true' : 'false' }})"
                                                 class="p-1.5 transition-colors 
@@ -311,10 +326,8 @@
                                                 title="{{ $student->is_active ? 'Deactivate' : 'Activate' }}">
                                 
                                                 @if($student->is_active)
-                                                    {{-- Icon Power Off (Deactivate) --}}
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
                                                 @else
-                                                    {{-- Icon Check (Activate) --}}
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                                 @endif
                                             </button>
@@ -330,8 +343,32 @@
                     </table>
                 </div>
 
+                {{-- PAGINATION CUSTOM (PREVIOUS / NEXT) --}}
                 <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white">
-                    {{ $students->links() }}
+                    
+                    @if ($students->onFirstPage())
+                        <button class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-400 bg-gray-50 cursor-not-allowed" disabled>
+                            Previous
+                        </button>
+                    @else
+                        <a href="{{ $students->previousPageUrl() }}" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 hover:text-gray-800 transition-colors">
+                            Previous
+                        </a>
+                    @endif
+                    
+                    <span class="text-sm text-gray-500 font-medium">
+                        Page <span class="font-semibold text-gray-900">{{ $students->currentPage() }}</span> of <span class="font-semibold text-gray-900">{{ $students->lastPage() }}</span>
+                    </span>
+                    
+                    @if ($students->hasMorePages())
+                        <a href="{{ $students->nextPageUrl() }}" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 hover:text-gray-800 transition-colors">
+                            Next
+                        </a>
+                    @else
+                        <button class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-400 bg-gray-50 cursor-not-allowed" disabled>
+                            Next
+                        </button>
+                    @endif
                 </div>
 
             </div>
@@ -341,7 +378,7 @@
         @include('admin.student.partials.add-modal')
         @include('admin.student.partials.edit-modal', ['showClassAssignment' => false])
 
-        {{-- FORM HIDDEN UNTUK TOGGLE STATUS (DIPANGGIL OLEH SWEETALERT) --}}
+        {{-- FORM HIDDEN UNTUK TOGGLE STATUS --}}
         <form id="toggleStatusForm" method="POST" action="#" style="display: none;">
             @csrf 
             @method('PATCH')

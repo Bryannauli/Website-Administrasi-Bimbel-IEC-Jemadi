@@ -30,28 +30,41 @@
                 </h1>
             </div>
 
-            {{-- 3. STATS CARD (Posisi & Desain Sama) --}}
-            <div class="bg-white rounded-xl shadow-sm p-4 mb-8 max-w-xl border border-gray-100">
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div class="flex items-center gap-6 w-full sm:w-auto">
-                        <div>
-                            <h3 class="text-sm font-semibold text-gray-500 mb-1">Total Teachers</h3>
-                            <p class="text-3xl font-bold text-gray-900">{{ number_format($totalTeachers ?? 0) }}</p>
-                        </div>
-                        <div class="flex gap-3">
-                            <div class="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-lg border border-blue-100">
-                                <span class="text-xs font-medium">Active</span>
-                                <span class="text-sm font-bold">{{ number_format($totalActive ?? 0) }}</span>
-                            </div>
-                            <div class="flex items-center gap-2 px-3 py-1 bg-red-50 text-red-700 rounded-lg border border-red-100">
-                                <span class="text-xs font-medium">Inactive</span>
-                                <span class="text-sm font-bold">{{ number_format($totalInactive ?? 0) }}</span>
-                            </div>
-                        </div>
-                    </div>
+          {{-- 3. STATS CARD (Compact Version) --}}
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-blue-600 p-4 mb-8 max-w-sm">
+    <div class="flex items-center justify-between gap-4">
+        
+        {{-- Kiri: Total Utama --}}
+        <div>
+            <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Total Teachers</h3>
+            <p class="text-3xl font-bold text-gray-900 leading-none">
+                {{ number_format($totalTeachers ?? 0) }}
+            </p>
+        </div>
+
+        {{-- Kanan: Active & Inactive (Atas Bawah lebih Rapat) --}}
+        <div class="flex flex-col gap-1.5">
+            {{-- Active --}}
+            <div class="flex items-center justify-between gap-3 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-md border border-blue-100 min-w-[110px]">
+                <div class="flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                    <span class="text-[10px] font-bold uppercase">Active</span>
                 </div>
+                <span class="text-sm font-bold">{{ number_format($totalActive ?? 0) }}</span>
             </div>
 
+            {{-- Inactive --}}
+            <div class="flex items-center justify-between gap-3 px-2.5 py-1 bg-red-50 text-red-700 rounded-md border border-red-100 min-w-[110px]">
+                <div class="flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>
+                    <span class="text-[10px] font-bold uppercase">Inactive</span>
+                </div>
+                <span class="text-sm font-bold">{{ number_format($totalInactive ?? 0) }}</span>
+            </div>
+        </div>
+
+    </div>
+</div>
             {{-- 4. TABLE SECTION CONTAINER --}}
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
 
