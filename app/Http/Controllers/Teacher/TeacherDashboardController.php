@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use App\Models\ClassModel; // Pastikan model ini di-import
 
-class DashboardTeacherController extends Controller
+class TeacherDashboardController extends Controller
 {
     public function index()
     {
