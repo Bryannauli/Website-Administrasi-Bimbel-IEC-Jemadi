@@ -7,9 +7,9 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Validator; // Penting: Import Validator Facade
 use App\Models\ClassModel;
 use App\Models\Student;
-use Illuminate\Validation\ValidationException;
 
 class AdminStudentController extends Controller
 {
@@ -22,7 +22,7 @@ class AdminStudentController extends Controller
         $years = ClassModel::select('academic_year')->distinct()->orderBy('academic_year', 'desc')->pluck('academic_year');
         $categories = ClassModel::select('category')->distinct()->pluck('category');
 
-        // Filter Dropdown Kelas (Agar kelas yang muncul di dropdown sesuai filter tahun/kategori yang sedang dipilih)
+        // Filter Dropdown Kelas
         $classQuery = ClassModel::orderBy('name', 'asc');
         if ($request->filled('academic_year')) $classQuery->where('academic_year', $request->academic_year);
         if ($request->filled('category')) $classQuery->where('category', $request->category);
@@ -32,11 +32,10 @@ class AdminStudentController extends Controller
         $query = Student::with('classModel');
 
         // --- FILTER LOGIC ---
-
+        
         // A. Filter Status
         if (!$request->has('status')) {
-            // DEFAULT STATE: Tampilkan hanya Active
-            $query->where('is_active', true);
+            $query->where('is_active', true); // Default: Active only
         } elseif ($request->filled('status')) {
             if ($request->status == 'active') {
                 $query->where('is_active', true);
@@ -83,34 +82,25 @@ class AdminStudentController extends Controller
         // 3. Eksekusi Query & Pagination
         $students = $query->paginate(10)->appends($request->query());
 
-        // 4. Hitung Statistik Global (MENGGUNAKAN STORED PROCEDURE)
-        // Panggil Stored Procedure
+        // 4. Hitung Statistik Global (Stored Procedure)
         DB::statement('CALL p_get_student_global_stats(@total, @active, @inactive)');
-        
-        // Ambil hasil OUT parameter
         $stats = DB::select('SELECT @total AS total, @active AS active, @inactive AS inactive');
-        // Asign ke variabel lama
+        
         $globalTotal = $stats[0]->total;
         $totalActive = $stats[0]->active;
         $totalInactive = $stats[0]->inactive;
 
         return view('admin.student.student', compact(
-            'students',
-            'classes',
-            'years',
-            'categories',
-            'totalActive',
-            'totalInactive',
-            'globalTotal' // Mengirim variabel global total
+            'students', 'classes', 'years', 'categories',
+            'totalActive', 'totalInactive', 'globalTotal'
         ));
     }
 
     /**
-     * Halaman Form Tambah Siswa (Sekarang via Modal)
+     * Halaman Form Tambah Siswa (Redirect ke Index karena pakai Modal)
      */
     public function add()
     {
-        // Method ini seharusnya sudah dihapus, jika masih ada, sebaiknya redirect ke index
         return redirect()->route('admin.student.index');
     }
 
@@ -128,14 +118,14 @@ class AdminStudentController extends Controller
             'class_id'       => 'nullable|exists:classes,id',
         ]);
         
-        // Pastikan 'is_active' diset ke 1 jika tidak ada di request (karena form add tidak mengirimnya)
+        // Default 'is_active' => 1
         Student::create(array_merge($request->all(), ['is_active' => 1]));
         
         return back()->with('success', 'Student successfully added!');
     }
     
     /**
-     * Halaman Detail Siswa (Juga menangani data untuk Modal Edit)
+     * Halaman Detail Siswa
      */
     public function detail($id)
     {
@@ -145,14 +135,14 @@ class AdminStudentController extends Controller
         $classes = ClassModel::where('is_active', true)->orderBy('category')->orderBy('name')->get();
         $categories = $classes->pluck('category')->unique();
 
-        // 1. Ambil History Absensi (View)
+        // 1. History Absensi
         $attendance = DB::table('v_student_attendance')
             ->where('student_id', $id)
-            ->where('class_id', $student->class_id) // <--- FILTER PENTING
+            ->where('class_id', $student->class_id)
             ->orderBy('session_date', 'DESC')
             ->get();
 
-        // 2. Ambil Summary Statistik (Stored Procedure)
+        // 2. Summary Statistik (SP)
         $rawSummary = DB::select("CALL p_get_attendance_summary(?)", [$id]);
         $summaryData = $rawSummary[0];
 
@@ -173,7 +163,6 @@ class AdminStudentController extends Controller
 
         for ($i = 6; $i >= 0; $i--) {
             $date = $today->copy()->subDays($i)->format('Y-m-d');
-            
             $record = DB::table('v_student_attendance')
                 ->where('student_id', $student->id)
                 ->where('class_id', $student->class_id)
@@ -181,8 +170,11 @@ class AdminStudentController extends Controller
                 ->select('status')
                 ->first();
 
-            $status = $record->status ?? 'none';
-            $last7Days[] = ['date' => $date, 'day' => Carbon::parse($date)->format('D'), 'status' => $status];
+            $last7Days[] = [
+                'date' => $date, 
+                'day' => Carbon::parse($date)->format('D'), 
+                'status' => $record->status ?? 'none'
+            ];
         }
         
         $rangeStart = $today->copy()->subDays(6)->format('d M Y');
@@ -196,40 +188,45 @@ class AdminStudentController extends Controller
     }
 
     /**
-     * Proses Update Data Siswa
+     * Proses Update Data Siswa (REFACTORED: Menggunakan Validator Manual)
      */
     public function update(Request $request, $id)
     {
-        // Tangani validasi di dalam blok try-catch untuk menangkap ValidationException
-        try {
-            $data = $request->validate([
-                'student_number' => ['required', 'string', Rule::unique('students')->ignore($id)],
-                'name'           => 'required|string|max:255',
-                'gender'         => 'required|in:male,female',
-                'phone'          => 'nullable|string|max:30',
-                'address'        => 'nullable|string',
-                'class_id'       => 'nullable|exists:classes,id',
-                'is_active'      => 'required|boolean', 
-            ]);
-            
-            $student = Student::findOrFail($id);
-            $student->update($data);
-            
-            return back()->with('success', 'Student profile updated successfully.');
-            
-        } catch (ValidationException $e) {
-            // PERBAIKAN: Jika validasi gagal
-            // Kita perlu mengirimkan old('id') agar init() di Alpine bisa mengatur updateUrl
+        $student = Student::findOrFail($id);
+
+        // 1. Definisikan Validasi
+        $validator = Validator::make($request->all(), [
+            'student_number' => ['required', 'string', Rule::unique('students')->ignore($id)],
+            'name'           => 'required|string|max:255',
+            'gender'         => 'required|in:male,female',
+            'phone'          => 'nullable|string|max:30',
+            'address'        => 'nullable|string',
+            'class_id'       => 'nullable|exists:classes,id',
+            'is_active'      => 'required|boolean', 
+        ]);
+
+        // 2. Cek Validasi Gagal
+        if ($validator->fails()) {
             return back()
-                ->withErrors($e->errors())
-                ->withInput($request->all() + ['id' => $id]) // Tambahkan 'id' ke old()
-                ->with('edit_failed', true); // Flag agar Edit Modal terbuka
-                
-        } catch (\Throwable $e) {
-            return back()->withInput($request->all() + ['id' => $id])
-                ->with('error', 'Update failed: '.$e->getMessage())
+                ->withErrors($validator)
+                // Penting: Kirim input + ID agar modal tahu siapa yang diedit
+                ->withInput($request->all() + ['id' => $id]) 
+                // Flag untuk membuka modal edit di frontend
                 ->with('edit_failed', true);
         }
+
+        // 3. Update Data
+        $student->update([
+            'student_number' => $request->student_number,
+            'name'           => $request->name,
+            'gender'         => $request->gender,
+            'phone'          => $request->phone,
+            'address'        => $request->address,
+            'class_id'       => $request->class_id,
+            'is_active'      => $request->is_active,
+        ]);
+        
+        return back()->with('success', 'Student profile updated successfully.');
     }
     
     /**
@@ -254,7 +251,7 @@ class AdminStudentController extends Controller
             $student->delete(); 
 
             return redirect()->route('admin.student.index')
-                ->with('success', 'Student moved to trash. Data is safe and hidden.');
+                ->with('success', 'Student moved to trash.');
                 
         } catch (\Exception $e) {
             return back()->with('error', 'Failed to delete student: ' . $e->getMessage());

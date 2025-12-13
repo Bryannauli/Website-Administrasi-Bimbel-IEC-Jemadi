@@ -386,6 +386,33 @@
 
         </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // GUNAKAN JSON_ENCODE (Aman dari tanda kutip)
+            const successMessage = <?php echo json_encode(session('success')); ?>;
+            const errorMessage   = <?php echo json_encode(session('error')); ?>;
+
+            if (successMessage) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: successMessage,
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            }
+
+            if (errorMessage) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: errorMessage,
+                });
+            }
+        });
+    </script>
     
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </x-app-layout>
