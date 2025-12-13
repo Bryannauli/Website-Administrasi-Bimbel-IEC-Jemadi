@@ -26,6 +26,15 @@ class StudentSeeder extends Seeder
 
         foreach ($classes as $class) {
             
+            // =================================================================
+            // NEW LOGIC: SKIP CLASS YANG DIKHUSUSKAN UNTUK EMPTY ASSESSMENT
+            // =================================================================
+            if (str_contains($class->name, 'Empty Assessment')) {
+                $this->command->warn("Skipping student generation for class: {$class->name} (Reserved for Empty Class Example).");
+                continue; // Lompati iterasi ini (tidak ada siswa yang dibuat untuk kelas ini)
+            }
+            // =================================================================
+
             // Random jumlah siswa antara 4 sampai 6 per kelas
             $jumlahSiswa = rand(4, 6);
 

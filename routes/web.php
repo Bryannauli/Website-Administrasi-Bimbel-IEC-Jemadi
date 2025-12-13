@@ -86,7 +86,7 @@ Route::middleware(['auth', 'verified', 'admin'])
             
             // Assessment Routes (Management per Class)
             Route::get('/{classId}/assessment/{type}', [AdminAssessmentController::class, 'detail'])->name('assessment.detail');
-            Route::patch('/{sessionId}/store-grades', [AdminAssessmentController::class, 'storeOrUpdateGrades'])->name('assessment.storeOrUpdate');
+            Route::post('/{classId}/assessment/{type}/save', [AdminAssessmentController::class, 'storeOrUpdateGrades'])->name('assessment.storeOrUpdateGrades');
         });
 
         /* TEACHER LIST */

@@ -85,7 +85,6 @@ class ClassSeeder extends Seeder
 
         // --- KELAS 3: Step 2 (Jumat & Sabtu) ---
         // Skenario: HANYA punya Form Teacher (Local Teacher null)
-        // Maka jadwalnya WAJIB 'form' semua.
         $t3_form = $teachers->random();
         
         $class3 = ClassModel::create([
@@ -110,7 +109,40 @@ class ClassSeeder extends Seeder
         Schedule::create([
             'class_id' => $class3->id, 
             'day_of_week' => 'Saturday', 
+            'teacher_type' => 'local'
+        ]);
+        
+        
+        // --- KELAS 4: Step 3 (Kelas untuk Contoh Kosong) ---
+        // Skenario: Kelas baru yang baru dibuat, belum ada nilai assessment.
+        $t4_form = $teachers->random();
+        $t4_local = $teachers->where('id', '!=', $t4_form->id)->random() ?? $teachers->random();
+        
+        $class4 = ClassModel::create([
+            'category'       => 'step',
+            'name'           => 'Step 3 - Empty Assessment',
+            'classroom'      => 'Japan',
+            'form_teacher_id'=> $t4_form->id,
+            'local_teacher_id' => $t4_local->id, 
+            'start_time'     => '14:00:00',
+            'end_time'       => '15:30:00',
+            'start_month'    => 'August',
+            'end_month'      => 'January',
+            'academic_year'  => 2026,
+            'is_active'      => true,
+        ]);
+
+        Schedule::create([
+            'class_id' => $class4->id, 
+            'day_of_week' => 'Monday', 
             'teacher_type' => 'form'
         ]);
+        Schedule::create([
+            'class_id' => $class4->id, 
+            'day_of_week' => 'Wednesday', 
+            'teacher_type' => 'local'
+        ]);
+        
+        $this->command->info("Class 'Step 3 - Empty Assessment' (ID: {$class4->id}) created for empty assessment example.");
     }
 }

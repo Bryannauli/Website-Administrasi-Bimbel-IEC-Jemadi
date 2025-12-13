@@ -100,9 +100,12 @@ class AdminAssessmentController extends Controller
             'formTeacher' 
         ])->findOrFail($classId);
 
+        // MENGHILANGKAN NILAI DEFAULT DATE!
+        // Jika sesi sudah ada (karena fitur pre-create di AdminClassController), maka aman.
+        // Jika belum ada (safety net), session akan dibuat dengan date = NULL.
         $session = AssessmentSession::firstOrCreate(
             ['class_id' => $classId, 'type' => $type],
-            ['date' => now()->toDateString()]
+            ['date' => null] // <--- PERUBAHAN KRITIS: date diset NULL (kosong) jika sesi baru dibuat
         );
 
         $allTeachers = User::where('role', 'teacher')->where('is_active', true)->orderBy('name', 'asc')->get();
@@ -147,9 +150,12 @@ class AdminAssessmentController extends Controller
     /**
      * Menyimpan atau memperbarui semua nilai (Tertulis dan Speaking)
      */
-    public function storeOrUpdateGrades(Request $request, $sessionId)
+    public function storeOrUpdateGrades(Request $request, $classId, $type)
     {
-        $session = AssessmentSession::findOrFail($sessionId);
+        // 1. Cari Session berdasarkan ClassID dan Type (sesuai Route baru)
+        $session = AssessmentSession::where('class_id', $classId)
+            ->where('type', $type)
+            ->firstOrFail();
         
         $rules = [
             'written_date' => 'required|date',
@@ -158,17 +164,21 @@ class AdminAssessmentController extends Controller
             'topic' => 'nullable|string|max:255',
             'grades' => 'required|array',
             
-            'grades.*.vocabulary' => 'nullable|integer|between:0,100',
-            'grades.*.grammar' => 'nullable|integer|between:0,100',
-            'grades.*.listening' => 'nullable|integer|between:0,100',
-            'grades.*.reading' => 'nullable|integer|between:0,100',
-            'grades.*.spelling' => 'nullable|integer|between:0,100',
+            // WAJIB ISI (Core Skills)
+            'grades.*.vocabulary' => 'required|integer|between:0,100',
+            'grades.*.grammar'    => 'required|integer|between:0,100',
+            'grades.*.listening'  => 'required|integer|between:0,100',
+            'grades.*.reading'    => 'required|integer|between:0,100',
 
-            'grades.*.speaking_content' => 'nullable|integer|between:0,50',
-            'grades.*.speaking_participation' => 'nullable|integer|between:0,50',
+            // OPSIONAL (Boleh Kosong)
+            'grades.*.spelling'   => 'nullable|integer|between:0,100',
+
+            // WAJIB ISI (Speaking Components)
+            'grades.*.speaking_content'      => 'required|integer|between:0,50',
+            'grades.*.speaking_participation'=> 'required|integer|between:0,50',
             
             'grades.*.student_id' => 'required|exists:students,id',
-            'grades.*.form_id' => 'nullable|exists:assessment_forms,id',
+            'grades.*.form_id' => 'nullable', 
         ];
 
         $validatedData = $request->validate($rules);
@@ -176,8 +186,10 @@ class AdminAssessmentController extends Controller
 
         DB::beginTransaction();
         try {
+            // Update Info Sesi
             $session->update(['date' => $validatedData['written_date']]);
 
+            // Update Info Speaking Test
             $speakingTest = SpeakingTest::updateOrCreate(
                 ['assessment_session_id' => $session->id],
                 [
@@ -187,9 +199,11 @@ class AdminAssessmentController extends Controller
                 ]
             );
 
+            // Loop Simpan Nilai
             foreach ($grades as $grade) {
                 $studentId = $grade['student_id'];
                 
+                // 1. Simpan Nilai Speaking (Detail)
                 $speakingResult = SpeakingTestResult::updateOrCreate(
                     [
                         'speaking_test_id' => $speakingTest->id,
@@ -201,15 +215,18 @@ class AdminAssessmentController extends Controller
                     ]
                 );
                 
+                // Hitung total speaking untuk dimasukkan ke AssessmentForm
                 $totalSpeaking = ($speakingResult->content_score ?? 0) + ($speakingResult->participation_score ?? 0);
 
+                // 2. Simpan Nilai Tertulis & Total Speaking
                 AssessmentForm::updateOrCreate(
                     [
-                        'id' => $grade['form_id'], 
+                        // Gunakan ID jika ada, atau cari kombinasi session+student
+                        'id' => $grade['form_id'] ?? null, 
+                    ], 
+                    [
                         'student_id' => $studentId,
                         'assessment_session_id' => $session->id,
-                    ],
-                    [
                         'vocabulary' => $grade['vocabulary'] ?? null,
                         'grammar' => $grade['grammar'] ?? null,
                         'listening' => $grade['listening'] ?? null,
@@ -222,11 +239,19 @@ class AdminAssessmentController extends Controller
             }
             
             DB::commit();
-            return back()->with('success', 'Grades updated successfully!');
+
+            // === PERBAIKAN UTAMA ===
+            // Jangan gunakan back(), tapi redirect spesifik ke route detail.
+            // Ini akan menghapus parameter '?mode=edit' dari URL, sehingga tampilan kembali ke Mode Baca.
+            return redirect()->route('admin.classes.assessment.detail', [
+                'classId' => $classId,
+                'type' => $type
+            ])->with('success', 'Grades updated successfully!');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Grade update failed for session {$sessionId}: " . $e->getMessage());
+            Log::error("Grade update failed for class {$classId} type {$type}: " . $e->getMessage());
+            // Jika error, baru kita pakai back() agar inputan tidak hilang
             return back()->with('error', 'Failed to save grades: ' . $e->getMessage())->withInput();
         }
     }

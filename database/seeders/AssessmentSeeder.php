@@ -18,31 +18,42 @@ class AssessmentSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Ambil semua kelas yang aktif dan memiliki relasi students dan formTeacher
+        // 1. Ambil semua kelas yang aktif
         $classes = ClassModel::with(['students', 'formTeacher'])->where('is_active', true)->get();
 
-        // Siapkan cadangan guru (fallback terakhir jika Form & Local Teacher kosong)
+        // Siapkan cadangan guru
         $fallbackInterviewer = User::where('role', 'teacher')->where('is_active', true)->inRandomOrder()->first();
 
         foreach ($classes as $class) {
             
+            // Tentukan apakah ini kelas khusus yang harus kosong
+            $isEmptyExample = str_contains($class->name, 'Empty Assessment');
+
             // Tentukan Interviewer:
-            // Prioritas 1: Local Teacher (local_teacher_id)
-            // Prioritas 2: Form Teacher (form_teacher_id)
-            // Prioritas 3: Fallback (Guru Acak)
             $interviewerId = $class->local_teacher_id 
                                 ?? $class->form_teacher_id 
                                 ?? ($fallbackInterviewer ? $fallbackInterviewer->id : null);
 
-            // Kita buat 2 jenis ujian: Mid dan Final
             $types = ['mid', 'final'];
 
             foreach ($types as $type) {
                 
-                // Tentukan tanggal
-                $date = $type === 'mid' 
-                    ? Carbon::now()->subMonths(2) 
-                    : Carbon::now()->subMonth();
+                // =================================================================
+                // 1. PENENTUAN TANGGAL SESI (KRITIS!)
+                // =================================================================
+                $sessionDate = $isEmptyExample 
+                    ? null // JIKA KELAS KOSONG, DATE = NULL
+                    : ($type === 'mid' ? Carbon::now()->subMonths(2) : Carbon::now()->subMonth());
+                
+                $speakingDate = $isEmptyExample 
+                    ? null // JIKA KELAS KOSONG, DATE = NULL
+                    : ($sessionDate ? $sessionDate->copy()->addDays(1) : null);
+                
+                $topic = $isEmptyExample 
+                    ? null // JIKA KELAS KOSONG, TOPIK = NULL
+                    : ($type === 'mid' ? 'Describe your family' : 'Future Plans');
+                // =================================================================
+
 
                 // 2. Buat Assessment Session
                 $session = AssessmentSession::firstOrCreate(
@@ -51,21 +62,30 @@ class AssessmentSeeder extends Seeder
                         'type' => $type
                     ],
                     [
-                        'date' => $date,
+                        'date' => $sessionDate, // Menggunakan variabel yang sudah dikondisikan
                     ]
                 );
 
-                // 3. Buat Speaking Test Event (Interviewer menyesuaikan prioritas di atas)
+                // 3. Buat Speaking Test Event
                 $speakingTest = SpeakingTest::firstOrCreate(
                     ['assessment_session_id' => $session->id],
                     [
-                        'date' => $date->copy()->addDays(1),
-                        'topic' => $type === 'mid' ? 'Describe your family' : 'Future Plans',
+                        'date' => $speakingDate, // Menggunakan variabel yang sudah dikondisikan
+                        'topic' => $topic, 
                         'interviewer_id' => $interviewerId,
                     ]
                 );
+                
+                // =================================================================
+                // PENCEGAHAN SEEDING NILAI (Jika nama kelas mengandung 'Empty Assessment')
+                // =================================================================
+                if ($isEmptyExample) {
+                    continue; // Lompati proses pembuatan nilai siswa
+                }
+                // =================================================================
 
-                // 4. Loop semua siswa di kelas tersebut
+
+                // 4. Loop semua siswa di kelas tersebut (Hanya berjalan jika TIDAK di-skip)
                 foreach ($class->students as $student) {
                     
                     // A. Generate Nilai Speaking (Detail)
