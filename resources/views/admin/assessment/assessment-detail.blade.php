@@ -85,7 +85,10 @@
                     </button>
 
                     {{-- TOMBOL 3: CANCEL (Reload halaman untuk reset input) --}}
-                    <a href="{{ route('admin.classes.assessment.detail', ['classId' => $class->id, 'type' => $type]) }}"
+                    <a href="{{ route('admin.classes.assessment.detail', array_merge(
+                            ['classId' => $class->id, 'type' => $type], 
+                            request()->except('mode') // <--- Hapus parameter 'mode' agar keluar dari Edit Mode
+                        )) }}"
                             x-show="isEditing"
                             class="px-4 py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-bold rounded-lg transition shadow-sm flex items-center justify-center cursor-pointer text-decoration-none">
                         Cancel

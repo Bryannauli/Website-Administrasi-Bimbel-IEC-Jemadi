@@ -100,12 +100,11 @@ class AdminAssessmentController extends Controller
             'formTeacher' 
         ])->findOrFail($classId);
 
-        // MENGHILANGKAN NILAI DEFAULT DATE!
         // Jika sesi sudah ada (karena fitur pre-create di AdminClassController), maka aman.
         // Jika belum ada (safety net), session akan dibuat dengan date = NULL.
         $session = AssessmentSession::firstOrCreate(
             ['class_id' => $classId, 'type' => $type],
-            ['date' => null] // <--- PERUBAHAN KRITIS: date diset NULL (kosong) jika sesi baru dibuat
+            ['date' => null] // date diset NULL (kosong) jika sesi baru dibuat
         );
 
         $allTeachers = User::where('role', 'teacher')->where('is_active', true)->orderBy('name', 'asc')->get();
@@ -121,6 +120,9 @@ class AdminAssessmentController extends Controller
             $written = $forms->get($student->id);
             $speaking = $speakingResults->get($student->id);
             $totalSpeakingScore = ($speaking->content_score ?? 0) + ($speaking->participation_score ?? 0);
+
+            // Mengambil rata-rata dari Model AssessmentForm jika data sudah ada
+            $avgScore = $written ? $written->averageScore() : null;
 
             return [
                 'id' => $student->id,
@@ -138,9 +140,7 @@ class AdminAssessmentController extends Controller
                     'participation' => $speaking->participation_score ?? null,
                     'total' => $totalSpeakingScore,
                 ],
-                'avg_score' => $written 
-                    ? round(($written->vocabulary + $written->grammar + $written->listening + $written->reading + $written->spelling + $totalSpeakingScore) / 6)
-                    : null
+                'avg_score' => $avgScore // Menggunakan hasil dari Model (seharusnya sudah diubah ke dynamic/fixed divisor)
             ];
         });
         
@@ -149,6 +149,7 @@ class AdminAssessmentController extends Controller
 
     /**
      * Menyimpan atau memperbarui semua nilai (Tertulis dan Speaking)
+     * Parameter disesuaikan dengan Route (classId, type)
      */
     public function storeOrUpdateGrades(Request $request, $classId, $type)
     {
@@ -181,7 +182,18 @@ class AdminAssessmentController extends Controller
             'grades.*.form_id' => 'nullable', 
         ];
 
-        $validatedData = $request->validate($rules);
+        // Custom Messages untuk mengatasi notasi grades.*.* yang tidak user-friendly
+        $messages = [
+            'grades.*.vocabulary.required' => 'Vocabulary field is required.',
+            'grades.*.grammar.required' => 'Grammar field is required.',
+            'grades.*.listening.required' => 'Listening field is required.',
+            'grades.*.reading.required' => 'Reading field is required.',
+            'grades.*.speaking_content.required' => 'Speaking Content field is required.',
+            'grades.*.speaking_participation.required' => 'Speaking Participation field is required.',
+        ];
+
+        // Validasi dengan custom messages
+        $validatedData = $request->validate($rules, $messages);
         $grades = $validatedData['grades'];
 
         DB::beginTransaction();
@@ -210,28 +222,28 @@ class AdminAssessmentController extends Controller
                         'student_id' => $studentId,
                     ],
                     [
-                        'content_score' => $grade['speaking_content'] ?? null,
-                        'participation_score' => $grade['speaking_participation'] ?? null,
+                        'content_score' => $grade['speaking_content'],
+                        'participation_score' => $grade['speaking_participation'],
                     ]
                 );
                 
                 // Hitung total speaking untuk dimasukkan ke AssessmentForm
-                $totalSpeaking = ($speakingResult->content_score ?? 0) + ($speakingResult->participation_score ?? 0);
+                $totalSpeaking = $speakingResult->totalScore();
 
                 // 2. Simpan Nilai Tertulis & Total Speaking
-                AssessmentForm::updateOrCreate(
+                $assessmentForm = AssessmentForm::updateOrCreate(
                     [
-                        // Gunakan ID jika ada, atau cari kombinasi session+student
+                        // Jika form_id ada, gunakan itu. Jika tidak, akan dibuat baru.
                         'id' => $grade['form_id'] ?? null, 
                     ], 
                     [
                         'student_id' => $studentId,
                         'assessment_session_id' => $session->id,
-                        'vocabulary' => $grade['vocabulary'] ?? null,
-                        'grammar' => $grade['grammar'] ?? null,
-                        'listening' => $grade['listening'] ?? null,
-                        'reading' => $grade['reading'] ?? null,
-                        'spelling' => $grade['spelling'] ?? null,
+                        'vocabulary' => $grade['vocabulary'],
+                        'grammar' => $grade['grammar'],
+                        'listening' => $grade['listening'],
+                        'reading' => $grade['reading'],
+                        'spelling' => $grade['spelling'] ?? null, // Spelling nullable
                         'speaking' => $totalSpeaking, 
                         'is_submitted' => true,
                     ]
@@ -240,9 +252,7 @@ class AdminAssessmentController extends Controller
             
             DB::commit();
 
-            // === PERBAIKAN UTAMA ===
-            // Jangan gunakan back(), tapi redirect spesifik ke route detail.
-            // Ini akan menghapus parameter '?mode=edit' dari URL, sehingga tampilan kembali ke Mode Baca.
+            // Redirect spesifik ke route detail (menghapus parameter '?mode=edit')
             return redirect()->route('admin.classes.assessment.detail', [
                 'classId' => $classId,
                 'type' => $type
@@ -251,8 +261,8 @@ class AdminAssessmentController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Grade update failed for class {$classId} type {$type}: " . $e->getMessage());
-            // Jika error, baru kita pakai back() agar inputan tidak hilang
-            return back()->with('error', 'Failed to save grades: ' . $e->getMessage())->withInput();
+            // Jika error, gunakan back() agar inputan tidak hilang
+            return back()->with('error', 'Failed to save grades: System Error.')->withInput();
         }
     }
 }
