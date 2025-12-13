@@ -10,14 +10,14 @@ class AttendanceRecord extends Model
     use HasFactory;
 
     protected $fillable = [
-        'attendance_session_id',
+        'class_session_id',
         'student_id',
         'status',
     ];
 
     public function session()
     {
-        return $this->belongsTo(AttendanceSession::class, 'attendance_session_id');
+        return $this->belongsTo(ClassSession::class, 'class_session_id');
     }
 
     public function student()
@@ -27,6 +27,6 @@ class AttendanceRecord extends Model
 
     public function logs()
     {
-        return $this->hasMany(AttendanceSessionLog::class);
+        return $this->hasMany(AttendanceRecordLog::class);
     }
 }

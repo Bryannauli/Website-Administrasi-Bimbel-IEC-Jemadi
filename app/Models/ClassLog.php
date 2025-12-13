@@ -36,4 +36,9 @@ class ClassLog extends Model
         // Tapi di relasi belongsTo, parameter string tabelnya aman.
         return $this->belongsTo(ClassModel::class, 'class_id')->withTrashed();
     }
+
+    public function Logs()
+    {
+        return $this->hasMany(ClassLog::class);
+    }
 }

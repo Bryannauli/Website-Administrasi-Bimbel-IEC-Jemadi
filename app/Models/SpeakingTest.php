@@ -31,4 +31,9 @@ class SpeakingTest extends Model
     {
         return $this->hasMany(SpeakingTestResult::class, 'speaking_test_id');
     }
+
+    public function logs()
+    {
+        return $this->hasMany(SpeakingTestLog::class);
+    }
 }

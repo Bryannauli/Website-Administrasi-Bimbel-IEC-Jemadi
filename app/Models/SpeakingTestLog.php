@@ -18,8 +18,8 @@ class SpeakingTestLog extends Model
 
     public function user() { return $this->belongsTo(User::class)->withTrashed(); }
 
-    public function logs()
+    public function speakingTest()
     {
-        return $this->hasMany(SpeakingTestLog::class);
+        return $this->belongsTo(SpeakingTest::class);
     }
 }

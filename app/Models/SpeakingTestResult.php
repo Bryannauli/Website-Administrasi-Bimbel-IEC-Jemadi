@@ -32,5 +32,8 @@ class SpeakingTestResult extends Model
         return $this->content_score + $this->participation_score;
     }
 
-    
+    public function logs()
+    {
+        return $this->hasMany(SpeakingTestResultLog::class);
+    }
 }

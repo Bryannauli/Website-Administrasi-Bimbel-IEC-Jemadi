@@ -12,8 +12,8 @@ return new class extends Migration
             $table->id();
 
             // Relasi ke session absensi
-            $table->foreignId('attendance_session_id')
-                    ->constrained('attendance_sessions')
+            $table->foreignId('class_session_id')
+                    ->constrained('class_sessions')
                     ->cascadeOnDelete();
 
             // Relasi ke student
@@ -31,8 +31,8 @@ return new class extends Migration
             ]);
 
             $table->timestamps();
-            // Mencegah duplikat student_id untuk attendance_session_id yang sama
-            $table->unique(['attendance_session_id', 'student_id']);
+            // Mencegah duplikat student_id untuk class_session_id yang sama
+            $table->unique(['class_session_id', 'student_id']);
         });
     }
 

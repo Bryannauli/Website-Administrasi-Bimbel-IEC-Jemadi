@@ -4,9 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class AttendanceSessionLog extends Model
+class ClassSessionLog extends Model
 {
-    protected $fillable = ['attendance_session_id', 'user_id', 'action', 'old_values', 'new_values'];
+    protected $fillable = ['class_session_id', 'user_id', 'action', 'old_values', 'new_values'];
     protected $casts = ['old_values' => 'array', 'new_values' => 'array'];
 
     public function user()
@@ -14,8 +14,8 @@ class AttendanceSessionLog extends Model
         return $this->belongsTo(User::class);
     }
     
-    public function attendanceSession()
+    public function ClassSession()
     {
-        return $this->belongsTo(AttendanceSession::class);
+        return $this->belongsTo(ClassSession::class);
     }
 }
