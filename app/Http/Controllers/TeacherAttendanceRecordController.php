@@ -34,7 +34,7 @@ class TeacherAttendanceRecordController extends Controller
         $teacher = User::findOrFail($teacherId);
 
         // 2. Ambil Data Absensi menggunakan View
-        // View v_teacher_attendance sudah melakukan JOIN ke attendance_sessions
+        // View v_teacher_attendance sudah melakukan JOIN ke class_sessions
         $attendance = DB::table('v_teacher_attendance')
             ->where('teacher_id', $teacherId)
             ->orderBy('record_id', 'desc')

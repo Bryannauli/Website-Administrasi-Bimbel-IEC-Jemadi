@@ -16,12 +16,12 @@ return new class extends Migration
         DB::unprepared("
             CREATE OR REPLACE VIEW v_weekly_absence AS
             SELECT 
-                DATE(attendance_sessions.date) as date,
+                DATE(class_sessions.date) as date,
                 COUNT(attendance_records.id) as total_absence
             FROM attendance_records
-            JOIN attendance_sessions ON attendance_records.attendance_session_id = attendance_sessions.id
+            JOIN class_sessions ON attendance_records.class_session_id = class_sessions.id
             WHERE attendance_records.status IN ('absent', 'sick', 'permission')
-            GROUP BY DATE(attendance_sessions.date);
+            GROUP BY DATE(class_sessions.date);
         ");
 
         // ==========================================
@@ -38,7 +38,7 @@ return new class extends Migration
                 SUM(CASE WHEN t1.status = 'absent' THEN 1 ELSE 0 END) AS total_absent,
                 COUNT(t1.id) AS total_records
             FROM attendance_records t1
-            JOIN attendance_sessions t2 ON t1.attendance_session_id = t2.id
+            JOIN class_sessions t2 ON t1.class_session_id = t2.id
             GROUP BY t2.date
         ");
 
@@ -80,27 +80,24 @@ return new class extends Migration
                 s.class_id,
                 c.name AS session_name 
             FROM attendance_records ar
-            JOIN attendance_sessions s ON ar.attendance_session_id = s.id
+            JOIN class_sessions s ON ar.class_session_id = s.id
             JOIN classes c ON s.class_id = c.id; 
         ");
 
         // ==========================================
-        // 5. View: v_teacher_attendance
+        // 5. View: v_teacher_attendance (DIPERBAIKI)
         // ==========================================
         DB::unprepared("
             CREATE OR REPLACE VIEW v_teacher_attendance AS
             SELECT 
-                tar.id AS record_id,
-                tar.teacher_id,
-                tar.status,
-                tar.created_at,
-                tar.attendance_session_id,
+                s.id AS session_id,
+                s.teacher_id,
                 s.date AS session_date,
-                c.name AS session_name
-            FROM teacher_attendance_records tar
-            JOIN attendance_sessions s ON tar.attendance_session_id = s.id
+                s.created_at,
+                c.name AS class_name
+            FROM class_sessions s
             JOIN classes c ON s.class_id = c.id
-            ORDER BY tar.id DESC;
+            WHERE s.teacher_id IS NOT NULL;
         ");
 
         // ==========================================

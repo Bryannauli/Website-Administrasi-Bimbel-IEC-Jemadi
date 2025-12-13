@@ -2,16 +2,16 @@
 
 namespace App\Observers;
 
-use App\Models\AttendanceSession;
-use App\Models\AttendanceSessionLog;
+use App\Models\ClassSession;
+use App\Models\ClassSessionLog;
 use Illuminate\Support\Facades\Auth;
 
-class AttendanceSessionObserver
+class ClassSessionObserver
 {
-    private function createLog(string $action, AttendanceSession $session, array $original = null, array $changes = null): void
+    private function createLog(string $action, ClassSession $session, array $original = null, array $changes = null): void
     {
-        AttendanceSessionLog::create([
-            'attendance_session_id' => $session->id,
+        ClassSessionLog::create([
+            'class_session_id' => $session->id,
             'user_id'    => Auth::id(), 
             'action'     => $action,
             'old_values' => $original ? json_encode($original) : null,
@@ -19,12 +19,12 @@ class AttendanceSessionObserver
         ]);
     }
 
-    public function created(AttendanceSession $session): void
+    public function created(ClassSession $session): void
     {
         $this->createLog('CREATE', $session, null, $session->toArray());
     }
 
-    public function updated(AttendanceSession $session): void
+    public function updated(ClassSession $session): void
     {
         $changes = $session->getChanges();
         unset($changes['updated_at']); // Abaikan perubahan updated_at
@@ -35,7 +35,7 @@ class AttendanceSessionObserver
         }
     }
 
-    public function deleted(AttendanceSession $session): void
+    public function deleted(ClassSession $session): void
     {
         $this->createLog('DELETE', $session, $session->toArray(), null);
     }

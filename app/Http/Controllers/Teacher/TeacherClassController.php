@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\ClassModel;
 use App\Models\Student;
-use App\Models\AttendanceSession;
+use App\Models\ClassSession;
 use App\Models\AssessmentSession;
 
 class TeacherClassController extends Controller
@@ -38,7 +38,7 @@ class TeacherClassController extends Controller
             ->appends(request()->except('student_page'));
 
         // 2. Pagination Attendance
-        $attendanceSessions = AttendanceSession::where('class_id', $id)
+        $attendanceSessions = ClassSession::where('class_id', $id)
             ->orderBy('date', 'desc')
             ->paginate(5, ['*'], 'attendance_page');
 

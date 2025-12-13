@@ -1,5 +1,3 @@
-// fileName: 2025_11_07_000008_create_attendance_sessions_table.php
-
 <?php
 
 use Illuminate\Database\Migrations\Migration;
@@ -30,7 +28,7 @@ return new class extends Migration
             
             $table->timestamps();
         });
-        
+
         Schema::dropIfExists('teacher_attendance_records');
     }
 

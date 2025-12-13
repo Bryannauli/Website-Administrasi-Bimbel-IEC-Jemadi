@@ -40,9 +40,8 @@ class MySQLUserSeeder extends Seeder
         DB::statement("GRANT SELECT, INSERT, UPDATE ON iec_jemadi.assessment_forms TO 'iec_teacher'@'%';");
         DB::statement("GRANT SELECT, INSERT, UPDATE ON iec_jemadi.speaking_tests TO 'iec_teacher'@'%';");
         DB::statement("GRANT SELECT, INSERT, UPDATE ON iec_jemadi.speaking_test_results TO 'iec_teacher'@'%';");
-        DB::statement("GRANT SELECT, INSERT, UPDATE ON iec_jemadi.attendance_sessions TO 'iec_teacher'@'%';");
+        DB::statement("GRANT SELECT, INSERT, UPDATE ON iec_jemadi.class_sessions TO 'iec_teacher'@'%';");
         DB::statement("GRANT SELECT, INSERT, UPDATE ON iec_jemadi.attendance_records TO 'iec_teacher'@'%';");
-        DB::statement("GRANT SELECT, INSERT, UPDATE ON iec_jemadi.teacher_attendance_records TO 'iec_teacher'@'%';");
 
         // TABEL LOGS
         // Guru hanya boleh LIHAT (SELECT) dan TULIS BARU (INSERT)
@@ -55,9 +54,8 @@ class MySQLUserSeeder extends Seeder
             'assessment_form_logs',
             'speaking_test_logs',
             'speaking_test_result_logs',
-            'attendance_session_logs',
+            'class_session_logs',
             'attendance_record_logs',
-            'teacher_attendance_record_logs',
         ];
 
         foreach ($logTables as $table) {

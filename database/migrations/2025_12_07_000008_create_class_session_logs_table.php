@@ -29,6 +29,6 @@ class CreateClassSessionLogsTable extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('attendance_session_logs');
+        Schema::dropIfExists('class_session_logs');
     }
 }

@@ -40,7 +40,7 @@ class TeacherAttendanceController extends Controller
                           ->where('is_active', 1)
                           ->get();
 
-        $attendanceRecords = AttendanceRecord::where('attendance_session_id', $sessionId)
+        $attendanceRecords = AttendanceRecord::where('class_session_id', $sessionId)
                                              ->pluck('status', 'student_id')
                                              ->toArray();
 
@@ -74,7 +74,7 @@ class TeacherAttendanceController extends Controller
 
                 AttendanceRecord::updateOrCreate(
                     [
-                        'attendance_session_id' => $sessionId,
+                        'class_session_id' => $sessionId,
                         'student_id' => $studentId,
                     ],
                     [

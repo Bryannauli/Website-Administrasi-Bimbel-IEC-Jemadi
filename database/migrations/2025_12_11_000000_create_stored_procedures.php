@@ -38,7 +38,7 @@ return new class extends Migration
                     IFNULL(ROUND(SUM(ar.status = 'late') / COUNT(*) * 100, 0), 0) AS late,
                     IFNULL(ROUND(SUM(ar.status = 'absent') / COUNT(*) * 100, 0), 0) AS absent
                 FROM attendance_records ar
-                INNER JOIN attendance_sessions s ON ar.attendance_session_id = s.id
+                INNER JOIN class_sessions s ON ar.class_session_id = s.id
                 WHERE (date_filter IS NULL OR s.date = date_filter);
             END
         ");
@@ -59,7 +59,7 @@ return new class extends Migration
                     SUM(CASE WHEN ar.status = 'sick' THEN 1 ELSE 0 END) AS sick,
                     IFNULL((SUM(CASE WHEN ar.status = 'present' THEN 1 ELSE 0 END) / COUNT(ar.id)) * 100, 0) AS present_percent
                 FROM attendance_records ar
-                JOIN attendance_sessions s ON ar.attendance_session_id = s.id
+                JOIN class_sessions s ON ar.class_session_id = s.id
                 JOIN students stu ON ar.student_id = stu.id
                 WHERE ar.student_id = studentIdIn
                     AND s.class_id = stu.class_id; 
