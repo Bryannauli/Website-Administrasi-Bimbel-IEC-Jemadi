@@ -76,7 +76,6 @@
                     </button>
 
                     {{-- TOMBOL 2: SAVE (Hanya muncul saat mode EDIT) --}}
-                    {{-- Form attribute mengaitkan tombol ini ke <form id="assessmentForm"> di bawah --}}
                     <button type="submit" 
                             form="assessmentForm"
                             x-show="isEditing"
@@ -263,8 +262,6 @@
                                             let count = 0;
 
                                             components.forEach(val => {
-                                                // Jika value tidak kosong (not empty string & not null).
-                                                // Angka 0 tetap dihitung.
                                                 if (val !== '' && val !== null) {
                                                     total += parseInt(val);
                                                     count++;
@@ -388,51 +385,54 @@
                 }
             });
 
-            // 2. SweetAlert Notifications
+            // 2. SweetAlert Notifications (Menggunakan PHP tag eksplisit)
             
+            // --- PHP DATA PASSTHROUGH (Format Anti-VS Code Decorator Error) ---
+            const successMessage = <?php echo json_encode(session('success')); ?>;
+            const errorMessage   = <?php echo json_encode(session('error')); ?>;
+            const validationErrors = <?php echo json_encode($errors->all()); ?>;
+
             // A. Success
-            @if(session('success'))
+            if (successMessage) {
                 Swal.fire({
                     icon: 'success',
                     title: 'Saved!',
-                    text: '{{ session("success") }}',
+                    text: successMessage,
                     timer: 2000,
                     showConfirmButton: false
                 });
-            @endif
+            }
 
             // B. Validation Error (Required fields missing)
-            @if($errors->any())
+            if (validationErrors.length > 0) {
+                let errorListHtml = '<div class="text-left text-sm"><p class="mb-2 font-bold">Please check the red fields:</p><ul class="list-disc pl-5 text-red-600">';
+                
+                // Loop error (maksimal 3)
+                validationErrors.slice(0, 3).forEach(error => {
+                    errorListHtml += `<li>${error}</li>`;
+                });
+
+                if (validationErrors.length > 3) {
+                    errorListHtml += `<li>... and ${validationErrors.length - 3} more errors.</li>`;
+                }
+                errorListHtml += '</ul></div>';
+
                 Swal.fire({
                     icon: 'error',
                     title: 'Validation Failed',
-                    html: `
-                        <div class="text-left text-sm">
-                            <p class="mb-2 font-bold">Please check the red fields:</p>
-                            <ul class="list-disc pl-5 text-red-600">
-                                @foreach($errors->all() as $error)
-                                    @if($loop->iteration <= 3)
-                                        <li>{{ $error }}</li>
-                                    @endif
-                                @endforeach
-                                @if($errors->count() > 3)
-                                    <li>... and {{ $errors->count() - 3 }} more errors.</li>
-                                @endif
-                            </ul>
-                        </div>
-                    `,
+                    html: errorListHtml,
                     confirmButtonText: 'OK, I will fix it'
                 });
-            @endif
+            }
 
             // C. General System Error
-            @if(session('error'))
+            if (errorMessage) {
                 Swal.fire({
                     icon: 'error',
                     title: 'System Error',
-                    text: '{{ session("error") }}',
+                    text: errorMessage,
                 });
-            @endif
+            }
         });
     </script>
 </x-app-layout>
