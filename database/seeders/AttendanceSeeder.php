@@ -37,23 +37,30 @@ class AttendanceSeeder extends Seeder
 
                 foreach ($classes as $class) {
                     
-                    // A. CEK JADWAL HARI (DIPERBARUI)
-                    // Kita cari objek schedule spesifik untuk hari ini agar bisa baca 'teacher_type'
+                    // A. CEK JADWAL HARI
                     $schedule = $class->schedules->firstWhere('day_of_week', $dayName);
 
                     if ($schedule) {
 
                         // --- CEK JAM ---
-                        // Jika hari ini, tapi jam kelas belum mulai, skip.
                         if ($isToday && $class->start_time > $currentTime) {
                             continue; 
                         }
 
+                        // **LOGIKA BARU (B) - Menambahkan 'comment' saat membuat/memperbarui Sesi**
+                        $comment = 'Teaching material for ' . $dayName . ' (' . ucfirst($schedule->teacher_type) . ' Session)';
+                        
                         // B. BUAT SESI
-                        $session = AttendanceSession::firstOrCreate([
-                            'class_id' => $class->id,
-                            'date'     => $date->format('Y-m-d'),
-                        ]);
+                        $session = AttendanceSession::firstOrCreate(
+                            [
+                                'class_id' => $class->id,
+                                'date'     => $date->format('Y-m-d'),
+                            ],
+                            // TAMBAHKAN COMMENT DI SINI
+                            [
+                                'comment' => $comment,
+                            ]
+                        );
 
                         // C. BUAT ABSENSI SISWA (Tetap sama)
                         foreach ($class->students as $student) {
@@ -85,8 +92,7 @@ class AttendanceSeeder extends Seeder
                             $teacherId = $class->local_teacher_id;
                         }
 
-                        // Fallback: Jika guru yang ditugaskan kosong (misal local belum diassign),
-                        // coba ambil guru yang tersedia saja agar seeder tidak error/kosong.
+                        // Fallback:
                         if (!$teacherId) {
                             $teacherId = $class->form_teacher_id ?? $class->local_teacher_id;
                         }
@@ -99,7 +105,6 @@ class AttendanceSeeder extends Seeder
                                 ],
                                 [
                                     'status'  => 'present',
-                                    'comment' => 'Teaching material for ' . $dayName . ' (' . ucfirst($schedule->teacher_type) . ' Session)',
                                 ]
                             );
                         }

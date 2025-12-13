@@ -30,9 +30,6 @@ return new class extends Migration
                 'substitute'        // Guru pengganti yang hadir -- atau nanti pakai present saja
             ]);
 
-            // catatan aktivitas kelas (materi yang diajarkan)
-            $table->text('comment')->nullable();
-
             $table->timestamps();
             // Mencegah duplikat teacher_id untuk attendance_session_id yang sama
             $table->unique(

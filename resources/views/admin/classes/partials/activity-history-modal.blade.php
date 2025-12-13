@@ -30,7 +30,8 @@
                                     @endphp
                                     <div class="text-right"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">{{ $pct }}% Present</span></div>
                                 </div>
-                                <div class="mt-3 pl-[72px]"><p class="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg italic border border-gray-100">"{{ $mainTR->comment ?? '-' }}"</p></div>
+                                {{-- PERBAIKAN DI SINI --}}
+                                <div class="mt-3 pl-[72px]"><p class="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg italic border border-gray-100">"{{ $log->comment ?? '-' }}"</p></div> 
                             </div>
                         @endforeach
                     </div>

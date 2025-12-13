@@ -12,6 +12,7 @@ class AttendanceSession extends Model
     protected $fillable = [
         'class_id',
         'date',
+        'comment',
     ];
 
     public function classModel()

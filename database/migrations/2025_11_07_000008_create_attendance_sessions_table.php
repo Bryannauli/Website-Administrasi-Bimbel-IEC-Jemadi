@@ -15,6 +15,8 @@ return new class extends Migration
         $table->id();
         $table->foreignId('class_id')->constrained('classes')->cascadeOnDelete();
         $table->date('date');
+        // catatan aktivitas kelas (materi yang diajarkan)
+        $table->text('comment')->nullable();
         $table->timestamps();
     });
 }

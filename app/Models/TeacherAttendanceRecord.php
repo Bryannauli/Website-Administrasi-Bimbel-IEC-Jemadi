@@ -10,7 +10,6 @@ class TeacherAttendanceRecord extends Model
         'attendance_session_id',
         'teacher_id',
         'status',
-        'comment',
     ];
 
     public function session()

@@ -348,7 +348,7 @@
                             @if($lastTeacherRecord && $lastTeacherRecord->teacher)
                                 <h3 class="text-lg font-bold truncate" title="{{ $lastTeacherRecord->teacher->name }}">{{ $lastTeacherRecord->teacher->name }}</h3>
                                 <div class="mt-3 bg-blue-800 bg-opacity-40 p-3 rounded-lg border border-blue-500 border-opacity-30">
-                                    <p class="text-blue-50 text-xs italic line-clamp-3">"{{ $lastTeacherRecord->comment ?? 'No teaching notes provided.' }}"</p>
+                                    <p class="text-blue-50 text-xs italic line-clamp-3">"{{ $lastSession->comment ?? 'No teaching notes provided.' }}"</p>
                                 </div>
                             @else
                                 <h3 class="text-xl font-bold">No Data Yet</h3>
