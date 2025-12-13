@@ -13,14 +13,14 @@
 @endsection
 
 @section('content')
-<div class="max-w-7xl mx-auto space-y-8">
+<div class="max-w-7xl mx-auto space-y-8" x-data="{ openModal: false }">
     
+    {{-- Info Kelas (Header) --}}
     <div class="border-l-4 border-red-500 bg-white rounded-lg p-6 shadow-sm">
         <div class="flex items-start justify-between">
             <div class="w-full">
                 <div class="flex justify-between items-start">
                     <h2 class="text-3xl font-bold text-gray-800 mb-4">{{ $class->name }}</h2>
-                    
                     <span class="bg-blue-100 text-blue-600 px-4 py-1 rounded-full text-sm font-medium uppercase">
                         {{ str_replace('_', ' ', $class->category) }}
                     </span>
@@ -34,15 +34,10 @@
                         <div>
                             <p class="text-xs text-gray-400">Schedule Days</p>
                             <p class="font-medium text-gray-800">
-                                @if($class->schedules->count() > 0)
-                                    {{ $class->schedules->pluck('day_of_week')->implode(' & ') }}
-                                @else
-                                    -
-                                @endif
+                                {{ $class->schedules->count() > 0 ? $class->schedules->pluck('day_of_week')->implode(' & ') : '-' }}
                             </p>
                         </div>
                     </div>
-
                     <div class="flex items-center space-x-3 bg-gray-50 p-3 rounded-lg">
                         <div class="bg-white p-2 rounded-md shadow-sm text-blue-500">
                             <i class="fas fa-clock w-4 h-4 text-center"></i>
@@ -55,7 +50,6 @@
                             </p>
                         </div>
                     </div>
-
                     <div class="flex items-center space-x-3 bg-gray-50 p-3 rounded-lg">
                         <div class="bg-white p-2 rounded-md shadow-sm text-green-500">
                             <i class="fas fa-door-open w-4 h-4 text-center"></i>
@@ -70,10 +64,10 @@
         </div>
     </div>
 
+    {{-- Tabel Siswa --}}
     <div class="space-y-4">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <h3 class="text-xl font-bold text-gray-800">Student List</h3>
-            
             <form method="GET" action="{{ url()->current() }}" class="flex items-center space-x-2">
                 <span class="text-sm text-gray-600">Show</span>
                 <select name="per_page" onchange="this.form.submit()" class="px-7 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
@@ -99,9 +93,7 @@
                     <tbody class="divide-y divide-gray-200">
                         @forelse($students as $student)
                         <tr class="hover:bg-gray-50 transition">
-                            <td class="px-6 py-4 text-sm text-gray-600">
-                                {{ $loop->iteration + $students->firstItem() - 1 }}
-                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600">{{ $loop->iteration + $students->firstItem() - 1 }}</td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center">
                                     <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs mr-3">
@@ -121,27 +113,26 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="5" class="px-6 py-4 text-center text-gray-500">No students found in this class.</td>
+                            <td colspan="4" class="px-6 py-4 text-center text-gray-500">No students found.</td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-
             <div class="px-6 py-4 border-t border-gray-200">
                 {{ $students->links() }}
             </div>
-
-
         </div>
     </div>
 
     <hr class="border-gray-200">
 
+    {{-- Tabel Absensi --}}
     <div class="space-y-4">
         <div class="flex items-center justify-between">
             <h3 class="text-xl font-bold text-gray-800">Attendance History</h3>
             
+            {{-- Tombol ini akan membuka modal --}}
             <button @click="openModal = true" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center space-x-2 text-sm shadow-sm shadow-blue-200">
                 <i class="fas fa-plus"></i>
                 <span>Add Session</span>
@@ -155,59 +146,45 @@
                         <tr>
                             <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-16">No</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
-                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Time</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Topics</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
                         @forelse($attendanceSessions as $session)
                         <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-4 text-sm text-gray-600">{{ $loop->iteration + $attendanceSessions->firstItem() - 1 }}</td>
+                            <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ \Carbon\Carbon::parse($session->date)->format('d M Y') }}</td>
                             <td class="px-6 py-4 text-sm text-gray-600">
-                                {{ $loop->iteration + $attendanceSessions->firstItem() - 1 }}
-                            </td>
-                            <td class="px-6 py-4 text-sm font-medium text-gray-900">
-                                {{ \Carbon\Carbon::parse($session->date)->format('d M Y') }}
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-600">
-                                {{ \Carbon\Carbon::parse($class->start_time)->format('H:i') }} - 
-                                {{ \Carbon\Carbon::parse($class->end_time)->format('H:i') }}
+                                {{ $session->topics ?? '-' }}
                             </td>
                             <td class="px-6 py-4">
-                                <div class="flex items-center space-x-3">
-                                    <a href="{{ route('teacher.classes.session.detail', [$class->id, $session->id]) }}" class="text-gray-500 hover:text-blue-600 transition" title="View Details">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                </div>
+                                <a href="{{ route('teacher.classes.session.detail', [$class->id, $session->id]) }}" class="text-gray-500 hover:text-blue-600 transition">
+                                    <i class="fas fa-eye"></i>
+                                </a>
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="4" class="px-6 py-8 text-center text-gray-500">
-                                No attendance sessions recorded yet.
-                            </td>
+                            <td colspan="4" class="px-6 py-8 text-center text-gray-500">No attendance sessions recorded yet.</td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-
             <div class="px-6 py-4 border-t border-gray-200">
                 {{ $attendanceSessions->links() }}
             </div>
         </div>
     </div>
+
     <hr class="border-gray-200">
 
+    {{-- Tabel Nilai --}}
     <div class="space-y-4">
         <div class="flex items-center justify-between">
             <h3 class="text-xl font-bold text-gray-800">Assessments</h3>
-            
-            <button @click="openAssessmentModal = true" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition flex items-center space-x-2 text-sm shadow-sm shadow-purple-200">
-                <i class="fas fa-plus"></i>
-                <span>Add Assessment</span>
-            </button>
         </div>
-
         <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
             <div class="overflow-x-auto">
                 <table class="w-full">
@@ -222,141 +199,143 @@
                     <tbody class="divide-y divide-gray-200">
                         @forelse($assessments as $assessment)
                         <tr class="hover:bg-gray-50 transition">
-                            <td class="px-6 py-4 text-sm text-gray-600">
-                                {{ $loop->iteration + $assessments->firstItem() - 1 }}
-                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600">{{ $loop->iteration + $assessments->firstItem() - 1 }}</td>
                             <td class="px-6 py-4 text-sm font-medium text-gray-900">
-                                @if($assessment->type == 'mid')
-                                    <span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-semibold">Mid Term</span>
-                                @else
-                                    <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-semibold">Final Term</span>
-                                @endif
+                                <span class="bg-{{ $assessment->type == 'mid' ? 'yellow' : 'indigo' }}-100 text-{{ $assessment->type == 'mid' ? 'yellow' : 'indigo' }}-700 px-3 py-1 rounded-full text-xs font-semibold">
+                                    {{ $assessment->type == 'mid' ? 'Mid Term' : 'Final Term' }}
+                                </span>
                             </td>
-                            <td class="px-6 py-4 text-sm text-gray-600">
-                                {{ \Carbon\Carbon::parse($assessment->date)->format('d F Y') }}
-                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600">{{ \Carbon\Carbon::parse($assessment->date)->format('d F Y') }}</td>
                             <td class="px-6 py-4">
-                                <div class="flex items-center space-x-3">
-                                    <a href="{{ route('teacher.classes.assessment.detail', [$class->id, $assessment->id]) }}" 
-                                    class="text-gray-500 hover:text-purple-600 transition" 
-                                    title="Input Marks">
-                                        <i class="fas fa-pen-to-square"></i>
-                                    </a>
-                                </div>
+                                <a href="{{ route('teacher.classes.assessment.detail', [$class->id, $assessment->id]) }}" class="text-gray-500 hover:text-purple-600 transition">
+                                    <i class="fas fa-pen-to-square"></i>
+                                </a>
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="4" class="px-6 py-8 text-center text-gray-500">
-                                No assessments scheduled yet.
-                            </td>
+                            <td colspan="4" class="px-6 py-8 text-center text-gray-500">No assessments scheduled.</td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-
             <div class="px-6 py-4 border-t border-gray-200">
                 {{ $assessments->links() }}
             </div>
         </div>
     </div>
-    </div>
 
-        <div x-show="openModal" **x-cloak**
-            class="fixed inset-0 z-50 overflow-y-auto" 
-            @keydown.escape.window="openModal = false">
-            <div class="flex items-center justify-center min-h-screen px-4">
-                <div class="fixed inset-0 bg-black opacity-50" @click="openModal = false"></div>
+    {{-- MODAL CREATE SESSION (UPDATED: Centered & Larger) --}}
+    <div x-show="openModal" 
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         aria-labelledby="modal-title" role="dialog" aria-modal="true"
+         style="display: none;">
+         
+        {{-- Container: Menggunakan 'items-center' agar posisi di tengah secara vertikal --}}
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            
+            {{-- Background Overlay --}}
+            <div x-show="openModal" 
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
+                 @click="openModal = false" aria-hidden="true"></div>
+
+            {{-- Trik untuk centering pada browser lama (optional di tailwind baru, tapi aman dibiarkan) --}}
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            {{-- Modal Panel: Ubah 'sm:max-w-lg' jadi 'sm:max-w-2xl' agar lebih lebar --}}
+            <div x-show="openModal" 
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:w-full sm:max-w-2xl"> 
                 
-                <div class="relative bg-white rounded-xl shadow-xl max-w-lg w-full p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-xl font-bold text-gray-800">Add Attendance Session</h3>
-                        <button @click="openModal = false" class="text-gray-400 hover:text-gray-600 transition">
-                            <i class="fas fa-times text-lg"></i>
-                        </button>
+                <form action="{{ route('teacher.classes.session.store', $class->id) }}" method="POST">
+                    @csrf
+                    
+                    <div class="bg-white px-6 pt-6 pb-6">
+                        <div class="sm:flex sm:items-start">
+                            
+                            {{-- Icon --}}
+                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-12 sm:w-12">
+                                <i class="fas fa-calendar-plus text-blue-600 text-xl"></i>
+                            </div>
+
+                            {{-- Content --}}
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-5 sm:text-left w-full">
+                                <h3 class="text-xl leading-6 font-bold text-gray-900" id="modal-title">
+                                    Create Attendance Session
+                                </h3>
+                                <p class="text-sm text-gray-500 mt-1">
+                                    Fill in the details below to create a new class session.
+                                </p>
+                                
+                                <div class="mt-6 space-y-5">
+                                    {{-- 1. Date Input (READONLY & LOCKED) --}}
+                                    <div>
+                                        <label for="date" class="block text-sm font-medium text-gray-700">Date (Locked)</label>
+                                        <div class="mt-1 relative rounded-md shadow-sm">
+                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <i class="fas fa-lock text-gray-400"></i>
+                                            </div>
+                                            <input type="date" name="date" id="date" required readonly
+                                                   class="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed py-2.5 border"
+                                                   value="{{ date('Y-m-d') }}">
+                                        </div>
+                                    </div>
+
+                                    {{-- 2. Topic Material (LEBIH BESAR) --}}
+                                    <div>
+                                        <label for="topics" class="block text-sm font-medium text-gray-700">
+                                            Topic Material <span class="text-red-500">*</span>
+                                        </label>
+                                        <textarea name="topics" id="topics" rows="3" required placeholder="Example: Simple Present Tense, Chapter 4 Vocabulary..."
+                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-3"></textarea>
+                                    </div>
+
+                                    {{-- 3. Info / Warning Box --}}
+                                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-md">
+                                        <div class="flex">
+                                            <div class="flex-shrink-0">
+                                                <i class="fas fa-info-circle text-yellow-400 text-lg"></i>
+                                            </div>
+                                            <div class="ml-3">
+                                                <p class="text-sm text-yellow-800 font-medium">
+                                                    Attendance Notice
+                                                </p>
+                                                <p class="text-sm text-yellow-700 mt-1">
+                                                    By creating this session, your attendance (Teacher) will automatically be marked as <strong>Present</strong> for today.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <form action="{{ route('teacher.classes.session.store', $class->id) }}" method="POST">
-                        @csrf
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                                <input type="date" name="date" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ date('Y-m-d') }}">
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                                    <input type="time" name="start_time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ \Carbon\Carbon::parse($class->start_time)->format('H:i') }}">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                                    <input type="time" name="end_time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{ \Carbon\Carbon::parse($class->end_time)->format('H:i') }}">
-                                </div>
-                            </div>
-                            <p class="text-xs text-gray-500 italic">*Times are preset based on class schedule but can be adjusted.</p>
-                        </div>
-
-                        <div class="mt-6 flex justify-end space-x-3">
-                            <button type="button" @click="openModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
-                                Cancel
-                            </button>
-                            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-200">
-                                Create Session
-                            </button>
-                        </div>
-                    </form>
-                </div>
+                    {{-- Footer Buttons --}}
+                    <div class="bg-gray-50 px-6 py-4 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-5 py-2.5 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                            Create Session
+                        </button>
+                        <button type="button" @click="openModal = false" class="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-5 py-2.5 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
-
-        <div x-show="openAssessmentModal" **x-cloak**
-            class="fixed inset-0 z-50 overflow-y-auto" 
-            @keydown.escape.window="openAssessmentModal = false">
-            <div class="flex items-center justify-center min-h-screen px-4">
-                <div class="fixed inset-0 bg-black opacity-50" @click="openAssessmentModal = false"></div>
-                
-                <div class="relative bg-white rounded-xl shadow-xl max-w-lg w-full p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-xl font-bold text-gray-800">Add New Assessment</h3>
-                        <button @click="openAssessmentModal = false" class="text-gray-400 hover:text-gray-600 transition">
-                            <i class="fas fa-times text-lg"></i>
-                        </button>
-                    </div>
-
-                    <form action="{{ route('teacher.classes.assessment.store', $class->id) }}" method="POST">
-                        @csrf
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Assessment Type</label>
-                                <select name="type" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-                                    <option value="" disabled selected>Select Type</option>
-                                    <option value="mid">Mid Term Exam</option>
-                                    <option value="final">Final Exam</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                                <input type="date" name="date" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-                            </div>
-                        </div>
-
-                        <div class="mt-6 flex justify-end space-x-3">
-                            <button type="button" @click="openAssessmentModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
-                                Cancel
-                            </button>
-                            <button type="submit" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition shadow-lg shadow-purple-200">
-                                Create Assessment
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
 </div>
 @endsection
