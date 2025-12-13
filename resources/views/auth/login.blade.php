@@ -37,7 +37,7 @@
                     @csrf
 
                     <div class="mb-5">
-                        <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+                        <label for="username" class="block text-xs font-bold text-gray-500 uppercase tracking-wide">Username</label>
                         <input
                             id="username"
                             type="text"
@@ -52,7 +52,7 @@
                     </div>
 
                     <div class="mb-5">
-                        <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                        <label for="password" class="block text-xs font-bold text-gray-500 uppercase tracking-wide">Password</label>
                         <div class="relative mt-1">
                             <input
                                 id="password"
