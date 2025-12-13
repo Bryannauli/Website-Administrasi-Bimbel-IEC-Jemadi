@@ -19,7 +19,7 @@ return new class extends Migration
                 ->nullOnDelete();
 
             $table->enum('type', ['mid', 'final']);
-            $table->date('date');
+            $table->date('date')->nullable();
 
             $table->timestamps();
             $table->unique(['class_id', 'type']);

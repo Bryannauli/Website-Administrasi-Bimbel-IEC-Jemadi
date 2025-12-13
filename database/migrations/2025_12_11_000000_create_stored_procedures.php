@@ -91,6 +91,24 @@ return new class extends Migration
                 ORDER BY percentage ASC;
             END
         ");
+
+        // ==========================================
+        // 5. PROCEDURE: Student Global Stats (BARU)
+        // ==========================================
+        // Menghitung total seluruh siswa, aktif, dan non-aktif (Mirip Dashboard Stats)
+        DB::unprepared('
+            DROP PROCEDURE IF EXISTS p_get_student_global_stats;
+            CREATE PROCEDURE p_get_student_global_stats(
+                OUT total_students INT,
+                OUT total_active INT,
+                OUT total_inactive INT
+            )
+            BEGIN
+                SELECT COUNT(*) INTO total_students FROM students WHERE deleted_at IS NULL;
+                SELECT COUNT(*) INTO total_active FROM students WHERE is_active = 1 AND deleted_at IS NULL;
+                SELECT COUNT(*) INTO total_inactive FROM students WHERE is_active = 0 AND deleted_at IS NULL;
+            END
+        ');
     }
 
     public function down(): void
@@ -99,5 +117,6 @@ return new class extends Migration
         DB::unprepared('DROP PROCEDURE IF EXISTS p_GetAttendanceStats');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_get_attendance_summary');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_get_class_attendance_stats');
+        DB::unprepared('DROP PROCEDURE IF EXISTS p_get_student_global_stats');
     }
 };

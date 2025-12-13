@@ -2,7 +2,7 @@
     <x-slot name="header"></x-slot>
 
     <div class="py-6" x-data="{ 
-        isEditing: false, 
+        isEditing: {{ request('mode') == 'edit' ? 'true' : 'false' }}, 
         assessmentType: '{{ $type }}' 
     }">
 

@@ -18,6 +18,8 @@
                     @csrf
                     @method('PUT')
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+                        
+                        {{-- Bagian 1: Identitas --}}
                         <div class="space-y-4">
                             {{-- Class Name --}}
                             <div>
@@ -43,6 +45,7 @@
                             </div>
                         </div>
                         
+                        {{-- Bagian 2: Lokasi & Periode --}}
                         <div class="space-y-4">
                             {{-- Classroom --}}
                             <div>
@@ -61,6 +64,7 @@
                             </div>
                         </div>
 
+                        {{-- Bagian 3: Guru --}}
                         <div class="md:col-span-2 grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
                             {{-- Form Teacher --}}
                             <div>
@@ -80,7 +84,7 @@
                             </div>
                         </div>
 
-                        {{-- SCHEDULE DAYS & TEACHER TYPE (MODIFIED SECTION) --}}
+                        {{-- Bagian 4: Jadwal & Tipe Guru (SWITCH UI - UPDATED) --}}
                         <div class="md:col-span-2">
                             <label class="block text-sm font-bold text-gray-700 mb-3 @error('days') text-red-500 @enderror">Schedule & Teacher Assignment <span class="text-red-500">*</span></label>
                             
@@ -89,8 +93,8 @@
                                     <div class="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                                         :class="editForm.days.includes('{{ $day }}') ? 'bg-blue-50 border-blue-200' : ''">
                                         
-                                        <div class="flex items-center justify-between mb-2">
-                                            <label class="inline-flex items-center cursor-pointer">
+                                        <div class="flex items-center justify-between">
+                                            <label class="inline-flex items-center cursor-pointer w-full">
                                                 {{-- Checkbox Hari --}}
                                                 <input type="checkbox" name="days[]" value="{{ $day }}" 
                                                     :checked="editForm.days.includes('{{ $day }}')" 
@@ -100,22 +104,39 @@
                                             </label>
                                         </div>
 
-                                        {{-- Dropdown Tipe Guru (Hanya muncul jika hari dicentang) --}}
-                                        <div x-show="editForm.days.includes('{{ $day }}')" x-transition class="mt-2 pl-6">
-                                            <select name="teacher_types[{{ $day }}]" 
-                                                    class="block w-full text-xs border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-1.5"
-                                                    x-model="editForm.teacher_types['{{ $day }}']">
-                                                <option value="form">Form Teacher</option>
-                                                <option value="local">Local Teacher</option>
-                                            </select>
+                                        {{-- SWITCH UI: Form / Local (Muncul saat hari dipilih) --}}
+                                        <div x-show="editForm.days.includes('{{ $day }}')" x-transition class="mt-3">
+                                            
+                                            {{-- Hidden Input untuk kirim nilai ke backend --}}
+                                            {{-- Default ke 'form' jika key belum ada di objek --}}
+                                            <input type="hidden" name="teacher_types[{{ $day }}]" 
+                                                   :value="editForm.teacher_types['{{ $day }}'] || 'form'">
+
+                                            <div class="flex bg-gray-100 p-1 rounded-md">
+                                                {{-- Button Form --}}
+                                                <button type="button" 
+                                                    @click="editForm.teacher_types['{{ $day }}'] = 'form'"
+                                                    :class="(editForm.teacher_types['{{ $day }}'] || 'form') === 'form' ? 'bg-white text-blue-700 shadow-sm ring-1 ring-black/5 font-bold' : 'text-gray-500 hover:text-gray-700 font-medium'"
+                                                    class="flex-1 py-1.5 text-xs rounded transition-all text-center">
+                                                    Form
+                                                </button>
+
+                                                {{-- Button Local --}}
+                                                <button type="button" 
+                                                    @click="editForm.teacher_types['{{ $day }}'] = 'local'"
+                                                    :class="editForm.teacher_types['{{ $day }}'] === 'local' ? 'bg-white text-purple-700 shadow-sm ring-1 ring-black/5 font-bold' : 'text-gray-500 hover:text-gray-700 font-medium'"
+                                                    class="flex-1 py-1.5 text-xs rounded transition-all text-center">
+                                                    Local
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 @endforeach
                             </div>
                             @error('days') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                            {{-- Catatan: Error untuk teacher_types.* akan muncul di bawah sini --}}
                         </div>
 
+                        {{-- Bagian 5: Waktu & Status --}}
                         <div class="md:col-span-2 flex justify-between items-end">
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Class Time <span class="text-red-500">*</span></label>

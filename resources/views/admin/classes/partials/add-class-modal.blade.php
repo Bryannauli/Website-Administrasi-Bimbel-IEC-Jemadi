@@ -16,11 +16,14 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
+
             <div class="p-6">
                 {{-- Form Create --}}
                 <form action="{{ route('admin.classes.store') }}" method="POST">
                     @csrf
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+                        
+                        {{-- Bagian 1: Identitas Kelas --}}
                         <div class="space-y-4">
                             {{-- Class Name --}}
                             <div>
@@ -48,6 +51,7 @@
                             </div>
                         </div>
                         
+                        {{-- Bagian 2: Waktu & Lokasi --}}
                         <div class="space-y-4">
                             {{-- Classroom --}}
                             <div>
@@ -66,6 +70,7 @@
                             </div>
                         </div>
 
+                        {{-- Bagian 3: Guru --}}
                         <div class="md:col-span-2 grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
                             {{-- Form Teacher --}}
                             <div>
@@ -85,20 +90,60 @@
                             </div>
                         </div>
 
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-bold text-gray-700 mb-2 @error('days') text-red-500 @enderror">Schedule Days <span class="text-red-500">*</span></label>
-                            <div class="flex flex-wrap gap-3">
+                        {{-- Bagian 4: Jadwal & Tipe Guru (NEW SWITCH UI) --}}
+                        <div class="md:col-span-2" x-data="{ selectedDays: {{ json_encode(old('days', [])) }} }">
+                            <label class="block text-sm font-bold text-gray-700 mb-3 @error('days') text-red-500 @enderror">Schedule & Teacher Assignment <span class="text-red-500">*</span></label>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 @foreach(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as $day)
-                                    <label class="inline-flex items-center cursor-pointer bg-white border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition">
-                                        {{-- Checkbox days --}}
-                                        <input type="checkbox" name="days[]" value="{{ $day }}" {{ in_array($day, old('days', [])) ? 'checked' : '' }} class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                                        <span class="ml-2 text-gray-700 text-sm font-medium">{{ $day }}</span>
-                                    </label>
+                                    <div class="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                                         :class="selectedDays.includes('{{ $day }}') ? 'bg-blue-50 border-blue-200' : ''">
+                                        
+                                        <div class="flex items-center justify-between">
+                                            <label class="inline-flex items-center cursor-pointer w-full">
+                                                {{-- Checkbox Hari --}}
+                                                <input type="checkbox" name="days[]" value="{{ $day }}" 
+                                                       x-model="selectedDays"
+                                                       class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                                                <span class="ml-2 text-gray-700 text-sm font-bold">{{ $day }}</span>
+                                            </label>
+                                        </div>
+
+                                        {{-- SWITCH UI: Form / Local (Muncul saat hari dipilih) --}}
+                                        <div x-show="selectedDays.includes('{{ $day }}')" x-transition 
+                                             class="mt-3" 
+                                             x-data="{ tType: '{{ old("teacher_types.$day", 'form') }}' }">
+                                            
+                                            {{-- Hidden input menyimpan nilai sebenarnya --}}
+                                            <input type="hidden" name="teacher_types[{{ $day }}]" :value="tType">
+
+                                            {{-- Toggle Button Group --}}
+                                            <div class="flex bg-gray-100 p-1 rounded-md">
+                                                {{-- Button Form --}}
+                                                <button type="button" 
+                                                    @click="tType = 'form'"
+                                                    :class="tType === 'form' ? 'bg-white text-blue-700 shadow-sm ring-1 ring-black/5 font-bold' : 'text-gray-500 hover:text-gray-700 font-medium'"
+                                                    class="flex-1 py-1.5 text-xs rounded transition-all text-center">
+                                                    Form
+                                                </button>
+
+                                                {{-- Button Local --}}
+                                                <button type="button" 
+                                                    @click="tType = 'local'"
+                                                    :class="tType === 'local' ? 'bg-white text-purple-700 shadow-sm ring-1 ring-black/5 font-bold' : 'text-gray-500 hover:text-gray-700 font-medium'"
+                                                    class="flex-1 py-1.5 text-xs rounded transition-all text-center">
+                                                    Local
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                    </div>
                                 @endforeach
                             </div>
                             @error('days') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
                         
+                        {{-- Bagian 5: Jam --}}
                         <div class="md:col-span-2">
                             <label class="block text-sm font-bold text-gray-700 mb-1">Class Time <span class="text-red-500">*</span></label>
                             <div class="flex items-center gap-2">
@@ -111,7 +156,7 @@
                     </div>
                     
                     <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
-                        {{-- CANCEL LOGIC: Refresh halaman jika ada error --}}
+                        {{-- CANCEL LOGIC: Close Modal --}}
                         <button type="button" @click="closeModal('showAddModal')" class="px-5 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition">Cancel</button>
                         <button type="submit" class="px-5 py-2.5 bg-blue-700 text-white font-medium rounded-lg hover:bg-blue-800 shadow-sm transition">Create Class</button>
                     </div>

@@ -22,26 +22,53 @@ class AdminAssessmentController extends Controller
     {
         // 1. Inisialisasi Query dengan relasi classModel
         $query = AssessmentSession::with(['classModel' => function($q) {
-            $q->select('id', 'name', 'category', 'academic_year'); 
+            // Pastikan 'name' dipilih agar bisa diakses untuk filtering
+            $q->select('id', 'name', 'category', 'academic_year', 'is_active'); 
         }]);
 
         // 2. Logika Filter Berdasarkan Request
+
+        // A. Filter Search (BARU)
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $query->whereHas('classModel', function($q) use ($searchTerm) {
+                $q->where('name', 'LIKE', "%{$searchTerm}%");
+            });
+        }
+        
+        // B. Filter Academic Year (Existing)
         if ($request->filled('academic_year')) {
             $query->whereHas('classModel', function($q) use ($request) {
                 $q->where('academic_year', $request->academic_year);
             });
         }
 
+        // C. Filter Category (Existing)
         if ($request->filled('category')) {
             $query->whereHas('classModel', function($q) use ($request) {
                 $q->where('category', $request->category);
             });
         }
 
+        // D. Filter Exam Type (Existing)
         if ($request->filled('type')) {
             $query->where('type', $request->type);
         }
 
+        // E. Filter Class ID (BARU)
+        if ($request->filled('class_id')) {
+            $query->where('class_id', $request->class_id);
+        }
+
+        // F. Filter Class Status (BARU - Default: Active)
+        $statusFilter = $request->get('class_status', 'active'); // Default ke 'active'
+        if ($statusFilter != '') { // Jika bukan 'All Status'
+            $isActive = $statusFilter === 'active';
+            $query->whereHas('classModel', function($q) use ($isActive) {
+                $q->where('is_active', $isActive);
+            });
+        }
+        
         // 3. Eksekusi Query dengan Pagination
         $assessments = $query->orderBy('date', 'desc')->paginate(10);
         $assessments->appends($request->all());
@@ -50,8 +77,11 @@ class AdminAssessmentController extends Controller
         $categories = ['pre_level', 'level', 'step', 'private'];
         $years = ClassModel::select('academic_year')->distinct()->pluck('academic_year')->sortDesc();
         $types = ['mid', 'final'];
+        
+        // Ambil daftar kelas untuk dropdown filter
+        $classes = ClassModel::select('id', 'name')->orderBy('name', 'asc')->get();
 
-        return view('admin.assessment.assessment', compact('assessments', 'categories', 'years', 'types'));
+        return view('admin.assessment.assessment', compact('assessments', 'categories', 'years', 'types', 'classes'));
     }
     
     /**

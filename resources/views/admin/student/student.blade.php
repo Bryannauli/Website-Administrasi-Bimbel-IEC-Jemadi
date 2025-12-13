@@ -134,9 +134,8 @@
                     {{-- Kiri: Total Utama --}}
                     <div>
                         <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-0.5">Total Students</h3>
-                        {{-- Pastikan variabel $totalStudents dikirim dari Controller, atau gunakan count($students) sementara --}}
                         <p class="text-3xl font-bold text-gray-900 leading-none">
-                            {{ number_format($students->total() ?? 0) }}
+                            {{ number_format($globalTotal ?? 0) }}
                         </p>
                     </div>
 
@@ -194,10 +193,10 @@
                         <form action="{{ route('admin.student.index') }}" method="GET" class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
                             @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
 
-                            {{-- Filter Tahun --}}
+                            {{-- Filter Tahun (Updated: pr-10) --}}
                             <div class="relative flex-grow sm:flex-grow-0">
                                 <select name="academic_year" onchange="this.form.submit()" 
-                                        class="h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 bg-gray-50 focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                        class="h-10 w-full sm:w-auto px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 bg-gray-50 focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none">
                                     <option value="">All Years</option>
                                     @foreach($years as $year)
                                         <option value="{{ $year }}" {{ request('academic_year') == $year ? 'selected' : '' }}>{{ $year }}</option>
@@ -205,21 +204,21 @@
                                 </select>
                             </div>
 
-                            {{-- Filter Category --}}
+                            {{-- Filter Category (Updated: "All Categories" & pr-10) --}}
                             <div class="relative flex-grow sm:flex-grow-0">
                                 <select name="category" onchange="this.form.submit()" 
-                                        class="h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                                    <option value="">Category</option>
+                                        class="h-10 w-full sm:w-auto px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none">
+                                    <option value="">All Categories</option> {{-- PERUBAHAN DI SINI --}}
                                     @foreach($categories as $cat)
                                         <option value="{{ $cat }}" {{ request('category') == $cat ? 'selected' : '' }}>{{ ucwords(str_replace('_', ' ', $cat)) }}</option>
                                     @endforeach
                                 </select>
                             </div>
 
-                            {{-- Filter Class --}}
+                            {{-- Filter Class (Updated: pr-10) --}}
                             <div class="relative flex-grow sm:flex-grow-0">
                                 <select name="class_id" onchange="this.form.submit()" 
-                                        class="h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer max-w-[200px] truncate">
+                                        class="h-10 w-full sm:w-auto px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none max-w-[200px] truncate">
                                     <option value="">All Classes</option>
                                     <option value="no_class" class="text-red-600 font-semibold" {{ request('class_id') == 'no_class' ? 'selected' : '' }}>⚠ No Class</option>
                                     @foreach($classes as $classItem)
@@ -228,19 +227,43 @@
                                 </select>
                             </div>
 
-                            {{-- Sort Filter --}}
+                            {{-- Filter Status --}}
                             <div class="relative flex-grow sm:flex-grow-0">
-                                <select name="sort" onchange="this.form.submit()" 
-                                        class="h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                                    <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Newest</option>
-                                    <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest</option>
-                                    <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>A-Z</option>
-                                    <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Z-A</option>
+                                <select name="status" onchange="this.form.submit()" 
+                                        class="h-10 w-full sm:w-auto px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none">
+                                    
+                                    {{-- Value kosong untuk 'All Status' --}}
+                                    {{-- Selected logic: Hanya terpilih jika ada parameter status DAN nilainya kosong --}}
+                                    <option value="" {{ request()->has('status') && request('status') == '' ? 'selected' : '' }}>All Status</option>
+                                    
+                                    {{-- Value 'active' --}}
+                                    {{-- Selected logic: Terpilih jika value 'active' ATAU jika parameter status TIDAK ADA (Default) --}}
+                                    <option value="active" {{ request('status', 'active') == 'active' ? 'selected' : '' }}>Active</option>
+                                    
+                                    <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
                                 </select>
                             </div>
 
-                            {{-- Reset Filters --}}
-                            @if(request('class_id') || request('academic_year') || request('category') || request('sort') || request('search'))
+                            {{-- Sort Filter --}}
+                            <div class="relative flex-grow sm:flex-grow-0">
+                                <select name="sort" onchange="this.form.submit()" 
+                                        class="h-10 w-full sm:w-auto px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none">
+                                    
+                                    <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Newest</option>
+                                    <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest</option>
+                                    
+                                    {{-- TAMBAHAN OPSI STUDENT NUMBER --}}
+                                    <option value="number_asc" {{ request('sort') == 'number_asc' ? 'selected' : '' }}>ID (0-9)</option>
+                                    <option value="number_desc" {{ request('sort') == 'number_desc' ? 'selected' : '' }}>ID (9-0)</option>
+                                    {{-- ----------------------------- --}}
+
+                                    <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>Name (A-Z)</option>
+                                    <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Name (Z-A)</option>
+                                </select>
+                            </div>
+
+                            {{-- Reset Filters (Updated condition) --}}
+                            @if(request('class_id') || request('academic_year') || request('category') || request('sort') || request('search') || request('status'))
                                 <a href="{{ route('admin.student.index') }}" class="h-10 w-10 flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg transition-colors flex-shrink-0" title="Reset Filters">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                 </a>
@@ -250,13 +273,12 @@
                         {{-- BUTTON ADD NEW STUDENT --}}
                         <div class="w-full lg:w-auto">
                             <button @click="showAddModal = true" 
-                               class="inline-flex w-full lg:w-auto items-center justify-center gap-2 px-5 h-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm whitespace-nowrap">
+                            class="inline-flex w-full lg:w-auto items-center justify-center gap-2 px-5 h-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm whitespace-nowrap">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" /></svg>
                                 Add New Student
                             </button>
                         </div>
                     </div>
-                </div>
 
                 {{-- TABLE CONTENT --}}
                 <div class="overflow-x-auto">

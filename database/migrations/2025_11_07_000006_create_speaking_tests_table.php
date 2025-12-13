@@ -19,7 +19,7 @@ return new class extends Migration
                 ->cascadeOnDelete()
                 ->unique();
 
-            $table->date('date');
+            $table->date('date')->nullable();
             $table->string('topic', 200)->nullable();
 
             // Interviewer (guru)

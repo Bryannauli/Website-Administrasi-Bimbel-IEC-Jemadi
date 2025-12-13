@@ -7,6 +7,8 @@ use App\Models\ClassModel;
 use App\Models\Schedule; 
 use App\Models\User; // Import Model User untuk ambil data guru
 use App\Models\Student;
+use App\Models\AssessmentSession;
+use App\Models\SpeakingTest;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
@@ -97,6 +99,9 @@ class AdminClassController extends Controller
     /**
      * Menyimpan Data Kelas Baru (Create)
      */
+    /**
+     * Menyimpan Data Kelas Baru (Create)
+     */
     public function store(Request $request)
     {
         // 1. Validasi Input
@@ -113,41 +118,78 @@ class AdminClassController extends Controller
             'end_time' => 'required',
             'days' => 'required|array',
             'days.*' => 'string|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
-            // Validasi teacher_types (opsional tapi disarankan)
             'teacher_types' => 'nullable|array',
         ]);
 
-        // 2. Simpan Data Kelas Utama
-        $class = ClassModel::create([
-            'category' => $request->category,
-            'name' => $request->name,
-            'classroom' => $request->classroom,
-            'start_month' => $request->start_month,
-            'end_month' => $request->end_month,
-            'academic_year' => $request->academic_year,
-            'form_teacher_id' => $request->form_teacher_id,
-            'local_teacher_id' => $request->local_teacher_id,
-            'start_time' => $request->start_time,
-            'end_time' => $request->end_time,
-            'is_active' => true,
-        ]);
+        // Gunakan Transaction agar data konsisten (semua tersimpan atau batal semua)
+        DB::beginTransaction();
 
-        // 3. Simpan Jadwal Hari ke Tabel Schedules beserta Tipe Guru
-        // Ambil data teacher_types dari request, default array kosong jika tidak ada
-        $teacherTypes = $request->input('teacher_types', []);
-
-        foreach ($request->days as $day) {
-            // Cek tipe guru untuk hari tersebut (default 'form')
-            $type = $teacherTypes[$day] ?? 'form';
-
-            Schedule::create([
-                'class_id' => $class->id,
-                'day_of_week' => $day,
-                'teacher_type' => $type, // Simpan ke database
+        try {
+            // 2. Simpan Data Kelas Utama
+            $class = ClassModel::create([
+                'category' => $request->category,
+                'name' => $request->name,
+                'classroom' => $request->classroom,
+                'start_month' => $request->start_month,
+                'end_month' => $request->end_month,
+                'academic_year' => $request->academic_year,
+                'form_teacher_id' => $request->form_teacher_id,
+                'local_teacher_id' => $request->local_teacher_id,
+                'start_time' => $request->start_time,
+                'end_time' => $request->end_time,
+                'is_active' => true,
             ]);
-        }
 
-        return redirect()->route('admin.classes.index')->with('success', 'Class created successfully!');
+            // 3. Simpan Jadwal Hari ke Tabel Schedules
+            $teacherTypes = $request->input('teacher_types', []);
+
+            foreach ($request->days as $day) {
+                $type = $teacherTypes[$day] ?? 'form';
+
+                Schedule::create([
+                    'class_id' => $class->id,
+                    'day_of_week' => $day,
+                    'teacher_type' => $type,
+                ]);
+            }
+
+            // 4. OTOMATISASI: Buat Sesi Assessment (Mid & Final) Kosong
+            // Logic: Interviewer default diambil dari Local Teacher.
+            // Jika local_teacher_id NULL (belum diassign), maka interviewer_id juga NULL.
+            $interviewerId = $class->local_teacher_id; 
+
+            $types = ['mid', 'final'];
+
+            foreach ($types as $type) {
+                
+                // A. Buat Session (Date NULL)
+                $session = AssessmentSession::create([
+                    'class_id' => $class->id,
+                    'type'     => $type,
+                    'date'     => null, // Masih kosong
+                ]);
+
+                // B. Buat Speaking Test (Date & Topic NULL, Interviewer = Local Teacher/Null)
+                SpeakingTest::create([
+                    'assessment_session_id' => $session->id,
+                    'date'           => null, // Masih kosong
+                    'topic'          => null, // Masih kosong
+                    'interviewer_id' => $interviewerId, // Local Teacher ID atau NULL
+                ]);
+            }
+
+            DB::commit();
+            return redirect()->route('admin.classes.index')->with('success', 'Class and assessment sessions created successfully!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            // Log error untuk developer jika perlu
+            // Log::error("Failed to create class: " . $e->getMessage());
+            
+            return back()
+                ->withInput()
+                ->with('error', 'Failed to create class: ' . $e->getMessage());
+        }
     }
 
     /**
