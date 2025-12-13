@@ -79,7 +79,7 @@
                             <button @click="open = !open" @click.outside="open = false" class="flex items-center space-x-3 focus:outline-none hover:bg-gray-50 p-2 rounded-lg transition">
                                 <img src="https://ui-avatars.com/api/?name={{ Auth::user()->name ?? 'Teacher' }}&background=8B5CF6&color=fff" class="w-10 h-10 rounded-full object-cover">
                                 <div class="hidden md:block text-left">
-                                    <p class="font-semibold text-sm text-gray-800">{{ Auth::user()->name ?? 'Geonwoo' }}</p>
+                                    <p class="font-semibold text-sm text-gray-800">{{ Auth::user()->name}}</p>
                                     <p class="text-xs text-gray-500">{{ ucfirst(Auth::user()->role ?? 'Teacher') }}</p>
                                 </div>
                                 <i class="fas fa-chevron-down text-xs text-gray-400 transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
