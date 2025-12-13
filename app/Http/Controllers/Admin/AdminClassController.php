@@ -285,7 +285,7 @@ class AdminClassController extends Controller
         $availableStudents = $query->get();
 
         // 3. History Sesi (Columns)
-        $teachingLogs = \App\Models\AttendanceSession::where('class_id', $id)
+        $teachingLogs = \App\Models\ClassSession::where('class_id', $id)
             ->with(['teacherRecords.teacher', 'records'])
             ->orderBy('date', 'desc')
             ->get();

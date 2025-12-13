@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\ClassModel;
-use App\Models\AttendanceSession;
+use App\Models\ClassSession;
 use App\Models\AttendanceRecord;
 
 class TeacherAttendanceController extends Controller
@@ -18,7 +18,7 @@ class TeacherAttendanceController extends Controller
             'date' => 'required|date',
         ]);
 
-        $session = AttendanceSession::create([
+        $session = ClassSession::create([
             'class_id' => $id,
             'date' => $request->date,
         ]);
@@ -32,7 +32,7 @@ class TeacherAttendanceController extends Controller
     public function sessionDetail($classId, $sessionId)
     {
         $class = ClassModel::findOrFail($classId);
-        $session = AttendanceSession::where('class_id', $classId)
+        $session = ClassSession::where('class_id', $classId)
                                     ->where('id', $sessionId)
                                     ->firstOrFail();
 
@@ -63,7 +63,7 @@ class TeacherAttendanceController extends Controller
             'attendance.*' => 'in:present,absent,late,permitted,sick',
         ]);
 
-        $session = AttendanceSession::where('class_id', $classId)
+        $session = ClassSession::where('class_id', $classId)
                                     ->where('id', $sessionId)
                                     ->firstOrFail();
 

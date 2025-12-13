@@ -38,7 +38,7 @@ class TeacherClassController extends Controller
             ->appends(request()->except('student_page'));
 
         // 2. Pagination Attendance
-        $attendanceSessions = ClassSession::where('class_id', $id)
+        $ClassSessions = ClassSession::where('class_id', $id)
             ->orderBy('date', 'desc')
             ->paginate(5, ['*'], 'attendance_page');
 
@@ -47,6 +47,6 @@ class TeacherClassController extends Controller
             ->orderBy('date', 'desc')
             ->paginate(5, ['*'], 'assessment_page');
 
-        return view('teacher.classes.detail', compact('class', 'students', 'attendanceSessions', 'assessments'));
+        return view('teacher.classes.detail', compact('class', 'students', 'ClassSessions', 'assessments'));
     }
 }

@@ -151,9 +151,9 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
-                        @forelse($attendanceSessions as $session)
+                        @forelse($ClassSessions as $session)
                         <tr class="hover:bg-gray-50 transition">
-                            <td class="px-6 py-4 text-sm text-gray-600">{{ $loop->iteration + $attendanceSessions->firstItem() - 1 }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-600">{{ $loop->iteration + $ClassSessions->firstItem() - 1 }}</td>
                             <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ \Carbon\Carbon::parse($session->date)->format('d M Y') }}</td>
                             <td class="px-6 py-4 text-sm text-gray-600">
                                 {{ $session->topics ?? '-' }}
@@ -173,7 +173,7 @@
                 </table>
             </div>
             <div class="px-6 py-4 border-t border-gray-200">
-                {{ $attendanceSessions->links() }}
+                {{ $ClassSessions->links() }}
             </div>
         </div>
     </div>
