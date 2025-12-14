@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\Teacher;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use App\Models\ClassModel;
 use App\Models\ClassSession;
+use Illuminate\Http\Request;
 use App\Models\AttendanceRecord;
+use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 
 class TeacherAttendanceController extends Controller
 {
@@ -16,11 +17,14 @@ class TeacherAttendanceController extends Controller
     {
         $request->validate([
             'date' => 'required|date',
+            'topics' => 'required|string',
         ]);
 
         $session = ClassSession::create([
             'class_id' => $id,
             'date' => $request->date,
+            'comment' => $request->topics,
+            'teacher_id' => Auth::id(),
         ]);
 
         // Redirect ke halaman input absen
