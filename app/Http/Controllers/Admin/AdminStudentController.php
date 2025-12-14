@@ -3,11 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Validator; // Penting: Import Validator Facade
+use Illuminate\Support\Facades\Validator;
 use App\Models\ClassModel;
 use App\Models\Student;
 
@@ -19,16 +18,18 @@ class AdminStudentController extends Controller
     public function index(Request $request)
     {
         // 1. Data Pendukung Filter (Dropdown)
+        // Mengambil tahun dan kategori unik dari tabel classes
         $years = ClassModel::select('academic_year')->distinct()->orderBy('academic_year', 'desc')->pluck('academic_year');
         $categories = ClassModel::select('category')->distinct()->pluck('category');
 
-        // Filter Dropdown Kelas
+        // Filter Dropdown Kelas (Dinamis berdasarkan filter tahun/kategori jika ada)
         $classQuery = ClassModel::orderBy('name', 'asc');
         if ($request->filled('academic_year')) $classQuery->where('academic_year', $request->academic_year);
         if ($request->filled('category')) $classQuery->where('category', $request->category);
         $classes = $classQuery->get();
 
-        // 2. Query Utama Siswa
+        // 2. Query Utama Siswa dengan Eager Loading
+        // Menggunakan 'classModel' sesuai definisi di model Student.php
         $query = Student::with('classModel');
 
         // --- FILTER LOGIC ---
@@ -44,12 +45,12 @@ class AdminStudentController extends Controller
             }
         }
 
-        // B. Filter Academic Year
+        // B. Filter Academic Year (via Relasi Class)
         if ($request->filled('academic_year') && $request->class_id != 'no_class') {
             $query->whereHas('classModel', fn($q) => $q->where('academic_year', $request->academic_year));
         }
 
-        // C. Filter Category
+        // C. Filter Category (via Relasi Class)
         if ($request->filled('category') && $request->class_id != 'no_class') {
             $query->whereHas('classModel', fn($q) => $q->where('category', $request->category));
         }
@@ -83,6 +84,7 @@ class AdminStudentController extends Controller
         $students = $query->paginate(10)->appends($request->query());
 
         // 4. Hitung Statistik Global (Stored Procedure)
+        // Menggunakan Procedure agar beban hitung ada di MySQL
         DB::statement('CALL p_get_student_global_stats(@total, @active, @inactive)');
         $stats = DB::select('SELECT @total AS total, @active AS active, @inactive AS inactive');
         
@@ -118,7 +120,7 @@ class AdminStudentController extends Controller
             'class_id'       => 'nullable|exists:classes,id',
         ]);
         
-        // Default 'is_active' => 1
+        // Default 'is_active' => 1 saat create
         Student::create(array_merge($request->all(), ['is_active' => 1]));
         
         return back()->with('success', 'Student successfully added!');
@@ -129,20 +131,25 @@ class AdminStudentController extends Controller
      */
     public function detail($id)
     {
-        $student = Student::findOrFail($id);
+        // 1. Ambil Data Siswa + Eager Load Kelas
+        // Menggunakan 'with' mengurangi query n+1 saat menampilkan nama kelas di breadcrumb/header
+        $student = Student::with('classModel')->findOrFail($id);
 
-        // Data untuk Modal Edit
+        // Data Pendukung untuk Modal Edit (di dalam halaman detail)
         $classes = ClassModel::where('is_active', true)->orderBy('category')->orderBy('name')->get();
         $categories = $classes->pluck('category')->unique();
 
-        // 1. History Absensi
+        // 2. History Absensi
+        // Hanya ambil history dari kelas yang SEDANG ditempati siswa (class_id saat ini)
+        // Menggunakan View Database untuk performa read
         $attendance = DB::table('v_student_attendance')
             ->where('student_id', $id)
             ->where('class_id', $student->class_id)
             ->orderBy('session_date', 'DESC')
             ->get();
 
-        // 2. Summary Statistik (SP)
+        // 3. Summary Statistik (Stored Procedure)
+        // Menghitung total hadir/sakit/izin dsb secara efisien di DB
         $rawSummary = DB::select("CALL p_get_attendance_summary(?)", [$id]);
         $summaryData = $rawSummary[0];
 
@@ -157,38 +164,17 @@ class AdminStudentController extends Controller
         $totalDays = $summaryData->total_days;
         $presentPercent = round($summaryData->present_percent);
 
-        // 3. Grafik 7 Hari Terakhir
-        $last7Days = [];
-        $today = Carbon::today();
-
-        for ($i = 6; $i >= 0; $i--) {
-            $date = $today->copy()->subDays($i)->format('Y-m-d');
-            $record = DB::table('v_student_attendance')
-                ->where('student_id', $student->id)
-                ->where('class_id', $student->class_id)
-                ->where('session_date', $date)
-                ->select('status')
-                ->first();
-
-            $last7Days[] = [
-                'date' => $date, 
-                'day' => Carbon::parse($date)->format('D'), 
-                'status' => $record->status ?? 'none'
-            ];
-        }
-        
-        $rangeStart = $today->copy()->subDays(6)->format('d M Y');
-        $rangeEnd   = $today->format('d M Y');
+        // (Bagian Grafik 7 Hari dihapus karena tidak digunakan di View)
 
         return view('admin.student.detail-student', compact(
             'student', 'attendance', 'summary', 'presentPercent', 
-            'totalDays', 'last7Days', 'rangeStart', 'rangeEnd',
+            'totalDays', 
             'classes', 'categories'
         ));
     }
 
     /**
-     * Proses Update Data Siswa (REFACTORED: Menggunakan Validator Manual)
+     * Proses Update Data Siswa
      */
     public function update(Request $request, $id)
     {
@@ -209,9 +195,9 @@ class AdminStudentController extends Controller
         if ($validator->fails()) {
             return back()
                 ->withErrors($validator)
-                // Penting: Kirim input + ID agar modal tahu siapa yang diedit
+                // Kirim input lama + ID agar modal edit tahu siapa yang diedit & datanya tidak hilang
                 ->withInput($request->all() + ['id' => $id]) 
-                // Flag untuk membuka modal edit di frontend
+                // Flag session untuk auto-open modal edit di frontend
                 ->with('edit_failed', true);
         }
 
