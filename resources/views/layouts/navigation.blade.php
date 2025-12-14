@@ -108,6 +108,7 @@
                     {{ request()->routeIs('admin.teacher.*') ? $activeClasses : $inactiveClasses }}">
 
                     <span class="flex items-center">
+                        {{-- Icon Users --}}
                         <svg class="mr-3 h-6 w-6 flex-shrink-0
                             {{ request()->routeIs('admin.teacher.*') ? $activeClassesIcon : $inactiveClassesIcon }}"
                             xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -125,16 +126,18 @@
                 </button>
 
                 <div x-show="open" x-transition class="mt-2 space-y-1">
+                    {{-- 1. All Teachers --}}
                     <a href="{{ route('admin.teacher.index') }}"
                         class="block px-4 py-2 ml-4 rounded-md text-sm font-medium transition-colors duration-150
                         {{ request()->routeIs('admin.teacher.index') ? $subActiveClasses : $subInactiveClasses }}">
                         All Teachers
                     </a>
                     
-                    <a href="{{ route('admin.teacher.attendance') }}"
+                    {{-- 2. Daily Class Monitor (Updated Label) --}}
+                    <a href="{{ route('admin.teacher.daily-recap') }}"
                         class="block px-4 py-2 ml-4 rounded-md text-sm font-medium transition-colors duration-150
-                        {{ request()->routeIs('admin.teacher.attendance') ? $subActiveClasses : $subInactiveClasses }}">
-                        Attendance
+                        {{ request()->routeIs('admin.teacher.daily-recap') ? $subActiveClasses : $subInactiveClasses }}">
+                        Daily Class Monitor
                     </a>
                 </div>
             </div>

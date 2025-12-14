@@ -12,8 +12,6 @@ use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminStudentController;
 use App\Http\Controllers\Admin\AdminTeacherController;
 
-use App\Http\Controllers\TeacherAttendanceRecordController;
-
 // Teacher Controllers
 use App\Http\Controllers\Teacher\TeacherAttendanceController;
 use App\Http\Controllers\Teacher\TeacherAssessmentController;
@@ -91,21 +89,23 @@ Route::middleware(['auth', 'verified', 'admin'])
 
         /* TEACHER LIST */
         Route::prefix('teachers')->name('teacher.')->group(function () {
+            // 1. Index List Guru
             Route::get('/', [AdminTeacherController::class, 'index'])->name('index');
+            
+            // 2. Daily Recap (Monitoring Harian)
+            // PENTING: Wajib ditaruh SEBELUM route detail /{id}
+            Route::get('/daily-recap', [AdminTeacherController::class, 'dailyRecap'])->name('daily-recap');
+
+            // 3. Tambah Guru
             Route::get('/add', [AdminTeacherController::class, 'create'])->name('add');
             Route::post('/', [AdminTeacherController::class, 'store'])->name('store');
+            
+            // 4. Detail, Update, Delete (Parameter ID)
             Route::get('/{id}', [AdminTeacherController::class, 'detail'])->name('detail');
             Route::put('/{teacher}', [AdminTeacherController::class, 'update'])->name('update');
             Route::put('/{teacher}/toggle-status', [AdminTeacherController::class, 'toggleStatus'])->name('toggle-status');
             Route::delete('/{id}', [AdminTeacherController::class, 'delete'])->name('delete');
         });
-
-        /* =====================================================================
-        | TEACHER ATTENDANCE RECORD
-        ===================================================================== */
-        Route::get('/teacher-attendance', [TeacherAttendanceRecordController::class, 'teacher'])->name('teacher.attendance');
-        Route::get('/teacher-attendance/{teacherId}', [TeacherAttendanceRecordController::class, 'detail'])->name('teacher.detail');
-        Route::post('/teacher-attendance/store', [TeacherAttendanceRecordController::class, 'store'])->name('teacher.attendance.store');
 
         /* =====================================================================
         | ASSESSMENT (Global Index/Recap)
