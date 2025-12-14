@@ -28,7 +28,7 @@ class MySQLUserSeeder extends Seeder
         DB::statement("GRANT SELECT ON iec_jemadi.users TO 'iec_teacher'@'%';");
         // Guru TIDAK BISA ubah: username, role, is_teacher, is_active, deleted_at
         DB::statement("
-            GRANT UPDATE (name, photo, email, phone, password, remember_token, updated_at) 
+            GRANT UPDATE (name, email, phone, password, remember_token, updated_at) 
             ON iec_jemadi.users TO 'iec_teacher'@'%';
         ");
 

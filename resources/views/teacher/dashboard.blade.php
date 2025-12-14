@@ -18,7 +18,7 @@
         <div class="bg-white rounded-xl shadow-sm p-6">
             <div class="flex items-start justify-between">
                 <div class="flex items-center space-x-4">
-                    <img src="{{ $user->photo ? asset('storage/'.$user->photo) : 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=8B5CF6&color=fff' }}" 
+                    <img src="{{ 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=8B5CF6&color=fff' }}" 
                          class="w-24 h-24 rounded-full object-cover border-2 border-gray-100">
                     <div>
                         <h2 class="text-2xl font-bold text-gray-800">{{ $user->name }}</h2>

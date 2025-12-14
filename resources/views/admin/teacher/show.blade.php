@@ -5,7 +5,6 @@
 
 // Pastikan properti tambahan tersedia
 $teacher->status = $teacher->is_active ?? $teacher->status ?? 0;
-$teacher->photo = $teacher->profile_photo_path ?? null;
 
 // Dummy Attendance Records
 $attendance_records = collect([
