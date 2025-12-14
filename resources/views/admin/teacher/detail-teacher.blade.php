@@ -17,7 +17,7 @@
 
         updateUrl: '{{ route('admin.teacher.update', $teacher->id) }}',
         deleteUrl: '{{ route('admin.teacher.delete', $teacher->id) }}',
-        toggleRoleUrl: '{{ route('admin.teacher.toggleRole', $teacher->id) }}', // <-- URL BARU
+        toggleRoleUrl: '{{ route('admin.teacher.toggleRole', $teacher->id) }}', 
 
         // --- 2. FUNGSI-FUNGSI ---
         closeModal(modalVar) {
@@ -48,7 +48,6 @@
             // Tentukan teks berdasarkan role saat ini
             const isCurrentlyAdmin = '{{ $teacher->role }}' === 'admin';
             
-            // UBAH DISINI: Ganti 'Demote to Teacher' jadi 'Change to Teacher'
             const actionText = isCurrentlyAdmin ? 'Change to Teacher' : 'Make Admin';
             
             const confirmText = isCurrentlyAdmin 
@@ -81,12 +80,33 @@
                             Dashboard
                         </a>
                     </li>
-                    <li>
-                        <div class="flex items-center">
-                            <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                            <a href="{{ route('admin.teacher.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Teachers</a>
-                        </div>
-                    </li>
+                    
+                    {{-- LOGIKA DINAMIS BREADCRUMB --}}
+                    @if(isset($ref) && $ref === 'class' && isset($refClass))
+                        {{-- NAVIGASI DARI DETAIL KELAS: Dashboard > Classes > [Nama Kelas] > Teacher Detail --}}
+                        <li>
+                            <div class="flex items-center">
+                                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                                <a href="{{ route('admin.classes.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Classes</a>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="flex items-center">
+                                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                                <a href="{{ route('admin.classes.detailclass', $refClass->id) }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2 truncate max-w-[100px]">{{ $refClass->name }}</a>
+                            </div>
+                        </li>
+                    @else
+                        {{-- NAVIGASI DARI LIST GURU (DEFAULT): Dashboard > Teachers > Teacher Detail --}}
+                        <li>
+                            <div class="flex items-center">
+                                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                                <a href="{{ route('admin.teacher.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Teachers</a>
+                            </div>
+                        </li>
+                    @endif
+                    
+                    {{-- CURRENT PAGE (Selalu Ada) --}}
                     <li aria-current="page">
                         <div class="flex items-center">
                             <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
@@ -114,7 +134,6 @@
                             @if($teacher->role === 'admin')
                                 {{-- Icon Arrow Down --}}
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
-                                {{-- UBAH TEKS DISINI --}}
                                 Change to Teacher
                             @else
                                 {{-- Icon Badge Check --}}
@@ -172,6 +191,51 @@
                     </div>
                 </div>
             </div>
+            
+            {{-- INFORMASI KELAS YANG DIAJAR (BARU) --}}
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Assigned Classes (Active)</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    {{-- Form Teacher Classes --}}
+                    <div>
+                        <h4 class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-3">As Form Teacher ({{ $teacher->formClasses->count() }})</h4>
+                        {{-- TAMBAHKAN MAX-HEIGHT DAN SCROLL DI SINI --}}
+                        <div class="flex flex-wrap gap-2 max-h-[200px] overflow-y-auto custom-scrollbar pr-2">
+                            @if($teacher->formClasses->count() > 0)
+                                @foreach($teacher->formClasses as $class)
+                                    <a href="{{ route('admin.classes.detailclass', $class->id) }}" 
+                                       class="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-lg text-sm font-bold hover:bg-blue-100 transition shadow-sm">
+                                        {{ $class->name }}
+                                    </a>
+                                @endforeach
+                            @else
+                                <p class="text-sm text-gray-400 italic">No classes assigned.</p>
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- Local Teacher Classes --}}
+                    <div>
+                        <h4 class="text-xs font-bold text-purple-600 uppercase tracking-widest mb-3">As Local Teacher ({{ $teacher->localClasses->count() }})</h4>
+                        {{-- TAMBAHKAN MAX-HEIGHT DAN SCROLL DI SINI --}}
+                        <div class="flex flex-wrap gap-2 max-h-[200px] overflow-y-auto custom-scrollbar pr-2">
+                            @if($teacher->localClasses->count() > 0)
+                                @foreach($teacher->localClasses as $class)
+                                    <a href="{{ route('admin.classes.detailclass', $class->id) }}" 
+                                       class="px-3 py-1.5 bg-purple-50 text-purple-700 border border-purple-100 rounded-lg text-sm font-bold hover:bg-purple-100 transition shadow-sm">
+                                        {{ $class->name }}
+                                    </a>
+                                @endforeach
+                            @else
+                                <p class="text-sm text-gray-400 italic">No classes assigned.</p>
+                            @endif
+                        </div>
+                    </div>
+
+                </div>
+            </div>
 
             {{-- GRID INFO & STATS --}}
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
@@ -193,6 +257,10 @@
                     {{-- FORM FILTER DATE RANGE --}}
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
                         <form action="{{ route('admin.teacher.detail', $teacher->id) }}" method="GET" class="flex flex-col sm:flex-row items-end gap-4">
+                            
+                            {{-- Tambahkan Hidden Input untuk mempertahankan konteks navigasi --}}
+                            @if(isset($ref)) <input type="hidden" name="ref" value="{{ $ref }}"> @endif
+                            @if(isset($refClass)) <input type="hidden" name="class_id" value="{{ $refClass->id }}"> @endif
                             
                             {{-- Start Date --}}
                             <div class="w-full sm:w-auto">
@@ -261,21 +329,50 @@
                 
                 <div id="attendance-timeline" class="flex overflow-x-auto gap-4 pb-4 custom-scrollbar scroll-smooth" style="scrollbar-width: thin;">
                     @forelse ($history as $session)
-                        <div class="min-w-[160px] bg-white border border-gray-200 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm hover:shadow-md transition-shadow flex-shrink-0">
-                            <span class="text-xs text-gray-400 font-semibold uppercase mb-1">
-                                {{ \Carbon\Carbon::parse($session->date)->format('D, d M Y') }}
-                            </span>
+                        {{-- Logic untuk menentukan Role dan Class Style --}}
+                        @php
+                            $role = 'Co-Teacher'; // Default jika guru mengajar tapi bukan Form/Local
+                            $tagClass = 'bg-gray-400';
+                            $borderClass = 'border-gray-200';
                             
-                            <span class="text-md font-bold text-gray-800 mb-2 text-center leading-tight line-clamp-2" title="{{ $session->class_name }}">
-                                {{ $session->class_name }}
-                            </span>
+                            // Cek apakah guru yang dilihat adalah Form Teacher di kelas ini?
+                            if ($session->teacher_id == $session->form_teacher_id) {
+                                $role = 'Form Teacher';
+                                $tagClass = 'bg-blue-600'; // Biru solid
+                                $borderClass = 'border-blue-400/50';
                             
-                            <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 mb-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            // Cek apakah guru yang dilihat adalah Local Teacher di kelas ini?
+                            } elseif ($session->teacher_id == $session->local_teacher_id) {
+                                $role = 'Local Teacher';
+                                $tagClass = 'bg-purple-600'; // Ungu solid
+                                $borderClass = 'border-purple-400/50';
+                            }
+                        @endphp
+
+                        <div class="min-w-[160px] bg-white border {{ $borderClass }} rounded-xl p-4 flex flex-col justify-between shadow-sm hover:shadow-lg transition-shadow flex-shrink-0">
+                            
+                            <div>
+                                {{-- TANGGAL --}}
+                                <span class="text-xs text-gray-400 font-semibold uppercase mb-1 block">
+                                    {{ \Carbon\Carbon::parse($session->date)->format('D, d M') }}
+                                </span>
+                                
+                                {{-- NAMA KELAS --}}
+                                <span class="text-md font-bold text-gray-800 mb-2 leading-tight line-clamp-2" title="{{ $session->class_name }}">
+                                    {{ $session->class_name }}
+                                </span>
+                                
+                                {{-- WAKTU --}}
+                                <div class="text-[10px] text-gray-500 bg-gray-50 px-2 py-1 rounded inline-block">
+                                    {{ \Carbon\Carbon::parse($session->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($session->end_time)->format('H:i') }}
+                                </div>
                             </div>
-                            
-                            <div class="text-[10px] text-gray-500 text-center leading-tight bg-gray-50 px-2 py-1 rounded">
-                                {{ \Carbon\Carbon::parse($session->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($session->end_time)->format('H:i') }}
+
+                            {{-- TAG ROLE GURU (Style Solid) --}}
+                            <div class="mt-3">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold leading-4 {{ $tagClass }} text-white shadow-md shadow-black/10">
+                                    {{ $role }}
+                                </span>
                             </div>
                         </div>
                     @empty
@@ -312,11 +409,9 @@
         });
     </script>
 
-    {{-- TAMBAHKAN SCRIPT INI --}}
+    {{-- SWEETALERT SCRIPTS --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
     <script>
-        // Opsional: Handle Flash Message Global (Success/Error dari Controller)
         document.addEventListener('DOMContentLoaded', function() {
             const successMessage = "{{ session('success') }}";
             const errorMessage = "{{ session('error') }}";

@@ -1,83 +1,43 @@
 {{-- resources/views/teacher/dashboard.blade.php --}}
 
 <x-app-layout>
-    
-    {{-- HAPUS <x-slot name="header"> jika Anda ingin breadcrumb di bawah navbar --}}
-    
-    {{-- Wrapper Konten Utama --}}
-    <div class="py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+
+    {{-- Wrapper Konten Utama (Ganti py-8 menjadi py-6 untuk konsistensi) --}}
+    <div class="py-6"> 
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
             
-            {{-- 1. BREADCRUMB (Dipindah ke sini agar muncul di area abu-abu) --}}
-            <nav class="flex" aria-label="Breadcrumb">
-                <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+            {{-- 1. BREADCRUMB (DISINGKAT AGAR KONSISTEN DENGAN DASHBOARD ADMIN) --}}
+            <nav class="flex mb-8" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-3">
                     <li class="inline-flex items-center">
-                        <a href="{{ route('teacher.dashboard') }}" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors">
-                            <svg class="w-3 h-3 mr-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="m19.707 9.293-2-2-7-7a1 1 0 0 0-1.414 0l-7 7-2 2a1 1 0 0 0 1.414 1.414L2 10.414V18a2 2 0 0 0 2 2h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a2 2 0 0 0 2-2v-7.586l.293.293a1 1 0 0 0 1.414-1.414Z"/>
-                            </svg>
-                            Home
+                        {{-- Sesuaikan dengan rute guru --}}
+                        <a href="{{ route('teacher.dashboard') }}" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600 cursor-default">
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
+                            Dashboard
                         </a>
-                    </li>
-                    <li>
-                        <div class="flex items-center">
-                            <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
-                            </svg>
-                            <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2">Teachers</span>
-                        </div>
-                    </li>
-                    <li aria-current="page">
-                        <div class="flex items-center">
-                            <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
-                            </svg>
-                            <span class="ml-1 text-sm font-bold text-gray-800 md:ml-2">Dashboard</span>
-                        </div>
                     </li>
                 </ol>
             </nav>
 
             {{-- 2. WELCOME SECTION (Grid 2 Kolom) --}}
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
-                {{-- Profile Card --}}
-                <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col sm:flex-row items-center sm:items-start gap-4 hover:shadow-md transition-shadow duration-300">
-                    <div class="relative flex-shrink-0">
-                        <img src="{{ $user->photo ? asset('storage/'.$user->photo) : 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=E0E7FF&color=4F46E5' }}" 
-                             class="w-20 h-20 rounded-full object-cover border-4 border-gray-50 shadow-sm">
-                        <span class="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></span>
-                    </div>
-                    <div class="text-center sm:text-left flex-1">
-                        <h2 class="text-2xl font-bold text-gray-800">{{ $user->name }}</h2>
-                        <p class="text-gray-500 text-sm mb-3 font-medium">{{ $user->email }}</p>
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">
-                            Teacher
-                        </span>
-                    </div>
+            {{-- Gunakan Div yang sama dengan dashboard admin agar konsisten --}}
+            <div class="w-full bg-white p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-center border border-gray-100">
+                <div class="text-gray-800 mb-4 md:mb-0 text-center md:text-left">
+                    <h2 class="text-2xl font-bold bg-gradient-to-r from-blue-500 to-red-500 bg-clip-text text-transparent">
+                        Welcome back, {{ explode(' ', $user->name)[0] }}!
+                    </h2>
+                    <p class="mt-2 text-gray-600 max-w-md text-sm leading-relaxed">
+                        You have <strong class="text-indigo-600">{{ $todaysClasses->count() }} classes</strong> scheduled for today. Have a great day!
+                    </p>
                 </div>
-
-                {{-- Greeting Banner (Pastel Color) --}}
-                <div class="relative bg-gradient-to-r from-blue-50 to-red-50 rounded-2xl shadow-sm p-6 flex items-center justify-between overflow-hidden border border-blue-100 hover:shadow-md transition-shadow duration-300">
-                    <div class="relative z-10 max-w-md">
-                        <h2 class="text-2xl font-bold mb-2 text-gray-800">
-                            Hello, <span class="text-indigo-600">{{ explode(' ', $user->name)[0] }}!</span> 👋
-                        </h2>
-                        <p class="text-gray-600 text-sm leading-relaxed">
-                            Welcome back! You have <strong class="text-indigo-600">{{ $todaysClasses->count() }} classes</strong> scheduled for today. Have a great day!
-                        </p>
-                    </div>
-                    {{-- Decorative Icon --}}
-                    <div class="hidden sm:block opacity-90">
-                         <div class="h-24 w-24 bg-white rounded-full flex items-center justify-center shadow-sm">
-                            <i class="fas fa-chalkboard-teacher text-4xl text-indigo-400"></i>
-                         </div>
-                    </div>
+                <div class="hidden sm:block">
+                    {{-- Ganti dengan asset yang sesuai atau hapus jika tidak ada --}}
+                    <img src="{{ asset('images/dashboard.png') }}" alt="Dashboard" class="rounded-lg object-contain h-32 w-auto"> 
                 </div>
             </div>
 
-            {{-- 3. SCHEDULE SECTION --}}
-            <div class="space-y-6">
+            {{-- 3. SCHEDULE SECTION (Ganti space-y-8 menjadi space-y-6) --}}
+            <div class="space-y-6"> 
                 <div class="flex items-center justify-between">
                     <div>
                         <h3 class="text-xl font-bold text-gray-800">Today's Schedule</h3>

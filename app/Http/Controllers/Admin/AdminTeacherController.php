@@ -119,7 +119,19 @@ class AdminTeacherController extends Controller
      */
     public function detail(Request $request, $id)
     {
-        $teacher = User::where('is_teacher', 1)->findOrFail($id);
+        $teacher = User::with(['formClasses', 'localClasses'])
+                        ->where('is_teacher', 1)
+                        ->findOrFail($id);
+
+        // 1. Ambil Parameter Navigasi
+        $ref = $request->input('ref'); 
+        $refClassId = $request->input('class_id'); 
+        
+        // Cek apakah class ID valid jika ref=class
+        $refClass = null;
+        if ($ref === 'class' && $refClassId) {
+            $refClass = ClassModel::find($refClassId);
+        }
 
         // 1. Filter Date (Default: Awal bulan ini s/d Akhir bulan ini)
         $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
@@ -149,7 +161,8 @@ class AdminTeacherController extends Controller
         ];
 
         return view('admin.teacher.detail-teacher', compact(
-            'teacher', 'history', 'summary', 'startDate', 'endDate'
+            'teacher', 'history', 'summary', 'startDate', 'endDate',
+            'ref', 'refClass'
         ));
     }
 

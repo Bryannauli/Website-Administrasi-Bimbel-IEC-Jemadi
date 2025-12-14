@@ -63,7 +63,7 @@ class User extends Authenticatable
     public function formClasses()
     {
         // 'form_teacher_id' adalah nama kolom di tabel 'classes'
-        return $this->hasMany(ClassModel::class, 'form_teacher_id');
+        return $this->hasMany(ClassModel::class, 'form_teacher_id')->where('is_active', 1);
     }
 
     /**
@@ -72,6 +72,6 @@ class User extends Authenticatable
     public function localClasses()
     {
         // 'local_teacher_id' adalah nama kolom di tabel 'classes'
-        return $this->hasMany(ClassModel::class, 'local_teacher_id');
+        return $this->hasMany(ClassModel::class, 'local_teacher_id')->where('is_active', 1);
     }
 }

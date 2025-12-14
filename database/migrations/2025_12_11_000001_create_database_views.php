@@ -198,6 +198,8 @@ return new class extends Migration
                 cs.class_id,
                 c.name AS class_name,
                 c.category,        -- Opsional: Jika butuh filter kategori
+                c.form_teacher_id,    -- <<< TAMBAHAN BARU
+                c.local_teacher_id,   -- <<< TAMBAHAN BARU
                 cs.date,
                 c.start_time,
                 c.end_time,
