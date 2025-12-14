@@ -34,13 +34,21 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        // Isi data standar (name, email) dari request yang sudah divalidasi
+        $user->fill($request->validated());
+
+        // Update status is_teacher secara eksplisit
+        // Helper boolean() akan mengembalikan true jika "1"/"on", dan false jika null/tidak ada
+        $user->is_teacher = $request->boolean('is_teacher');
+
+        // Reset verifikasi email hanya jika email berubah
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        $user->save();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
