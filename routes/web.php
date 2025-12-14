@@ -90,12 +90,15 @@ Route::middleware(['auth', 'verified', 'admin'])
         });
 
         /* TEACHER LIST */
-        Route::get('/teachers', [AdminTeacherController::class, 'index'])->name('teacher.index');
-        Route::get('/teachers/add', [AdminTeacherController::class, 'create'])->name('teacher.add');
-        Route::post('/teachers', [AdminTeacherController::class, 'store'])->name('teacher.store');
-        Route::get('/teachers/{id}', [AdminTeacherController::class, 'show'])->name('teacher.show');
-        Route::put('/teachers/{teacher}', [AdminTeacherController::class, 'update'])->name('teacher.update');
-        Route::put('teachers/{teacher}/toggle-status', [AdminTeacherController::class, 'toggleStatus'])->name('teachers.toggle-status');
+        Route::prefix('teachers')->name('teacher.')->group(function () {
+            Route::get('/', [AdminTeacherController::class, 'index'])->name('index');
+            Route::get('/add', [AdminTeacherController::class, 'create'])->name('add');
+            Route::post('/', [AdminTeacherController::class, 'store'])->name('store');
+            Route::get('/{id}', [AdminTeacherController::class, 'detail'])->name('detail');
+            Route::put('/{teacher}', [AdminTeacherController::class, 'update'])->name('update');
+            Route::put('/{teacher}/toggle-status', [AdminTeacherController::class, 'toggleStatus'])->name('toggle-status');
+            Route::delete('/{id}', [AdminTeacherController::class, 'delete'])->name('delete');
+        });
 
         /* =====================================================================
         | TEACHER ATTENDANCE RECORD
@@ -104,15 +107,11 @@ Route::middleware(['auth', 'verified', 'admin'])
         Route::get('/teacher-attendance/{teacherId}', [TeacherAttendanceRecordController::class, 'detail'])->name('teacher.detail');
         Route::post('/teacher-attendance/store', [TeacherAttendanceRecordController::class, 'store'])->name('teacher.attendance.store');
 
-
         /* =====================================================================
         | ASSESSMENT (Global Index/Recap)
         ===================================================================== */
         Route::prefix('assessment')->name('assessment.')->group(function () {
-             // Route ini akan menampilkan daftar semua sesi penilaian (Index Global)
             Route::get('/', [AdminAssessmentController::class, 'index'])->name('index');
-             // Route::get('/assessment/show', [AdminAssessmentController::class, 'show'])->name('assessment.show'); // Diabaikan
-             // Route::post('/assessment/create', [AdminAssessmentController::class, 'create'])->name('assessment.create'); // Diabaikan
         });
     });
 

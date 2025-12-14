@@ -1,32 +1,27 @@
 <x-app-layout>
     <x-slot name="header"></x-slot>
 
-    {{-- KONTEN UTAMA --}}
     <div x-data="{ 
-        // LOGIKA MODAL (FIXED)
-        // Buka Add Modal HANYA jika ada error DAN BUKAN error edit
+        // 1. STATE MODAL
         showAddModal: {{ $errors->any() && !session('edit_error') ? 'true' : 'false' }},
-        
-        // Buka Edit Modal jika ada session 'edit_error'
         showEditModal: {{ session('edit_error') ? 'true' : 'false' }},
         
-        // SETUP DATA FORM (Agar tidak hilang saat error)
+        // 2. STATE FORM EDIT
+        updateUrl: '{{ session('edit_error') ? route('admin.teacher.update', session('edit_error')) : '' }}',
+        deleteUrl: '', 
+        
         editForm: {
             name: '{{ old('name') }}',
             username: '{{ old('username') }}',
             email: '{{ old('email') }}',
             phone: '{{ old('phone') }}',
-            address: {{ json_encode(old('address')) }}, // Encode agar aman dari enter/newline
-            status: {{ old('status') == '1' ? 'true' : 'false' }} // Konversi string '1'/'0' ke boolean
+            address: {{ json_encode(old('address')) }},
+            status: {{ old('status') == '1' ? 'true' : 'false' }}
         },
 
-        // Reconstruct URL Update jika sedang dalam kondisi Error Edit
-        updateUrl: '{{ session('edit_error') ? route('admin.teacher.update', session('edit_error')) : '' }}',
-
-        // Functions
+        // 3. FUNCTIONS
         closeModal(modalVar) {
             if ({{ $errors->any() ? 'true' : 'false' }}) {
-                // Jika sedang error, bersihkan URL parameter agar modal tidak stuck terbuka
                 window.location.href = window.location.href.split('?')[0]; 
             } else {
                 this[modalVar] = false;
@@ -34,7 +29,6 @@
         },
 
         openEditModal(teacher) {
-            // Populate data saat tombol edit diklik (Normal Flow)
             this.editForm = {
                 name: teacher.name,
                 username: teacher.username,
@@ -43,8 +37,53 @@
                 address: teacher.address || '',
                 status: teacher.is_active == 1 
             };
+            
             this.updateUrl = '{{ route('admin.teacher.update', ':id') }}'.replace(':id', teacher.id);
+            this.deleteUrl = '{{ route('admin.teacher.delete', ':id') }}'.replace(':id', teacher.id);
+            
             this.showEditModal = true;
+        },
+
+        // TOGGLE STATUS (Persis seperti Student)
+        confirmToggleStatus(teacherId, isActive) {
+            const action = isActive ? 'DEACTIVATE' : 'ACTIVATE';
+            const statusText = isActive ? 'inactive' : 'active';
+            const iconColor = isActive ? '#EF4444' : '#10B981'; 
+
+            Swal.fire({
+                title: `${action} Teacher?`,
+                text: `Are you sure you want to change this teacher's status to ${statusText}?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: iconColor, 
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: `Yes, ${action}`
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.getElementById('toggleStatusForm');
+                    const url = '{{ route('admin.teacher.toggle-status', ':id') }}'.replace(':id', teacherId);
+                    form.action = url;
+                    form.submit();
+                }
+            });
+        },
+
+        // DELETE (Hanya dipanggil dari Modal Edit - Danger Zone)
+        confirmDelete() {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: 'This teacher will be moved to trash (Soft Delete).',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('delete-teacher-form').action = this.deleteUrl;
+                    document.getElementById('delete-teacher-form').submit();
+                }
+            });
         }
     }" class="py-6 bg-[#F3F4FF] min-h-screen font-sans">
         
@@ -68,20 +107,26 @@
                 </ol>
             </nav>
 
-            {{-- TITLE --}}
+            {{-- TITLE & DESC --}}
             <div class="mb-8">
                 <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent inline-block">
                     Teachers Data
                 </h1>
+                <p class="text-gray-500 text-sm mt-1">Manage all active and inactive teacher records.</p>
             </div>
 
-            {{-- STATS CARD --}}
+            {{-- STATS CARD (DIKEMBALIKAN KE SINI AGAR TIDAK ERROR) --}}
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-blue-600 p-4 mb-8 max-w-sm">
                 <div class="flex items-center justify-between gap-4">
+                    {{-- Total --}}
                     <div>
                         <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Total Teachers</h3>
-                        <p class="text-3xl font-bold text-gray-900 leading-none">{{ number_format($totalTeachers ?? 0) }}</p>
+                        <p class="text-3xl font-bold text-gray-900 leading-none">
+                            {{ number_format($totalTeachers ?? 0) }}
+                        </p>
                     </div>
+
+                    {{-- Active/Inactive --}}
                     <div class="flex flex-col gap-1.5">
                         <div class="flex items-center justify-between gap-3 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-md border border-blue-100 min-w-[110px]">
                             <div class="flex items-center gap-1.5">
@@ -90,6 +135,7 @@
                             </div>
                             <span class="text-sm font-bold">{{ number_format($totalActive ?? 0) }}</span>
                         </div>
+
                         <div class="flex items-center justify-between gap-3 px-2.5 py-1 bg-red-50 text-red-700 rounded-md border border-red-100 min-w-[110px]">
                             <div class="flex items-center gap-1.5">
                                 <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>
@@ -106,7 +152,6 @@
 
                 {{-- HEADER ACTIONS --}}
                 <div class="p-4 sm:p-6 border-b border-gray-200 flex flex-col gap-4">
-                    
                     {{-- Search --}}
                     <div class="w-full">
                         <form action="{{ route('admin.teacher.index') }}" method="GET" class="relative w-full">
@@ -126,7 +171,7 @@
                     <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                         <form action="{{ route('admin.teacher.index') }}" method="GET" class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
                             @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
-
+                            
                             {{-- Filter Status --}}
                             <div class="relative flex-grow sm:flex-grow-0">
                                 <select name="status" onchange="this.form.submit()" class="appearance-none h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 bg-gray-50 focus:ring-2 focus:ring-blue-500 cursor-pointer">
@@ -135,7 +180,7 @@
                                     <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
                                 </select>
                             </div>
-
+                            
                             {{-- Filter Sort --}}
                             <div class="relative flex-grow sm:flex-grow-0">
                                 <select name="sort" onchange="this.form.submit()" class="appearance-none h-10 w-full sm:w-auto px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer">
@@ -146,11 +191,8 @@
                                 </select>
                             </div>
 
-                            {{-- Reset --}}
                             @if(request('status') || request('sort') || request('search'))
-                                <a href="{{ route('admin.teacher.index') }}" class="h-10 w-10 flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg transition-colors flex-shrink-0" title="Reset Filters">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                </a>
+                                <a href="{{ route('admin.teacher.index') }}" class="h-10 w-10 flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg transition-colors flex-shrink-0" title="Reset Filters"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></a>
                             @endif
                         </form>
 
@@ -188,38 +230,43 @@
                                     <td class="px-6 py-4 whitespace-nowrap">{{ $teacher->phone ?? '-' }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap">{{ $teacher->email ?? '-' }}</td>
                                     
-                                    {{-- Status & Badge --}}
+                                    {{-- Status --}}
                                     <td class="px-6 py-4 text-center whitespace-nowrap">
-                                        <div class="flex flex-col items-center justify-center gap-1">
-                                            @if($teacher->is_active)
-                                                <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">Active</span>
-                                            @else
-                                                <span class="px-3 py-1 bg-gray-100 text-gray-500 rounded-full text-xs font-bold">Inactive</span>
-                                            @endif
-                                            
-                                            @php
-                                                $isForm = \App\Models\ClassModel::where('form_teacher_id', $teacher->id)->exists();
-                                                $isLocal = \App\Models\ClassModel::where('local_teacher_id', $teacher->id)->exists();
-                                            @endphp
-                                            @if ($isForm && $isLocal) <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200">Form & Local</span>
-                                            @elseif ($isForm) <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">Form Teacher</span>
-                                            @elseif ($isLocal) <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 border border-indigo-200">Local Teacher</span>
-                                            @endif
-                                        </div>
+                                        @if($teacher->is_active)
+                                            <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">Active</span>
+                                        @else
+                                            <span class="px-3 py-1 bg-gray-100 text-gray-500 rounded-full text-xs font-bold">Inactive</span>
+                                        @endif
                                     </td>
 
-                                    {{-- Actions --}}
+                                    {{-- Actions (Edit, Toggle Status, etc) --}}
                                     <td class="px-6 py-4 text-center whitespace-nowrap">
                                         <div class="flex items-center justify-center gap-3">
-                                            <a href="{{ route('admin.teacher.show', $teacher->id) }}" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View">
+                                            
+                                            {{-- View --}}
+                                            <a href="{{ route('admin.teacher.detail', $teacher->id) }}" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                             </a>
+                                            
+                                            {{-- Edit --}}
                                             <button @click='openEditModal(@json($teacher))' class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Edit">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                             </button>
-                                            <button class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+
+                                            {{-- Toggle Status (GANTIKAN Ikon Delete) --}}
+                                            <button type="button" 
+                                                @click="confirmToggleStatus({{ $teacher->id }}, {{ $teacher->is_active ? 'true' : 'false' }})"
+                                                class="p-1.5 transition-colors {{ $teacher->is_active ? 'text-gray-400 hover:text-red-600 hover:bg-red-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50' }}"
+                                                title="{{ $teacher->is_active ? 'Deactivate' : 'Activate' }}">
+                                                @if($teacher->is_active)
+                                                    {{-- Ikon Power/Ban --}}
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                                                @else
+                                                    {{-- Ikon Check/Power --}}
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                @endif
                                             </button>
+
                                         </div>
                                     </td>
                                 </tr>
@@ -252,16 +299,30 @@
         @include('admin.teacher.partials.add-teacher-modal')
         @include('admin.teacher.partials.edit-teacher-modal')
 
+        {{-- FORMS HIDDEN --}}
+        <form id="delete-teacher-form" method="POST" style="display: none;">
+            @csrf @method('DELETE')
+        </form>
+
+        <form id="toggleStatusForm" method="POST" action="#" style="display: none;">
+            @csrf @method('PUT')
+        </form>
+
     </div>
 
     {{-- SweetAlert --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const successMessage = <?php echo json_encode(session('success')); ?>;
-            const errorMessage = <?php echo json_encode(session('error')); ?>;
-            if (successMessage) Swal.fire({ icon: 'success', title: 'Success!', text: successMessage, timer: 3000, showConfirmButton: false });
-            if (errorMessage) Swal.fire({ icon: 'error', title: 'Error!', text: errorMessage });
+            const successMessage = <?= json_encode(session('success')) ?>;
+            const errorMessage = <?= json_encode(session('error')) ?>;
+
+            if (successMessage) {
+                Swal.fire({ icon: 'success', title: 'Success!', text: successMessage, timer: 3000, showConfirmButton: false });
+            }
+            if (errorMessage) {
+                Swal.fire({ icon: 'error', title: 'Error!', text: errorMessage });
+            }
         });
     </script>
 </x-app-layout>

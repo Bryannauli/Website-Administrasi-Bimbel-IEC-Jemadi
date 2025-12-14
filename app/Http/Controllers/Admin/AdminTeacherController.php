@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class AdminTeacherController extends Controller
 {
@@ -53,12 +55,22 @@ class AdminTeacherController extends Controller
         // 3. Pagination
         $teachers = $query->paginate(10)->withQueryString();
 
-        // 4. Statistik (Query terpisah agar angka tetap statis meski difilter)
-        $totalTeachers = User::where('is_teacher', 1)->count();
-        $totalActive   = User::where('is_teacher', 1)->where('is_active', 1)->count();
-        $totalInactive = User::where('is_teacher', 1)->where('is_active', 0)->count();
+        // ============================================================
+        // 4. Hitung Statistik (MENGGUNAKAN STORED PROCEDURE) - UPDATED
+        // ============================================================
+        
+        // Panggil Procedure
+        DB::statement('CALL p_get_teacher_global_stats(@total, @active, @inactive)');
+        
+        // Ambil Hasil dari Variabel MySQL
+        $stats = DB::select('SELECT @total AS total, @active AS active, @inactive AS inactive');
+        
+        $totalTeachers = $stats[0]->total;
+        $totalActive   = $stats[0]->active;
+        $totalInactive = $stats[0]->inactive;
+        // ============================================================
 
-        // Data pendukung (jika masih diperlukan untuk filter dropdown di masa depan)
+        // Data pendukung
         $classes = ClassModel::orderBy('name')->get();
 
         return view('admin.teacher.teacher', compact(
@@ -104,76 +116,121 @@ class AdminTeacherController extends Controller
     /**
      * Menampilkan Detail Guru
      */
-    public function show($id)
+    public function detail(Request $request, $id)
     {
-        $teacher = User::with(['formClasses', 'localClasses'])->where('is_teacher', 1)->findOrFail($id);
+        $teacher = User::where('is_teacher', 1)->findOrFail($id);
 
-        // Logic Label Tipe Guru
-        $isForm = $teacher->formClasses->isNotEmpty();
-        $isLocal = $teacher->localClasses->isNotEmpty();
-        
-        if ($isForm && $isLocal) $type = 'Form & Local Teacher';
-        elseif ($isForm) $type = 'Form Teacher';
-        elseif ($isLocal) $type = 'Local Teacher';
-        else $type = '-';
-        
-        // --- DUMMY DATA ATTENDANCE ---
-        $present = 22; $late = 3; $sick = 1; $absent = 2; $permission = 0;
-        $totalDays = $present + $late + $sick + $absent + $permission;
-        $percentage = $totalDays > 0 ? round((($present + $late) / $totalDays) * 100) : 0;
-        $summary = ['present' => $present, 'late' => $late, 'sick' => $sick, 'absent' => $absent, 'permission' => $permission];
-        
-        $dummyRecords = collect([]);
-        for ($i = 0; $i < 15; $i++) {
-            $mockRecord = new \stdClass();
-            $statuses = ['present', 'present', 'present', 'late', 'absent', 'sick']; 
-            $mockRecord->status = $statuses[array_rand($statuses)];
-            $mockSession = new \stdClass();
-            $mockSession->date = now()->subDays($i)->format('Y-m-d'); 
-            $mockRecord->session = $mockSession;
-            $dummyRecords->push($mockRecord);
-        }
-        $attendance = $dummyRecords; 
-        $lastRecords = $dummyRecords->take(7); 
-        // -----------------------------
+        // 1. Filter Date (Default: Awal bulan ini s/d Akhir bulan ini)
+        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
+        $endDate   = $request->input('end_date', Carbon::now()->endOfMonth()->format('Y-m-d'));
 
-        return view('admin.teacher.show', compact('teacher', 'type', 'totalDays', 'percentage', 'summary', 'lastRecords', 'attendance', 'present', 'late', 'sick', 'absent', 'permission'));
+        // 2. BASE QUERY
+        $baseQuery = DB::table('class_sessions as s')
+            ->join('classes as c', 's.class_id', '=', 'c.id')
+            ->where('s.teacher_id', $id)
+            // ->where('c.is_active', 1)    <--- INI DIHAPUS
+            ->whereNull('c.deleted_at')     // Tetap dipertahankan agar data sampah tidak masuk
+            ->whereBetween('s.date', [$startDate, $endDate]);
+
+        // 3. HISTORY
+        $history = $baseQuery->clone()
+            ->select(
+                's.id', 's.date', 
+                'c.name as class_name', 'c.start_time', 'c.end_time'
+            )
+            ->orderBy('s.date', 'desc')
+            ->get();
+
+        // 4. STATISTIK
+        $totalSessions = $baseQuery->clone()->count();
+        $totalClasses  = $baseQuery->clone()->distinct('s.class_id')->count('s.class_id');
+
+        $summary = [
+            'total_sessions' => $totalSessions,
+            'unique_classes' => $totalClasses,
+        ];
+
+        return view('admin.teacher.detail-teacher', compact(
+            'teacher', 'history', 'summary', 'startDate', 'endDate'
+        ));
     }
 
     /**
-     * Update Data Guru (Tanpa Password & Foto)
+     * Update Data Guru
      */
     public function update(Request $request, User $teacher)
     {
-        // 1. Gunakan Validator Manual agar bisa custom redirect
+        // 1. Validasi
         $validator = Validator::make($request->all(), [
             'name'      => 'required|string|max:255',
-            // Unique username & email kecuali punya diri sendiri
             'username'  => ['required', 'string', 'max:255', Rule::unique('users', 'username')->ignore($teacher->id)],
             'email'     => ['nullable', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($teacher->id)],
             'phone'     => 'nullable|string|max:20', 
             'status'    => 'required|boolean', 
             'address'   => 'nullable|string',
+            // Validasi Password (Nullable, hanya dicek jika diisi)
+            'password'  => 'nullable|string|min:8', 
         ]);
 
-        // 2. Jika Gagal, Redirect Back dengan Flag 'edit_error'
         if ($validator->fails()) {
             return redirect()->back()
                         ->withErrors($validator)
                         ->withInput()
-                        ->with('edit_error', $teacher->id); // <--- KUNCI PERBAIKANNYA
+                        ->with('edit_error', $teacher->id);
         }
 
-        // 3. Jika Sukses, Lakukan Update
-        $teacher->update([
+        // 2. Siapkan Data Update Dasar
+        $dataToUpdate = [
             'name'      => $request->name,
             'username'  => $request->username,
             'email'     => $request->email,
             'phone'     => $request->phone,
             'is_active' => $request->status, 
             'address'   => $request->address,
-        ]);
+        ];
+
+        // 3. Cek apakah Password diisi? (Fitur Reset Password)
+        if ($request->filled('password')) {
+            $dataToUpdate['password'] = Hash::make($request->password);
+        }
+
+        // 4. Update
+        $teacher->update($dataToUpdate);
 
         return redirect()->route('admin.teacher.show', $teacher->id)->with('success', 'Teacher updated successfully!');
+    }
+
+    /**
+     * Toggle Status Guru (Active <-> Inactive)
+     */
+    public function toggleStatus($id)
+    {
+        $teacher = User::where('is_teacher', 1)->findOrFail($id);
+        
+        // Toggle is_active
+        $teacher->update([
+            'is_active' => !$teacher->is_active
+        ]);
+
+        $statusText = $teacher->is_active ? 'activated' : 'deactivated';
+        return back()->with('success', "Teacher has been {$statusText}.");
+    }
+
+    public function delete($id)
+    {
+        try {
+            $teacher = User::where('is_teacher', 1)->findOrFail($id);
+            
+            // Hapus foto profil jika ada (Opsional, atau biarkan saja biar soft delete murni)
+            // if ($teacher->profile_photo_path) { ... }
+
+            $teacher->delete(); // Soft Delete
+
+            return redirect()->route('admin.teacher.index')
+                ->with('success', 'Teacher has been moved to trash.');
+                
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to delete teacher: ' . $e->getMessage());
+        }
     }
 }

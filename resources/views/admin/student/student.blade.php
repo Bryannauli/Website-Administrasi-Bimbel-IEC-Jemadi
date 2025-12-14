@@ -10,10 +10,11 @@
         hasError: {{ $errors->any() ? 'true' : 'false' }},
         isEditFailed: {{ Session::get('edit_failed') ? 'true' : 'false' }}, 
         
-        // LOGIKA AUTO-OPEN
+        // LOGIKA AUTO-OPEN MODAL
         showAddModal: {{ $errors->any() && !Session::get('edit_failed') ? 'true' : 'false' }},
         showEditModal: {{ Session::get('edit_failed') ? 'true' : 'false' }}, 
         
+        // URL ACTION
         updateUrl: '',
         deleteUrl: '',
         
@@ -29,7 +30,7 @@
             class_id: ''
         },
 
-        // 1. INIT FUNCTION
+        // 1. INIT FUNCTION (Jalankan saat load jika ada error validasi edit)
         init() {
             if (this.isEditFailed) {
                 this.editForm = {
@@ -38,10 +39,11 @@
                     name: '{{ old('name') }}',
                     gender: '{{ old('gender') }}',
                     phone: '{{ old('phone') }}',
-                    address: '{{ old('address') }}',
+                    address: {{ json_encode(old('address')) }}, // Encode agar aman dari enter/newline
                     is_active: {{ old('is_active') == 1 ? 'true' : 'false' }},
                     class_id: '{{ old('class_id') }}'
                 };
+                // Reconstruct URL
                 this.updateUrl = '{{ route('admin.student.update', ':id') }}'.replace(':id', this.editForm.id);
                 this.deleteUrl = '{{ route('admin.student.delete', ':id') }}'.replace(':id', this.editForm.id);
             }
@@ -50,6 +52,7 @@
         // 2. CLOSE MODAL
         closeModal(modalVar) {
             if (this.hasError) {
+                // Jika sedang error, refresh halaman untuk bersihkan error bag
                 window.location.href = window.location.href.split('?')[0]; 
             } else {
                 this[modalVar] = false;
@@ -69,6 +72,7 @@
                 class_id: student.class_id || ''
             };
 
+            // Set URL Update & Delete sesuai ID siswa
             this.updateUrl = '{{ route('admin.student.update', ':id') }}'.replace(':id', student.id);
             this.deleteUrl = '{{ route('admin.student.delete', ':id') }}'.replace(':id', student.id);
             
@@ -95,6 +99,24 @@
                     const url = '{{ route('admin.student.toggleStatus', ':id') }}'.replace(':id', studentId);
                     form.action = url;
                     form.submit();
+                }
+            });
+        },
+
+        // 5. CONFIRM DELETE (Soft Delete)
+        confirmDelete() {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: 'This student will be moved to trash (Soft Delete).',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#EF4444', 
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: 'Yes, Delete Student'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Submit form hidden yang ada di dalam edit-modal.blade.php
+                    document.getElementById('delete-student-form').submit();
                 }
             });
         }
@@ -127,10 +149,9 @@
                 <p class="text-gray-500 text-sm mt-1">Manage all active and inactive student records.</p>
             </div>
 
-            {{-- STATS CARD (NEW ADDITION) --}}
+            {{-- STATS CARD --}}
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-blue-600 p-4 mb-8 max-w-sm">
                 <div class="flex items-center justify-between gap-4">
-                    
                     {{-- Kiri: Total Utama --}}
                     <div>
                         <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-0.5">Total Students</h3>
@@ -140,14 +161,12 @@
                     </div>
 
                     {{-- Kanan: Active & Inactive --}}
-                    {{-- Note: Idealnya hitungan Active/Inactive dikirim dari Controller agar akurat (tidak terkena pagination) --}}
                     <div class="flex flex-col gap-1.5">
                         <div class="flex items-center justify-between gap-3 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-md border border-blue-100 min-w-[110px]">
                             <div class="flex items-center gap-1.5">
                                 <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
                                 <span class="text-[10px] font-bold uppercase">Active</span>
                             </div>
-                            {{-- Placeholder Value (Ganti dengan $totalActive dari Controller) --}}
                             <span class="text-sm font-bold">{{ number_format($totalActive ?? 0) }}</span>
                         </div>
 
@@ -156,13 +175,11 @@
                                 <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>
                                 <span class="text-[10px] font-bold uppercase">Inactive</span>
                             </div>
-                            {{-- Placeholder Value (Ganti dengan $totalInactive dari Controller) --}}
                             <span class="text-sm font-bold">{{ number_format($totalInactive ?? 0) }}</span>
                         </div>
                     </div>
                 </div>
             </div>
-            {{-- END STATS CARD --}}
 
             {{-- TABLE SECTION --}}
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -173,7 +190,7 @@
                     {{-- Search --}}
                     <div class="w-full">
                         <form action="{{ route('admin.student.index') }}" method="GET" class="relative w-full">
-                            @foreach(['academic_year', 'category', 'class_id', 'sort'] as $key)
+                            @foreach(['academic_year', 'category', 'class_id', 'sort', 'status'] as $key)
                                 @if(request($key)) <input type="hidden" name="{{ $key }}" value="{{ request($key) }}"> @endif
                             @endforeach
                             
@@ -193,7 +210,7 @@
                         <form action="{{ route('admin.student.index') }}" method="GET" class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
                             @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
 
-                            {{-- Filter Tahun (Updated: pr-10) --}}
+                            {{-- Filter Tahun --}}
                             <div class="relative flex-grow sm:flex-grow-0">
                                 <select name="academic_year" onchange="this.form.submit()" 
                                         class="h-10 w-full sm:w-auto px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 bg-gray-50 focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none">
@@ -204,18 +221,18 @@
                                 </select>
                             </div>
 
-                            {{-- Filter Category (Updated: "All Categories" & pr-10) --}}
+                            {{-- Filter Category --}}
                             <div class="relative flex-grow sm:flex-grow-0">
                                 <select name="category" onchange="this.form.submit()" 
                                         class="h-10 w-full sm:w-auto px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none">
-                                    <option value="">All Categories</option> {{-- PERUBAHAN DI SINI --}}
+                                    <option value="">All Categories</option>
                                     @foreach($categories as $cat)
                                         <option value="{{ $cat }}" {{ request('category') == $cat ? 'selected' : '' }}>{{ ucwords(str_replace('_', ' ', $cat)) }}</option>
                                     @endforeach
                                 </select>
                             </div>
 
-                            {{-- Filter Class (Updated: pr-10) --}}
+                            {{-- Filter Class --}}
                             <div class="relative flex-grow sm:flex-grow-0">
                                 <select name="class_id" onchange="this.form.submit()" 
                                         class="h-10 w-full sm:w-auto px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none max-w-[200px] truncate">
@@ -231,15 +248,8 @@
                             <div class="relative flex-grow sm:flex-grow-0">
                                 <select name="status" onchange="this.form.submit()" 
                                         class="h-10 w-full sm:w-auto px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none">
-                                    
-                                    {{-- Value kosong untuk 'All Status' --}}
-                                    {{-- Selected logic: Hanya terpilih jika ada parameter status DAN nilainya kosong --}}
                                     <option value="" {{ request()->has('status') && request('status') == '' ? 'selected' : '' }}>All Status</option>
-                                    
-                                    {{-- Value 'active' --}}
-                                    {{-- Selected logic: Terpilih jika value 'active' ATAU jika parameter status TIDAK ADA (Default) --}}
                                     <option value="active" {{ request('status', 'active') == 'active' ? 'selected' : '' }}>Active</option>
-                                    
                                     <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
                                 </select>
                             </div>
@@ -248,21 +258,16 @@
                             <div class="relative flex-grow sm:flex-grow-0">
                                 <select name="sort" onchange="this.form.submit()" 
                                         class="h-10 w-full sm:w-auto px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none">
-                                    
                                     <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Newest</option>
                                     <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest</option>
-                                    
-                                    {{-- TAMBAHAN OPSI STUDENT NUMBER --}}
                                     <option value="number_asc" {{ request('sort') == 'number_asc' ? 'selected' : '' }}>ID (0-9)</option>
                                     <option value="number_desc" {{ request('sort') == 'number_desc' ? 'selected' : '' }}>ID (9-0)</option>
-                                    {{-- ----------------------------- --}}
-
                                     <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>Name (A-Z)</option>
                                     <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Name (Z-A)</option>
                                 </select>
                             </div>
 
-                            {{-- Reset Filters (Updated condition) --}}
+                            {{-- Reset Filters --}}
                             @if(request('class_id') || request('academic_year') || request('category') || request('sort') || request('search') || request('status'))
                                 <a href="{{ route('admin.student.index') }}" class="h-10 w-10 flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg transition-colors flex-shrink-0" title="Reset Filters">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -346,7 +351,6 @@
                                                 class="p-1.5 transition-colors 
                                                        {{ $student->is_active ? 'text-gray-400 hover:text-red-600 hover:bg-red-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50' }}"
                                                 title="{{ $student->is_active ? 'Deactivate' : 'Activate' }}">
-                                
                                                 @if($student->is_active)
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
                                                 @else
@@ -365,31 +369,20 @@
                     </table>
                 </div>
 
-                {{-- PAGINATION CUSTOM (PREVIOUS / NEXT) --}}
+                {{-- PAGINATION --}}
                 <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white">
-                    
                     @if ($students->onFirstPage())
-                        <button class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-400 bg-gray-50 cursor-not-allowed" disabled>
-                            Previous
-                        </button>
+                        <button class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-400 bg-gray-50 cursor-not-allowed" disabled>Previous</button>
                     @else
-                        <a href="{{ $students->previousPageUrl() }}" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 hover:text-gray-800 transition-colors">
-                            Previous
-                        </a>
+                        <a href="{{ $students->previousPageUrl() }}" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 hover:text-gray-800 transition-colors">Previous</a>
                     @endif
-                    
                     <span class="text-sm text-gray-500 font-medium">
                         Page <span class="font-semibold text-gray-900">{{ $students->currentPage() }}</span> of <span class="font-semibold text-gray-900">{{ $students->lastPage() }}</span>
                     </span>
-                    
                     @if ($students->hasMorePages())
-                        <a href="{{ $students->nextPageUrl() }}" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 hover:text-gray-800 transition-colors">
-                            Next
-                        </a>
+                        <a href="{{ $students->nextPageUrl() }}" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 hover:text-gray-800 transition-colors">Next</a>
                     @else
-                        <button class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-400 bg-gray-50 cursor-not-allowed" disabled>
-                            Next
-                        </button>
+                        <button class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-400 bg-gray-50 cursor-not-allowed" disabled>Next</button>
                     @endif
                 </div>
 
@@ -407,5 +400,31 @@
         </form>
     </div>
     
+    {{-- SWEETALERT HANDLER --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Gunakan json_encode untuk keamanan syntax JS
+            const successMessage = <?php json_encode(session('success')) ?>;
+            const errorMessage   = <?php json_encode(session('error')) ?>;
+
+            if (successMessage) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: successMessage,
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            }
+
+            if (errorMessage) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: errorMessage
+                });
+            }
+        });
+    </script>
 </x-app-layout>

@@ -275,6 +275,34 @@ return new class extends Migration
                 COMMIT; -- Commit dilakukan DI SINI
             END
         ");
+
+        // ==========================================
+        // 9. PROCEDURE: Teacher Global Stats (BARU)
+        // ==========================================
+        DB::unprepared('
+            DROP PROCEDURE IF EXISTS p_get_teacher_global_stats;
+            CREATE PROCEDURE p_get_teacher_global_stats(
+                OUT total_teachers INT,
+                OUT total_active INT,
+                OUT total_inactive INT
+            )
+            BEGIN
+                -- Hitung Total Semua Guru (is_teacher = 1)
+                SELECT COUNT(*) INTO total_teachers 
+                FROM users 
+                WHERE is_teacher = 1 AND deleted_at IS NULL;
+
+                -- Hitung Guru Aktif
+                SELECT COUNT(*) INTO total_active 
+                FROM users 
+                WHERE is_teacher = 1 AND is_active = 1 AND deleted_at IS NULL;
+
+                -- Hitung Guru Tidak Aktif
+                SELECT COUNT(*) INTO total_inactive 
+                FROM users 
+                WHERE is_teacher = 1 AND is_active = 0 AND deleted_at IS NULL;
+            END
+        ');
     }
 
     public function down(): void
@@ -288,5 +316,6 @@ return new class extends Migration
         DB::unprepared('DROP PROCEDURE IF EXISTS p_get_attendance_summary');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_get_class_attendance_stats');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_get_student_global_stats');
+        DB::unprepared('DROP PROCEDURE IF EXISTS p_get_teacher_global_stats');
     }
 };
