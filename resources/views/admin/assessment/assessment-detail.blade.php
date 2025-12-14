@@ -79,49 +79,54 @@
                     {{-- A. ACTIONS SAAT MODE BACA (!isEditing) --}}
                     {{-- ================================== --}}
                     <div x-show="!isEditing" class="flex items-center gap-2">
-                        
-                        {{-- Tombol EDIT (Selalu ada jika belum FINAL) --}}
-                        @if($session->status !== 'final')
-                        <button type="button" 
-                                @click="isEditing = true"
-                                class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition shadow-md flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                            Edit Assessment
-                        </button>
+                        {{-- CASE 1: DRAFT (Guru sedang kerja -> Admin GABOLEH Edit) --}}
+                        @if($session->status === 'draft')
+                            <span class="px-4 py-2 bg-yellow-100 text-yellow-700 text-sm font-bold rounded-lg border border-yellow-200 shadow-sm flex items-center gap-2 cursor-help" title="Waiting for teacher to submit">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                Draft (Teacher working)
+                            </span>
                         @endif
 
-                        {{-- Tombol QUICK APPROVE & FINALIZE (Ungu - Hanya muncul jika SUBMITTED) --}}
+                        {{-- CASE 2: SUBMITTED (Guru sudah setor -> Admin BOLEH Edit) --}}
                         @if($session->status === 'submitted')
-                        <button type="submit"
-                                form="quickStatusForm"
-                                name="action_type" 
-                                value="finalize_quick"
-                                onclick="return confirmFinalize(document.getElementById('quickStatusForm'))"
-                                class="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold rounded-lg transition shadow-md flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            Approve & Finalize
-                        </button>
+                            <button type="button" 
+                                    @click="isEditing = true"
+                                    class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition shadow-md flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                Review & Edit
+                            </button>
+
+                            {{-- Tombol QUICK APPROVE (Tetap ada) --}}
+                            <button type="submit"
+                                    form="quickStatusForm"
+                                    name="action_type" 
+                                    value="finalize_quick"
+                                    onclick="return confirmFinalize(document.getElementById('quickStatusForm'))"
+                                    class="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold rounded-lg transition shadow-md flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Approve & Finalize
+                            </button>
                         @endif
                         
-                        {{-- Tombol QUICK REVERT TO DRAFT (Tetap Merah) --}}
-                        @if($session->status === 'submitted' || $session->status === 'final')
-                        <button type="submit" 
-                                form="quickStatusForm"
-                                name="action_type" 
-                                value="draft_quick"
-                                title="Send back to teacher"
-                                onclick="return confirmRevert(document.getElementById('quickStatusForm'))"
-                                class="px-3 py-2.5 bg-red-100 text-red-600 hover:bg-red-200 border border-red-200 font-bold rounded-lg transition">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
-                        </button>
+                        {{-- CASE 3: FINAL (Locked) --}}
+                        @if($session->status === 'final')
+                            <span class="px-5 py-2.5 bg-purple-100 text-purple-700 text-sm font-bold rounded-lg border border-purple-200 shadow-sm flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Finalized (Locked)
+                            </span>
                         @endif
 
-                        {{-- Tombol FINALIZED (Indicator jika sudah FINAL) --}}
-                        @if($session->status === 'final')
-                        <span class="px-5 py-2.5 bg-purple-100 text-purple-700 text-sm font-bold rounded-lg border border-purple-200 shadow-sm flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            Finalized (Locked)
-                        </span>
+                        {{-- TOMBOL REVERT TO DRAFT (Bisa dilakukan saat Submitted atau Final) --}}
+                        @if($session->status === 'submitted' || $session->status === 'final')
+                            <button type="submit" 
+                                    form="quickStatusForm"
+                                    name="action_type" 
+                                    value="draft_quick"
+                                    title="Send back to teacher (Revert to Draft)"
+                                    onclick="return confirmRevert(document.getElementById('quickStatusForm'))"
+                                    class="px-3 py-2.5 bg-red-100 text-red-600 hover:bg-red-200 border border-red-200 font-bold rounded-lg transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                            </button>
                         @endif
 
                     </div>

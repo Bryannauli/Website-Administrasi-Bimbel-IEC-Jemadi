@@ -209,6 +209,17 @@ class AdminAssessmentController extends Controller
         // LOGIKA FULL GRADE UPDATE (Jika bukan Quick Action, lanjutkan proses nilai)
         // ==========================================================
 
+        // [BARU] SECURITY CHECK: Admin tidak boleh edit nilai jika masih DRAFT
+        if ($session->status === 'draft') {
+            return back()->with('error', 'Action denied. You cannot edit grades while the assessment is still in DRAFT mode (Teacher is working on it).');
+        }
+
+        // [BARU] SECURITY CHECK: Admin tidak boleh edit nilai jika sudah FINAL (Kecuali revert)
+        // (Opsional, karena UI sudah menghilangkannya, tapi bagus untuk keamanan)
+        if ($session->status === 'final') {
+            return back()->with('error', 'Action denied. Assessment is already FINALISED.');
+        }
+
         $rules = [
             'written_date' => 'required|date',
             'speaking_date' => 'required|date',
