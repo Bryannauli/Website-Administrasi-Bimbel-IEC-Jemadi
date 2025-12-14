@@ -131,8 +131,6 @@
     <div class="space-y-4">
         <div class="flex items-center justify-between">
             <h3 class="text-xl font-bold text-gray-800">Attendance History</h3>
-            
-            {{-- Tombol ini akan membuka modal --}}
             <button @click="openModal = true" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center space-x-2 text-sm shadow-sm shadow-blue-200">
                 <i class="fas fa-plus"></i>
                 <span>Add Session</span>
@@ -147,16 +145,27 @@
                             <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-16">No</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Topics</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Teacher</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
-                        @forelse($ClassSessions as $session)
+                        {{-- PERHATIKAN: Variabel diganti jadi $classSessions (sesuai controller) --}}
+                        @forelse($classSessions as $session)
                         <tr class="hover:bg-gray-50 transition">
-                            <td class="px-6 py-4 text-sm text-gray-600">{{ $loop->iteration + $ClassSessions->firstItem() - 1 }}</td>
-                            <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ \Carbon\Carbon::parse($session->date)->format('d M Y') }}</td>
                             <td class="px-6 py-4 text-sm text-gray-600">
-                                {{ $session->topics ?? '-' }}
+                                {{ $loop->iteration + $classSessions->firstItem() - 1 }}
+                            </td>
+                            <td class="px-6 py-4 text-sm font-medium text-gray-900">
+                                {{ \Carbon\Carbon::parse($session->date)->format('d M Y') }}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600">
+                                {{-- Menampilkan Topic dari kolom comment --}}
+                                {{ $session->comment ?? '-' }}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600">
+                                {{-- Menampilkan Guru --}}
+                                {{ $session->teacher->name ?? 'Unknown' }}
                             </td>
                             <td class="px-6 py-4">
                                 <a href="{{ route('teacher.classes.session.detail', [$class->id, $session->id]) }}" class="text-gray-500 hover:text-blue-600 transition">
@@ -166,21 +175,21 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="4" class="px-6 py-8 text-center text-gray-500">No attendance sessions recorded yet.</td>
+                            <td colspan="5" class="px-6 py-8 text-center text-gray-500">No attendance sessions recorded yet.</td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
             <div class="px-6 py-4 border-t border-gray-200">
-                {{ $ClassSessions->links() }}
+                {{ $classSessions->links() }}
             </div>
         </div>
     </div>
 
     <hr class="border-gray-200">
 
-    {{-- Tabel Nilai --}}
+    {{-- Tabel Nilai (Assessments) --}}
     <div class="space-y-4">
         <div class="flex items-center justify-between">
             <h3 class="text-xl font-bold text-gray-800">Assessments</h3>
