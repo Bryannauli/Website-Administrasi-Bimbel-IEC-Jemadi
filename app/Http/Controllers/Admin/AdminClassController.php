@@ -21,7 +21,7 @@ class AdminClassController extends Controller
     {
         $query = ClassModel::with(['formTeacher', 'localTeacher', 'schedules']);
 
-        // Search
+        // 1. Filter Search Text
         if ($request->has('search') && $request->search != '') {
             $searchTerm = $request->search;
             $query->where(function($q) use ($searchTerm) {
@@ -30,15 +30,19 @@ class AdminClassController extends Controller
             });
         }
         
-        // Filters
+        // 2. Filters Utama
         if ($request->filled('academic_year')) {
             $query->where('academic_year', $request->academic_year);
         }
         if ($request->filled('category')) {
             $query->where('category', $request->category);
         }
+        // [BARU] Filter Specific Class Name
+        if ($request->filled('class_name')) {
+            $query->where('name', $request->class_name);
+        }
         
-        // Filter Status
+        // 3. Filter Status
         if (!$request->has('status')) {
             $query->where('is_active', true);
         } elseif ($request->filled('status')) {
@@ -49,7 +53,7 @@ class AdminClassController extends Controller
             }
         }
         
-        // Sorting
+        // 4. Sorting
         $sort = $request->query('sort', 'newest'); 
         switch ($sort) {
             case 'oldest': $query->orderBy('created_at', 'asc'); break;
@@ -58,15 +62,32 @@ class AdminClassController extends Controller
             case 'newest': default: $query->orderBy('created_at', 'desc'); break;
         }
 
+        // --- DATA PENDUKUNG DROPDOWN (DINAMIS) ---
         $categories = ['pre_level', 'level', 'step', 'private'];
         $years = ClassModel::select('academic_year')->distinct()->pluck('academic_year')->sortDesc();
 
+        // [LOGIKA BARU] Ambil List Nama Kelas untuk Dropdown
+        // Query ini dipengaruhi oleh filter Category & Year yang sedang aktif
+        $classNameQuery = ClassModel::select('name')->distinct()->orderBy('name', 'asc');
+
+        if ($request->filled('category')) {
+            $classNameQuery->where('category', $request->category);
+        }
+        if ($request->filled('academic_year')) {
+            $classNameQuery->where('academic_year', $request->academic_year);
+        }
+        
+        // Ambil hasil pluck
+        $classNames = $classNameQuery->pluck('name'); 
+
+        // Execute Pagination
         $classes = $query->paginate(10);
         $classes->appends($request->all());
 
         $teachers = User::where('is_teacher', true)->orderBy('name', 'asc')->get();
 
-        return view('admin.classes.class', compact('classes', 'teachers', 'years', 'categories'));
+        // Jangan lupa kirim $classNames ke view
+        return view('admin.classes.class', compact('classes', 'teachers', 'years', 'categories', 'classNames'));
     }
 
     /**

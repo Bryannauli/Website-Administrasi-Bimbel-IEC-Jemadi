@@ -156,25 +156,27 @@
                     {{-- SEARCH BAR --}}
                     <div class="w-full">
                         <form action="{{ route('admin.classes.index') }}" method="GET" class="relative w-full">
-                            @foreach(['academic_year', 'category', 'sort', 'status'] as $key)
+                            {{-- [UPDATE] Tambahkan class_name ke hidden inputs search agar filter tidak hilang saat search text --}}
+                            @foreach(['academic_year', 'category', 'class_name', 'sort', 'status'] as $key)
                                 @if(request($key)) <input type="hidden" name="{{ $key }}" value="{{ request($key) }}"> @endif
                             @endforeach
+                            
                             <input type="text" name="search" value="{{ request('search') }}" 
-                                   placeholder="Search class name or classroom..." 
-                                   class="w-full h-11 pl-12 pr-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm shadow-sm transition-all">
+                                placeholder="Search class name or classroom..." 
+                                class="w-full h-11 pl-12 pr-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm shadow-sm transition-all">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
                             </div>
                         </form>
                     </div>
-                    
+
                     {{-- FILTERS --}}
                     <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
 
                         <form action="{{ route('admin.classes.index') }}" method="GET" class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
                             @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
                             
-                            {{-- Academic Year (Fix: pr-10) --}}
+                            {{-- Academic Year --}}
                             <div class="relative flex-grow sm:flex-grow-0">
                                 <select name="academic_year" onchange="this.form.submit()" 
                                         class="h-10 w-full sm:w-auto px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 bg-gray-50 focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none">
@@ -185,7 +187,7 @@
                                 </select>
                             </div>
 
-                            {{-- Category (Fix: pr-10) --}}
+                            {{-- Category --}}
                             <div class="relative flex-grow sm:flex-grow-0">
                                 <select name="category" onchange="this.form.submit()" 
                                         class="h-10 w-full sm:w-auto px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none">
@@ -195,8 +197,23 @@
                                     @endforeach
                                 </select>
                             </div>
+
+                            {{-- [BARU] Class Name Filter (Ditempatkan Setelah Category) --}}
+                            {{-- Isinya akan berubah otomatis tergantung apa yang dipilih di Category --}}
+                            <div class="relative flex-grow sm:flex-grow-0">
+                                <select name="class_name" onchange="this.form.submit()" 
+                                        class="h-10 w-full sm:w-auto px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none"
+                                        style="min-width: 150px;">
+                                    <option value="">All Class Names</option>
+                                    @foreach($classNames as $cName)
+                                        <option value="{{ $cName }}" {{ request('class_name') == $cName ? 'selected' : '' }}>
+                                            {{ $cName }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                             
-                            {{-- Status (Fix: pr-10) --}}
+                            {{-- Status --}}
                             <div class="relative flex-grow sm:flex-grow-0">
                                 <select name="status" onchange="this.form.submit()" 
                                         class="h-10 w-full sm:w-auto px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none">
@@ -206,7 +223,7 @@
                                 </select>
                             </div>
 
-                            {{-- Sort (Fix: pr-10) --}}
+                            {{-- Sort --}}
                             <div class="relative flex-grow sm:flex-grow-0">
                                 <select name="sort" onchange="this.form.submit()" 
                                         class="h-10 w-full sm:w-auto px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none">
@@ -217,8 +234,8 @@
                                 </select>
                             </div>
 
-                            {{-- Reset --}}
-                            @if(request('academic_year') || request('category') || request('sort') || request('search') || request('status'))
+                            {{-- Reset Button (Update Logic) --}}
+                            @if(request('academic_year') || request('category') || request('class_name') || request('sort') || request('search') || request('status'))
                                 <a href="{{ route('admin.classes.index') }}" class="h-10 w-10 flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg transition-colors flex-shrink-0" title="Reset Filters">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                 </a>
