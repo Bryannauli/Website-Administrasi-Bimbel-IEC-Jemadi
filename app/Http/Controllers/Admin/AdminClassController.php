@@ -296,4 +296,41 @@ class AdminClassController extends Controller
         elseif ($type === 'local') $class->update(['local_teacher_id' => null]);
         return back()->with('success', ucfirst($type) . ' Teacher has been unassigned.');
     }
+
+    public function dailyRecap(Request $request)
+    {
+        // 1. Ambil Tanggal Filter (Default: Hari Ini)
+        $date = $request->input('date', \Carbon\Carbon::today()->format('Y-m-d'));
+        
+        // 2. Tentukan Hari (Monday, Tuesday, dst)
+        $dayOfWeek = \Carbon\Carbon::parse($date)->format('l');
+
+        // 3. Query Jadwal (Schedules) join ke Classes
+        // Lalu Left Join ke Session untuk cek apakah sudah ada sesi hari ini
+        $records = DB::table('schedules as sch')
+            ->join('classes as c', 'sch.class_id', '=', 'c.id')
+            ->leftJoin('class_sessions as s', function($join) use ($date) {
+                $join->on('c.id', '=', 's.class_id')
+                     ->where('s.date', '=', $date);
+            })
+            ->leftJoin('users as t', 's.teacher_id', '=', 't.id') // Ambil guru dari sesi (jika ada)
+            ->where('sch.day_of_week', $dayOfWeek)
+            ->where('c.is_active', 1)   // Hanya tampilkan kelas aktif
+            ->whereNull('c.deleted_at')
+            ->select(
+                'c.id as class_id',
+                'c.name as class_name',
+                'c.start_time',
+                'c.end_time',
+                's.id as session_id',        // NULL jika belum ada sesi
+                't.name as teacher_name',    // NULL jika belum ada sesi/guru
+                'sch.teacher_type'           // form/local (info tambahan jika perlu)
+            )
+            ->orderBy('c.start_time', 'asc')
+            ->paginate(20)->withQueryString();
+
+        // Statistik dihapus sesuai request
+
+        return view('admin.classes.daily-recap', compact('records', 'date'));
+    }
 }

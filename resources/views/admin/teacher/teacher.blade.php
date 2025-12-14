@@ -239,7 +239,7 @@
                                         @endif
                                     </td>
 
-                                    {{-- Actions (Edit, Toggle Status, etc) --}}
+                                    {{-- Actions --}}
                                     <td class="px-6 py-4 text-center whitespace-nowrap">
                                         <div class="flex items-center justify-center gap-3">
                                             
@@ -248,24 +248,34 @@
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                             </a>
                                             
-                                            {{-- Edit --}}
-                                            <button @click='openEditModal(@json($teacher))' class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Edit">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                            </button>
+                                            {{-- CEK: JANGAN TAMPILKAN TOMBOL EDIT/TOGGLE JIKA ITU DIRI SENDIRI --}}
+                                            @if(Auth::id() !== $teacher->id)
+                                                
+                                                {{-- Edit --}}
+                                                <button @click='openEditModal(@json($teacher))' class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Edit">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                                </button>
 
-                                            {{-- Toggle Status (GANTIKAN Ikon Delete) --}}
-                                            <button type="button" 
-                                                @click="confirmToggleStatus({{ $teacher->id }}, {{ $teacher->is_active ? 'true' : 'false' }})"
-                                                class="p-1.5 transition-colors {{ $teacher->is_active ? 'text-gray-400 hover:text-red-600 hover:bg-red-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50' }}"
-                                                title="{{ $teacher->is_active ? 'Deactivate' : 'Activate' }}">
-                                                @if($teacher->is_active)
-                                                    {{-- Ikon Power/Ban --}}
-                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
-                                                @else
-                                                    {{-- Ikon Check/Power --}}
-                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                                @endif
-                                            </button>
+                                                {{-- Toggle Status --}}
+                                                <button type="button" 
+                                                    @click="confirmToggleStatus({{ $teacher->id }}, {{ $teacher->is_active ? 'true' : 'false' }})"
+                                                    class="p-1.5 transition-colors {{ $teacher->is_active ? 'text-gray-400 hover:text-red-600 hover:bg-red-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50' }}"
+                                                    title="{{ $teacher->is_active ? 'Deactivate' : 'Activate' }}">
+                                                    @if($teacher->is_active)
+                                                        {{-- Ikon Power/Ban --}}
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                                                    @else
+                                                        {{-- Ikon Check/Power --}}
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                    @endif
+                                                </button>
+
+                                            @else
+                                                {{-- Tampilan Jika Diri Sendiri --}}
+                                                <span class="px-2 py-1 text-[10px] font-bold text-blue-600 bg-blue-50 rounded border border-blue-100 uppercase">
+                                                    You
+                                                </span>
+                                            @endif
 
                                         </div>
                                     </td>

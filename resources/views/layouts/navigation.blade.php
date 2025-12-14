@@ -55,7 +55,7 @@
             @php
                 $isAcademicsActive = request()->routeIs('admin.classes.*') || 
                                      request()->routeIs('admin.assessment.*') || 
-                                     request()->routeIs('admin.teacher.daily-recap');
+                                     request()->routeIs('admin.classes.daily-recap');
             @endphp
 
             <div x-data="{ open: {{ $isAcademicsActive ? 'true' : 'false' }} }">
@@ -82,9 +82,9 @@
 
                 <div x-show="open" x-transition class="mt-2 space-y-1">
                     {{-- 2.a Daily Class Monitor (Pindah ke sini) --}}
-                    <a href="{{ route('admin.teacher.daily-recap') }}"
+                    <a href="{{ route('admin.classes.daily-recap') }}"
                         class="block px-4 py-2 ml-4 rounded-md text-sm font-medium transition-colors duration-150
-                        {{ request()->routeIs('admin.teacher.daily-recap') ? $subActiveClasses : $subInactiveClasses }}">
+                        {{ request()->routeIs('admin.classes.daily-recap') ? $subActiveClasses : $subInactiveClasses }}">
                         Daily Class Monitor
                     </a>
 
@@ -119,7 +119,7 @@
             {{-- 4. TEACHERS (Sekarang Single Link, bukan Dropdown) --}}
             {{-- Logika Active: Nyala jika route teacher.* TAPI BUKAN daily-recap --}}
             @php
-                $isTeachersActive = request()->routeIs('admin.teacher.*') && !request()->routeIs('admin.teacher.daily-recap');
+                $isTeachersActive = request()->routeIs('admin.teacher.*') && !request()->routeIs('admin.classes.daily-recap');
             @endphp
             
             <a href="{{ route('admin.teacher.index') }}"

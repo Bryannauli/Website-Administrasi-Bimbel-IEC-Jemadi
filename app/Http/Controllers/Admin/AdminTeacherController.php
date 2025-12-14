@@ -11,6 +11,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class AdminTeacherController extends Controller
 {
@@ -124,26 +125,23 @@ class AdminTeacherController extends Controller
         $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->format('Y-m-d'));
         $endDate   = $request->input('end_date', Carbon::now()->endOfMonth()->format('Y-m-d'));
 
-        // 2. BASE QUERY
-        $baseQuery = DB::table('class_sessions as s')
-            ->join('classes as c', 's.class_id', '=', 'c.id')
-            ->where('s.teacher_id', $id)
-            // ->where('c.is_active', 1)    <--- INI DIHAPUS
-            ->whereNull('c.deleted_at')     // Tetap dipertahankan agar data sampah tidak masuk
-            ->whereBetween('s.date', [$startDate, $endDate]);
+        // 2. QUERY DARI VIEW (Lebih Ringan & Bersih)
+        // Kita tidak perlu melakukan JOIN manual lagi di sini
+        $query = DB::table('v_teacher_teaching_history')
+            ->where('teacher_id', $id)
+            ->whereBetween('date', [$startDate, $endDate]);
 
-        // 3. HISTORY
-        $history = $baseQuery->clone()
-            ->select(
-                's.id', 's.date', 
-                'c.name as class_name', 'c.start_time', 'c.end_time'
-            )
-            ->orderBy('s.date', 'desc')
+        // 3. AMBIL DATA HISTORY (Timeline)
+        // Gunakan clone() agar query object dasar tidak berubah
+        $history = $query->clone()
+            ->orderBy('date', 'desc')
+            ->orderBy('start_time', 'asc') // Urutkan jam jika tanggal sama
             ->get();
 
-        // 4. STATISTIK
-        $totalSessions = $baseQuery->clone()->count();
-        $totalClasses  = $baseQuery->clone()->distinct('s.class_id')->count('s.class_id');
+        // 4. HITUNG STATISTIK (Aggregate dari View)
+        // Query Count jauh lebih cepat pada View yang terindeks dibanding Join manual berulang
+        $totalSessions = $query->clone()->count();
+        $totalClasses  = $query->clone()->distinct('class_id')->count('class_id');
 
         $summary = [
             'total_sessions' => $totalSessions,
@@ -206,6 +204,11 @@ class AdminTeacherController extends Controller
     public function toggleStatus($id)
     {
         $teacher = User::where('is_teacher', 1)->findOrFail($id);
+
+        // PROTEKSI: Tidak boleh menonaktifkan diri sendiri
+        if ($teacher->id == Auth::id()) {
+            return back()->with('error', 'You cannot deactivate your own account.');
+        }
         
         // Toggle is_active
         $teacher->update([
@@ -221,8 +224,10 @@ class AdminTeacherController extends Controller
         try {
             $teacher = User::where('is_teacher', 1)->findOrFail($id);
             
-            // Hapus foto profil jika ada (Opsional, atau biarkan saja biar soft delete murni)
-            // if ($teacher->profile_photo_path) { ... }
+            // PROTEKSI: Tidak boleh menghapus diri sendiri
+            if ($teacher->id == Auth::id()) {
+                return back()->with('error', 'You cannot delete your own account.');
+            }
 
             $teacher->delete(); // Soft Delete
 
@@ -234,40 +239,26 @@ class AdminTeacherController extends Controller
         }
     }
 
-    public function dailyRecap(Request $request)
+    /**
+     * Toggle Role User: teacher <-> admin
+     */
+    public function toggleRole($id)
     {
-        // 1. Ambil Tanggal Filter (Default: Hari Ini)
-        $date = $request->input('date', \Carbon\Carbon::today()->format('Y-m-d'));
+        $user = User::findOrFail($id);
+        $currentRole = $user->role;
         
-        // 2. Tentukan Hari (Monday, Tuesday, dst)
-        $dayOfWeek = \Carbon\Carbon::parse($date)->format('l');
+        // PROTEKSI: Tidak boleh mengubah role akun yang sedang login
+        if ($user->id == Auth::id()) {
+            return back()->with('error', 'You cannot change your own account role.');
+        }
 
-        // 3. Query Jadwal (Schedules) join ke Classes
-        // Lalu Left Join ke Session untuk cek apakah sudah ada sesi hari ini
-        $records = DB::table('schedules as sch')
-            ->join('classes as c', 'sch.class_id', '=', 'c.id')
-            ->leftJoin('class_sessions as s', function($join) use ($date) {
-                $join->on('c.id', '=', 's.class_id')
-                     ->where('s.date', '=', $date);
-            })
-            ->leftJoin('users as t', 's.teacher_id', '=', 't.id') // Ambil guru dari sesi (jika ada)
-            ->where('sch.day_of_week', $dayOfWeek)
-            ->where('c.is_active', 1)   // Hanya tampilkan kelas aktif
-            ->whereNull('c.deleted_at')
-            ->select(
-                'c.id as class_id',
-                'c.name as class_name',
-                'c.start_time',
-                'c.end_time',
-                's.id as session_id',        // NULL jika belum ada sesi
-                't.name as teacher_name',    // NULL jika belum ada sesi/guru
-                'sch.teacher_type'           // form/local (info tambahan jika perlu)
-            )
-            ->orderBy('c.start_time', 'asc')
-            ->paginate(20)->withQueryString();
+        // Tentukan Role Baru
+        $newRole = ($currentRole === 'admin') ? 'teacher' : 'admin';
+        
+        // Update Role
+        $user->update(['role' => $newRole]);
 
-        // Statistik dihapus sesuai request
-
-        return view('admin.teacher.daily-recap', compact('records', 'date'));
+        $roleText = ucfirst($newRole); // Admin atau Teacher
+        return back()->with('success', "User role has been changed to {$roleText} successfully.");
     }
 }

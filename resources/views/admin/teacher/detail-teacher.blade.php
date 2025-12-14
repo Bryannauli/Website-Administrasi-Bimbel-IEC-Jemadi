@@ -3,6 +3,7 @@
 
     {{-- WRAPPER UTAMA --}}
     <div class="py-6" x-data="{ 
+        // --- 1. DATA UNTUK EDIT MODAL ---
         showEditModal: {{ $errors->any() ? 'true' : 'false' }},
         
         editForm: {
@@ -16,7 +17,9 @@
 
         updateUrl: '{{ route('admin.teacher.update', $teacher->id) }}',
         deleteUrl: '{{ route('admin.teacher.delete', $teacher->id) }}',
+        toggleRoleUrl: '{{ route('admin.teacher.toggleRole', $teacher->id) }}', // <-- URL BARU
 
+        // --- 2. FUNGSI-FUNGSI ---
         closeModal(modalVar) {
             if ({{ $errors->any() ? 'true' : 'false' }}) {
                 window.location.href = window.location.href.split('?')[0]; 
@@ -37,6 +40,32 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     document.getElementById('delete-teacher-form').submit();
+                }
+            });
+        },
+
+        confirmToggleRole() {
+            // Tentukan teks berdasarkan role saat ini
+            const isCurrentlyAdmin = '{{ $teacher->role }}' === 'admin';
+            
+            // UBAH DISINI: Ganti 'Demote to Teacher' jadi 'Change to Teacher'
+            const actionText = isCurrentlyAdmin ? 'Change to Teacher' : 'Make Admin';
+            
+            const confirmText = isCurrentlyAdmin 
+                ? 'Are you sure you want to change this user to a regular Teacher role?'
+                : 'Are you sure you want to promote this user to an Admin role?';
+                
+            Swal.fire({
+                title: actionText + '?',
+                text: confirmText,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#7C3AED', // Warna Ungu
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: 'Yes, ' + actionText,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('toggle-role-form').submit();
                 }
             });
         }
@@ -67,20 +96,52 @@
                 </ol>
             </nav>
 
-            {{-- HEADER TITLE & BUTTON --}}
-            <div class="flex justify-between items-center mb-6">
+            {{-- HEADER TITLE & ACTION BUTTONS --}}
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <h2 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent inline-block">
                     Teacher Profile
                 </h2>
                 
-                <button @click="showEditModal = true" 
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                    Edit Teacher
-                </button>
+                {{-- GROUP BUTTONS --}}
+                <div class="flex items-center gap-3">
+                    
+                    {{-- 1. TOMBOL TOGGLE ROLE (UNGU) --}}
+                    @if(Auth::id() !== $teacher->id)
+                        <button type="button" @click="confirmToggleRole()"
+                            class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2"
+                            title="{{ $teacher->role === 'admin' ? 'Change to Teacher' : 'Make Admin' }}">
+                            
+                            @if($teacher->role === 'admin')
+                                {{-- Icon Arrow Down --}}
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+                                {{-- UBAH TEKS DISINI --}}
+                                Change to Teacher
+                            @else
+                                {{-- Icon Badge Check --}}
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Make Admin
+                            @endif
+                        </button>
+                    @endif
+
+                    {{-- 2. TOMBOL EDIT (BIRU) --}}
+                    @if(Auth::id() !== $teacher->id)
+                        <button @click="showEditModal = true" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            Edit Teacher
+                        </button>
+                    @else
+                        {{-- SELF VIEW BADGE --}}
+                        <div class="px-4 py-2 bg-gray-100 text-gray-500 rounded-lg text-sm font-bold border border-gray-200 flex items-center gap-2 cursor-not-allowed select-none" title="You cannot manage your own administrative status">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                            This is You
+                        </div>
+                    @endif
+                </div>
             </div>
 
-            {{-- 1. INFO CARD UTAMA --}}
+            {{-- INFO CARD UTAMA --}}
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8 relative overflow-hidden z-0">
                 <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -mr-8 -mt-8"></div>
                 <div class="flex flex-col md:flex-row items-center justify-between relative gap-6">
@@ -88,7 +149,14 @@
                         <img src="https://ui-avatars.com/api/?name={{ urlencode($teacher->name) }}&background=2563EB&color=fff&size=128&bold=true"
                             alt="{{ $teacher->name }}" class="w-20 h-20 md:w-24 md:h-24 rounded-full border-4 border-white shadow-md bg-white">
                         <div>
-                            <h1 class="text-2xl font-bold text-gray-900">{{ $teacher->name }}</h1>
+                            <div class="flex items-center gap-2">
+                                <h1 class="text-2xl font-bold text-gray-900">{{ $teacher->name }}</h1>
+                                {{-- Role Badge --}}
+                                @if($teacher->role === 'admin')
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200 uppercase tracking-wide">Admin</span>
+                                @endif
+                            </div>
+                            
                             <div class="flex items-center gap-2 mt-2">
                                 @if($teacher->is_active)
                                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">Active</span>
@@ -105,7 +173,7 @@
                 </div>
             </div>
 
-            {{-- 2. GRID INFO & STATS --}}
+            {{-- GRID INFO & STATS --}}
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
                 
                 {{-- Kiri: Biodata --}}
@@ -122,9 +190,8 @@
                 {{-- Kanan: Statistik Teaching --}}
                 <div class="lg:col-span-2 flex flex-col gap-6">
                     
-                    {{-- FORM FILTER DATE RANGE (UPDATED) --}}
+                    {{-- FORM FILTER DATE RANGE --}}
                     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                        {{-- Perubahan: items-end (agar sejajar bawah) --}}
                         <form action="{{ route('admin.teacher.detail', $teacher->id) }}" method="GET" class="flex flex-col sm:flex-row items-end gap-4">
                             
                             {{-- Start Date --}}
@@ -142,7 +209,6 @@
                             </div>
 
                             {{-- Filter Button --}}
-                            {{-- Perubahan: bg-blue-600 (Warna Biru) --}}
                             <button type="submit" class="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm h-[38px] flex items-center justify-center">
                                 Apply Filter
                             </button>
@@ -150,6 +216,7 @@
                         </form>
                     </div>
 
+                    {{-- STATISTIK CARD --}}
                     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col flex-grow">
                         <div class="flex items-center justify-between mb-6">
                             <h3 class="text-lg font-bold text-gray-800">Teaching Activity</h3>
@@ -158,7 +225,7 @@
                             </div>
                         </div>
                         
-                        {{-- Grid Statistik --}}
+                        {{-- Grid Angka --}}
                         <div class="grid grid-cols-2 gap-4 mb-6">
                             {{-- Kiri: Total Sesi --}}
                             <div class="p-4 rounded-xl bg-blue-50 border border-blue-100 flex flex-col items-center">
@@ -166,10 +233,9 @@
                                 <span class="text-xs text-blue-600 font-bold uppercase mt-1">Sessions Taught</span>
                             </div>
                             
-                            {{-- Kanan: Jumlah Kelas Unik (LABEL DIPERBAIKI) --}}
+                            {{-- Kanan: Kelas Handled --}}
                             <div class="p-4 rounded-xl bg-indigo-50 border border-indigo-100 flex flex-col items-center">
                                 <span class="text-3xl font-bold text-indigo-700">{{ $summary['unique_classes'] }}</span>
-                                {{-- GANTI DARI 'Active Classes' MENJADI 'Classes Handled' --}}
                                 <span class="text-xs text-indigo-600 font-bold uppercase mt-1">Classes Handled</span>
                             </div>
                         </div>
@@ -186,33 +252,28 @@
                 </div>
             </div>
 
-            {{-- 3. TIMELINE HISTORY MENGAJAR --}}
+            {{-- TIMELINE HISTORY --}}
             <div class="mb-10">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-bold text-gray-800">Teaching History</h3>
                     <span class="text-xs text-gray-400">&larr; Scroll left for earliest</span>
                 </div>
                 
-                {{-- Container Timeline --}}
                 <div id="attendance-timeline" class="flex overflow-x-auto gap-4 pb-4 custom-scrollbar scroll-smooth" style="scrollbar-width: thin;">
                     @forelse ($history as $session)
                         <div class="min-w-[160px] bg-white border border-gray-200 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm hover:shadow-md transition-shadow flex-shrink-0">
-                            {{-- Tanggal --}}
                             <span class="text-xs text-gray-400 font-semibold uppercase mb-1">
                                 {{ \Carbon\Carbon::parse($session->date)->format('D, d M Y') }}
                             </span>
                             
-                            {{-- Nama Kelas --}}
                             <span class="text-md font-bold text-gray-800 mb-2 text-center leading-tight line-clamp-2" title="{{ $session->class_name }}">
                                 {{ $session->class_name }}
                             </span>
                             
-                            {{-- Ikon Check --}}
                             <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 mb-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                             </div>
                             
-                            {{-- Jam Mengajar --}}
                             <div class="text-[10px] text-gray-500 text-center leading-tight bg-gray-50 px-2 py-1 rounded">
                                 {{ \Carbon\Carbon::parse($session->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($session->end_time)->format('H:i') }}
                             </div>
@@ -227,7 +288,7 @@
 
         </div>
 
-        {{-- MODAL EDIT --}}
+        {{-- MODAL EDIT (PARTIAL) --}}
         @include('admin.teacher.partials.edit-teacher-modal')
 
         {{-- FORM HIDDEN DELETE --}}
@@ -236,12 +297,47 @@
             @method('DELETE')
         </form>
 
+        {{-- FORM HIDDEN TOGGLE ROLE (BARU) --}}
+        <form id="toggle-role-form" :action="toggleRoleUrl" method="POST" style="display: none;">
+            @csrf 
+            @method('PATCH')
+        </form>
+
     </div>
-    
+
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const container = document.getElementById('attendance-timeline');
             if(container) container.scrollLeft = 0; 
+        });
+    </script>
+
+    {{-- TAMBAHKAN SCRIPT INI --}}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        // Opsional: Handle Flash Message Global (Success/Error dari Controller)
+        document.addEventListener('DOMContentLoaded', function() {
+            const successMessage = "{{ session('success') }}";
+            const errorMessage = "{{ session('error') }}";
+
+            if (successMessage) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: successMessage,
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            }
+
+            if (errorMessage) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: errorMessage,
+                });
+            }
         });
     </script>
 </x-app-layout>

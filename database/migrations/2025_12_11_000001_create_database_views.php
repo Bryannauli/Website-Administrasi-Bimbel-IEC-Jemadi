@@ -185,6 +185,29 @@ return new class extends Migration
             LEFT JOIN attendance_records r ON s.id = r.class_session_id -- ASUMSI FK DI attendance_records SUDAH DIGANTI
             GROUP BY s.id, s.class_id, s.date, s.comment, u.name, u.id;
         ");
+
+        // ==========================================
+        // 8. View: v_teacher_teaching_history (NEW)
+        // ==========================================
+        DB::unprepared("
+            CREATE OR REPLACE VIEW v_teacher_teaching_history AS
+            SELECT 
+                cs.id AS session_id,
+                cs.teacher_id,
+                u.name AS teacher_name,
+                cs.class_id,
+                c.name AS class_name,
+                c.category,        -- Opsional: Jika butuh filter kategori
+                cs.date,
+                c.start_time,
+                c.end_time,
+                cs.created_at,     -- Untuk sorting secondary
+                c.deleted_at       -- Pastikan kita memfilter ini di View atau Controller
+            FROM class_sessions cs
+            JOIN classes c ON cs.class_id = c.id
+            JOIN users u ON cs.teacher_id = u.id
+            WHERE c.deleted_at IS NULL;
+        ");
     }
 
     /**
@@ -199,5 +222,6 @@ return new class extends Migration
         DB::unprepared("DROP VIEW IF EXISTS v_today_schedule");
         DB::unprepared("DROP VIEW IF EXISTS v_attendance_summary"); 
         DB::unprepared("DROP VIEW IF EXISTS v_weekly_absence");
+        DB::unprepared("DROP VIEW IF EXISTS v_teacher_teaching_history");
     }
 };

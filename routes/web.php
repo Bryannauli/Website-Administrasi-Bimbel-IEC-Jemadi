@@ -85,20 +85,20 @@ Route::middleware(['auth', 'verified', 'admin'])
             // Assessment Routes (Management per Class)
             Route::get('/{classId}/assessment/{type}', [AdminAssessmentController::class, 'detail'])->name('assessment.detail');
             Route::post('/{classId}/assessment/{type}/save', [AdminAssessmentController::class, 'storeOrUpdateGrades'])->name('assessment.storeOrUpdateGrades');
+            Route::get('/daily-recap', [AdminClassController::class, 'dailyRecap'])->name('daily-recap');
         });
 
         /* TEACHER LIST */
         Route::prefix('teachers')->name('teacher.')->group(function () {
             // 1. Index List Guru
             Route::get('/', [AdminTeacherController::class, 'index'])->name('index');
-            
-            // 2. Daily Recap (Monitoring Harian)
-            // PENTING: Wajib ditaruh SEBELUM route detail /{id}
-            Route::get('/daily-recap', [AdminTeacherController::class, 'dailyRecap'])->name('daily-recap');
 
-            // 3. Tambah Guru
+            // 2. Tambah Guru
             Route::get('/add', [AdminTeacherController::class, 'create'])->name('add');
             Route::post('/', [AdminTeacherController::class, 'store'])->name('store');
+
+            // 3. Toggle Role Guru / Admin
+            Route::patch('/{id}/toggle-role', [AdminTeacherController::class, 'toggleRole'])->name('toggleRole');
             
             // 4. Detail, Update, Delete (Parameter ID)
             Route::get('/{id}', [AdminTeacherController::class, 'detail'])->name('detail');
