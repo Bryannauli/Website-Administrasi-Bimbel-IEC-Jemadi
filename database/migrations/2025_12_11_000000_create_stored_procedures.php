@@ -87,7 +87,7 @@ return new class extends Migration
                 LEFT JOIN attendance_records ar ON s.id = ar.student_id
                 WHERE s.class_id = classId
                 GROUP BY s.id, s.name, s.student_number, s.is_active
-                ORDER BY percentage ASC;
+                ORDER BY s.name ASC;
             END
         ");
 

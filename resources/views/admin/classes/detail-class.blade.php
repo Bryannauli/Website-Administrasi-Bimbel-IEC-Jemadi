@@ -454,10 +454,23 @@
                         </div>
                     </div>
 
-                    {{-- D. STUDENT ATTENDANCE (SAMA) --}}
+                    {{-- D. STUDENT ATTENDANCE --}}
                     <div class="lg:col-span-1 bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col h-full">
-                        <div class="flex justify-between items-center mb-4">
-                            <div><h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Attendance</h4><h3 class="text-xl font-bold text-gray-800">Last Session</h3></div>
+                        <div class="flex justify-between items-start mb-4"> {{-- Ubah items-center jadi items-start agar rapi --}}
+                            <div>
+                                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Attendance</h4>
+                                <h3 class="text-xl font-bold text-gray-800">Last Session</h3>
+                                
+                                {{-- PERBAIKAN: MENAMBAHKAN TANGGAL SESI TERAKHIR --}}
+                                @if($lastSession)
+                                    <p class="text-xs text-gray-400 mt-0.5">
+                                        {{ \Carbon\Carbon::parse($lastSession->date)->format('d M Y') }}
+                                    </p>
+                                @else
+                                    <p class="text-xs text-gray-400 mt-0.5">-</p>
+                                @endif
+                            </div>
+
                             @if($lastSession)
                                 <div class="text-right">
                                     @php

@@ -226,8 +226,6 @@ class AdminClassController extends Controller
                 ->with('edit_failed', true);
         }
     }
-    
-    // ... (Sisa method di bawah ini TETAP SAMA) ...
 
     public function detailClass(Request $request, $id)
     {
@@ -243,7 +241,7 @@ class AdminClassController extends Controller
         }
         $availableStudents = $query->get();
 
-        $teachingLogs = DB::table('v_class_activity_logs')->where('class_id', $id)->orderBy('date', 'desc')->get();
+        $teachingLogs = DB::table('v_class_activity_logs')->where('class_id', $id)->orderBy('date', 'asc')->get();
 
         $lastSession = ClassSession::where('class_id', $id)->with('teacher')->orderBy('date', 'desc')->orderBy('created_at', 'desc')->first();
             

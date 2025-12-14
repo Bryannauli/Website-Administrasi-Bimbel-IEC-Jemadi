@@ -1,4 +1,19 @@
-<div x-show="showStudentStatsModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+{{-- PERUBAHAN 1: Tambahkan x-init untuk watch state modal --}}
+<div x-show="showStudentStatsModal" 
+    x-init="$watch('showStudentStatsModal', value => {
+        if (value) {
+            // Tunggu elemen render ($nextTick) lalu scroll ke kanan
+            $nextTick(() => {
+                const container = document.getElementById('attendance-matrix-container');
+                if(container) {
+                    container.scrollLeft = container.scrollWidth;
+                }
+            });
+        }
+    })"
+    style="display: none;" 
+    class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+    
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         
         <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showStudentStatsModal = false"></div>
@@ -38,8 +53,8 @@
                 </div>
             </div>
 
-            {{-- Scrollable Container --}}
-            <div class="max-h-[75vh] overflow-auto custom-scrollbar relative bg-white">
+            {{-- PERUBAHAN 2: Tambahkan ID pada container scroll --}}
+            <div id="attendance-matrix-container" class="max-h-[75vh] overflow-auto custom-scrollbar relative bg-white">
                 <table class="w-full text-left border-collapse">
                     <thead class="bg-gray-50 text-gray-500 text-xs font-bold uppercase border-b border-gray-200 sticky top-0 z-20 shadow-sm">
                         <tr>
@@ -61,11 +76,9 @@
                                             <span class="text-xs text-gray-800">{{ \Carbon\Carbon::parse($session->date)->format('d/m') }}</span>
                                         </div>
                                         
-                                        {{-- MODIFIKASI: Nama Guru --}}
+                                        {{-- Nama Guru --}}
                                         @php
-                                            // Menggunakan teacher_name dari View DB
                                             $teacherName = $session->teacher_name ?? '-'; 
-                                            // Ambil kata pertama saja agar tidak terlalu panjang
                                             $shortName = ($teacherName !== '-') ? explode(' ', trim($teacherName))[0] : '-';
                                         @endphp
                                         <div class="mt-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 text-[9px] border border-blue-100 truncate max-w-[70px]" title="{{ $teacherName }}">
@@ -97,7 +110,7 @@
                                 {{-- Loop Status Per Tanggal --}}
                                 @foreach($teachingLogs as $session)
                                     @php
-                                        // MENGGUNAKAN session_id (Nama Kolom dari View DB)
+                                        // Menggunakan session_id dari view DB
                                         $status = $attendanceMatrix[$stat->student_id][$session->session_id] ?? '-';
                                         
                                         $cellContent = match($status) {

@@ -99,6 +99,7 @@ class TeacherClassController extends Controller
         $students = Student::where('class_id', $id)
             ->where('is_active', true)
             ->orderBy('name', 'asc')
+            ->orderBy('student_number', 'asc')
             ->paginate($perPage, ['*'], 'student_page') 
             ->appends(request()->except('student_page'));
 

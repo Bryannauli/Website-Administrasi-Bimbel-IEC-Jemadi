@@ -145,7 +145,7 @@ class AdminStudentController extends Controller
         $attendance = DB::table('v_student_attendance')
             ->where('student_id', $id)
             ->where('class_id', $student->class_id)
-            ->orderBy('session_date', 'DESC')
+            ->orderBy('session_date', 'ASC')
             ->get();
 
         // 3. Summary Statistik (Stored Procedure)

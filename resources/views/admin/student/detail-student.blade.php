@@ -215,7 +215,8 @@
             <div class="mb-10">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-bold text-gray-800">Attendance History</h3>
-                    <span class="text-xs text-gray-400">&larr; Scroll left for earliest</span>
+                    {{-- FIX: Mengubah teks petunjuk scroll --}}
+                    <span class="text-xs text-gray-400">&larr; Scroll for history &rarr;</span>
                 </div>
                 
                 {{-- Loop History dari Controller --}}
@@ -271,9 +272,11 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            // Auto scroll timeline ke paling kiri (terbaru)
+            // FIX: Auto scroll timeline ke paling kanan (terbaru)
             const container = document.getElementById('attendance-timeline');
-            if(container) container.scrollLeft = 0; 
+            if(container) {
+                container.scrollLeft = container.scrollWidth; 
+            }
         });
     </script>
 </x-app-layout>

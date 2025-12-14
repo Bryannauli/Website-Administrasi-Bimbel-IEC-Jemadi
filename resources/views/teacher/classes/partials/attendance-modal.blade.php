@@ -1,4 +1,18 @@
-<div x-show="showStudentStatsModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+<div x-show="showStudentStatsModal" 
+    x-init="$watch('showStudentStatsModal', value => {
+        if (value) {
+            // Tunggu elemen render, lalu scroll mentok ke kanan (Lihat sesi terbaru)
+            $nextTick(() => {
+                const container = document.getElementById('attendance-matrix-container');
+                if(container) {
+                    container.scrollLeft = container.scrollWidth;
+                }
+            });
+        }
+    })"
+    style="display: none;" 
+    class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+    
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         
         <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showStudentStatsModal = false"></div>
@@ -11,7 +25,7 @@
             <div class="bg-white px-6 py-4 border-b border-gray-100 flex justify-between items-center sticky top-0 z-50">
                 <div>
                     <h3 class="text-lg leading-6 font-bold text-gray-900">Attendance Matrix</h3>
-                    <p class="text-sm text-gray-500 mt-1">Recap of all {{ $allSessions->count() }} sessions.</p>
+                    <p class="text-sm text-gray-500 mt-1">Recap of all {{ $allSessions->count() }} sessions (Oldest &rarr; Newest).</p>
                 </div>
                 <div class="flex items-center gap-4">
                     {{-- Legend --}}
@@ -28,8 +42,8 @@
                 </div>
             </div>
 
-            {{-- Matrix Table --}}
-            <div class="max-h-[75vh] overflow-auto custom-scrollbar relative bg-white">
+            {{-- Matrix Table Container (ID untuk Scroll Logic) --}}
+            <div id="attendance-matrix-container" class="max-h-[75vh] overflow-auto custom-scrollbar relative bg-white scroll-smooth">
                 <table class="w-full text-left border-collapse">
                     <thead class="bg-gray-50 text-gray-500 text-xs font-bold uppercase border-b border-gray-200 sticky top-0 z-20 shadow-sm">
                         <tr>
@@ -40,8 +54,9 @@
                             <th class="px-2 py-3 text-center w-16 bg-gray-50 border-r border-gray-100 align-bottom">
                                 Rate
                             </th>
-                            {{-- Loop Header Sesi --}}
-                            @foreach($allSessions as $session)
+                            
+                            {{-- Loop Header Sesi (Diurutkan LAMA -> BARU) --}}
+                            @foreach($allSessions->sortBy('date') as $session)
                                 <th class="px-2 py-2 text-center min-w-[80px] whitespace-nowrap bg-gray-50 align-top group hover:bg-gray-100 transition-colors">
                                     <div class="flex flex-col items-center justify-between h-full gap-1">
                                         <div class="flex flex-col items-center">
@@ -50,7 +65,6 @@
                                         </div>
                                         
                                         @php
-                                            // ELOQUENT ACCESS
                                             $teacherName = $session->teacher->name ?? '-';
                                             $shortName = ($teacherName !== '-') ? explode(' ', trim($teacherName))[0] : '-';
                                         @endphp
@@ -80,10 +94,9 @@
                                     </span>
                                 </td>
 
-                                {{-- Status Matrix --}}
-                                @foreach($allSessions as $session)
+                                {{-- Status Matrix (Loop harus SAMA dengan Header: LAMA -> BARU) --}}
+                                @foreach($allSessions->sortBy('date') as $session)
                                     @php
-                                        // Array Access
                                         $status = $attendanceMatrix[$studentId][$session->id] ?? '-';
                                         
                                         $cellContent = match($status) {
@@ -104,6 +117,14 @@
                         @endforeach
                     </tbody>
                 </table>
+                
+                {{-- Empty State --}}
+                @if(count($studentStats) == 0)
+                    <div class="flex flex-col items-center justify-center py-12 text-gray-400">
+                        <svg class="w-12 h-12 mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <p>No student data available.</p>
+                    </div>
+                @endif
             </div>
 
             <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-end">
