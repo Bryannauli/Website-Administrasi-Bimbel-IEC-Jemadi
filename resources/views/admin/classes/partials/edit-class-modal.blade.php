@@ -38,9 +38,22 @@
                             {{-- Academic Year --}}
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Academic Year</label>
-                                <select name="academic_year" x-model="editForm.academic_year" class="w-full border-gray-300 rounded-lg shadow-sm @error('academic_year') border-red-500 @enderror">
-                                    @foreach($years as $year) <option value="{{ $year }}">{{ $year }}</option> @endforeach
-                                </select>
+                                
+                                <input type="number" 
+                                    name="academic_year" 
+                                    {{-- Default: Tahun saat ini --}}
+                                    value="{{ old('academic_year', date('Y')) }}" 
+                                    
+                                    {{-- Min: 5 tahun ke belakang (Misal skrg 2025 -> Min 2020) --}}
+                                    min="{{ date('Y') - 5 }}" 
+                                    
+                                    {{-- Max: 5 tahun ke depan (Misal skrg 2025 -> Max 2030) --}}
+                                    max="{{ date('Y') + 5 }}" 
+                                    
+                                    step="1"
+                                    class="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 @error('academic_year') border-red-500 @enderror"
+                                    placeholder="e.g. {{ date('Y') }}">
+                                    
                                 @error('academic_year') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                             </div>
                         </div>
