@@ -2,7 +2,6 @@
     <x-slot name="header"></x-slot>
 
     {{-- WRAPPER UTAMA DENGAN ALPINE JS --}}
-    {{-- HAPUS: showCreateSessionModal dari x-data --}}
     <div class="bg-[#EEF2FF] min-h-screen font-sans" x-data="{ 
         showHistoryModal: false,
         showStudentStatsModal: false
@@ -151,7 +150,7 @@
                         </div>
                     </div>
 
-                    {{-- B. ATTENDANCE & ACTION CARD (SINGLE BUTTON) --}}
+                    {{-- B. ATTENDANCE & ACTION CARD (LOGIC CREATE/EDIT TODAY) --}}
                     <div class="lg:col-span-1">
                         <div class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-lg shadow-blue-200 p-6 text-white relative overflow-hidden group h-full flex flex-col justify-between">
                             <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition duration-500"></div>
@@ -159,16 +158,37 @@
                             <div class="relative z-10">
                                 <h3 class="text-lg font-bold mb-2">Class Attendance</h3>
                                 <p class="text-blue-100 text-xs mb-6 opacity-90 leading-relaxed">
-                                    Manage your daily class sessions and view attendance history in one place.
+                                    @if(isset($sessionToday) && $sessionToday)
+                                        Session for today ({{ \Carbon\Carbon::parse($sessionToday->date)->format('d M Y') }}) is already created. Edit now or view history.
+                                    @else
+                                        Start recording today's attendance or view past sessions.
+                                    @endif
                                 </p>
                             </div>
                             
-                            {{-- SINGLE BUTTON: Buka Modal History (Fitur Create sudah dipindahkan ke dalam) --}}
-                            <div class="relative z-10 mt-auto">
+                            {{-- BUTTON LOGIC --}}
+                            <div class="relative z-10 mt-auto flex flex-col gap-2">
+                                
+                                @if(isset($sessionToday) && $sessionToday)
+                                    {{-- JIKA SUDAH ADA SESI HARI INI: Tombol Edit --}}
+                                    <a href="{{ route('teacher.classes.session.detail', ['classId' => $class->id, 'sessionId' => $sessionToday->id]) }}" 
+                                        class="w-full py-3.5 bg-yellow-500 text-white rounded-xl text-sm font-bold hover:bg-yellow-600 transition shadow-lg shadow-yellow-900/10 flex items-center justify-center gap-2 group-hover:scale-[1.02]">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                        Edit Today's Attendance
+                                    </a>
+                                @else
+                                    {{-- JIKA BELUM ADA SESI HARI INI: Tombol Create (Buka Modal History yang langsung memicu form create) --}}
+                                    <button @click="showHistoryModal = true; $nextTick(() => { document.getElementById('createSessionBtn').click(); })" 
+                                        class="w-full py-3.5 bg-white text-blue-700 rounded-xl text-sm font-bold hover:bg-blue-50 transition shadow-lg shadow-blue-900/10 flex items-center justify-center gap-2 group-hover:scale-[1.02]">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                        Create Today's Session
+                                    </button>
+                                @endif
+
+                                {{-- Tombol View History (Selalu Ada) --}}
                                 <button @click="showHistoryModal = true" 
-                                    class="w-full py-3.5 bg-white text-blue-700 rounded-xl text-sm font-bold hover:bg-blue-50 transition shadow-lg shadow-blue-900/10 flex items-center justify-center gap-2.5 group-hover:scale-[1.02]">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                                    View & Create Session
+                                    class="w-full py-2 bg-blue-800/80 text-blue-200 rounded-xl text-xs font-bold hover:bg-blue-800 transition">
+                                    View Full History
                                 </button>
                             </div>
                         </div>
@@ -191,6 +211,7 @@
 
                             @if($lastSessionStats)
                                 @php
+                                    // Asumsi $lastSessionStats sudah memiliki relasi records yang dimuat
                                     $totalRec = $lastSessionStats->records->count();
                                     $presentRec = $lastSessionStats->records->whereIn('status', ['present', 'late'])->count();
                                     $perc = $totalRec > 0 ? round(($presentRec / $totalRec) * 100) : 0;
@@ -445,7 +466,7 @@
         </div>
 
         {{-- INCLUDE PARTIALS --}}
-        @include('teacher.classes.partials.activity-history-modal', ['classSessions' => $classSessions, 'class' => $class])
+        @include('teacher.classes.partials.activity-history-modal', ['classSessions' => $classSessions, 'class' => $class, 'sessionToday' => $sessionToday ?? null])
         @include('teacher.classes.partials.attendance-modal', ['allSessions' => $allSessions, 'studentStats' => $studentStats, 'attendanceMatrix' => $attendanceMatrix])
 
     </div>

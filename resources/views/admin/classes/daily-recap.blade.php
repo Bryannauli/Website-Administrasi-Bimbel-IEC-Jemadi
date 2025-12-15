@@ -1,7 +1,8 @@
 <x-app-layout>
     <x-slot name="header"></x-slot>
 
-    <div class="py-6 bg-[#F3F4FF] min-h-screen font-sans">
+    {{-- Hapus bg-[#F3F4FF] dan min-h-screen agar konsisten dengan layout utama --}}
+    <div class="py-6 font-sans">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
             {{-- BREADCRUMB --}}
@@ -24,8 +25,8 @@
                 </ol>
             </nav>
 
-            {{-- Title & Date Filter --}}
-            <div class="flex flex-col md:flex-row justify-between items-end md:items-center mb-8 gap-4">
+            {{-- Title & Date Filter (PERBAIKAN DI SINI) --}}
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4"> {{-- items-start untuk perataan kiri saat wrap --}}
                 <div>
                     <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                         Daily Class Monitor
@@ -34,7 +35,7 @@
                 </div>
 
                 {{-- Filter Date --}}
-                <form action="{{ route('admin.classes.daily-recap') }}" method="GET" class="bg-white p-2 rounded-xl shadow-sm border border-gray-200 flex items-center gap-3">
+                <form action="{{ route('admin.classes.daily-recap') }}" method="GET" class="bg-white p-2 rounded-xl shadow-sm border border-gray-200 flex items-center gap-3 w-full md:w-auto"> {{-- Tambahkan w-full md:w-auto --}}
                     <div class="flex flex-col">
                         <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider pl-1">Select Date</label>
                         <input type="date" name="date" value="{{ $date }}" 
@@ -46,8 +47,6 @@
                     </button>
                 </form>
             </div>
-
-            {{-- (BAGIAN STATISTIK DIHAPUS) --}}
 
             {{-- TABLE SECTION --}}
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -61,7 +60,9 @@
                             <tr>
                                 <th class="px-6 py-4 w-12">No</th>
                                 <th class="px-6 py-4">Time</th>
-                                <th class="px-6 py-4">Class Name</th>      
+                                <th class="px-6 py-4">Category</th>      
+                                <th class="px-6 py-4">Class Name</th>
+                                <th class="px-6 py-4">Classroom</th>
                                 <th class="px-6 py-4">Assigned Teacher</th>
                                 <th class="px-6 py-4 text-center">Session Status</th>
                                 <th class="px-6 py-4 text-center">Action</th>
@@ -78,6 +79,13 @@
                                         {{ \Carbon\Carbon::parse($record->end_time)->format('H:i') }}
                                     </td>
 
+                                    {{-- Category Data --}}
+                                    <td class="px-6 py-4">
+                                        <span class="inline-block bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded text-[10px] font-bold uppercase">
+                                            {{ str_replace('_', ' ', $record->category) }}
+                                        </span>
+                                    </td>
+
                                     {{-- Class Name --}}
                                     <td class="px-6 py-4 font-bold text-gray-800">
                                         {{ $record->class_name }}
@@ -86,7 +94,14 @@
                                         </span>
                                     </td>
 
-                                    {{-- Teacher Name (Logic: Jika ada sesi tampilkan nama, jika tidak strip) --}}
+                                    {{-- Classroom Data --}}
+                                    <td class="px-6 py-4">
+                                        <span class="inline-block bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-0.5 rounded text-[10px] font-bold uppercase">
+                                            {{ $record->classroom }}
+                                        </span>
+                                    </td>
+
+                                    {{-- Teacher Name --}}
                                     <td class="px-6 py-4">
                                         @if($record->teacher_name)
                                             <div class="flex items-center gap-2">
@@ -100,7 +115,7 @@
                                         @endif
                                     </td>
                                     
-                                    {{-- Status (Logic: Jika ada sesi id berarti Started, jika tidak Pending) --}}
+                                    {{-- Status --}}
                                     <td class="px-6 py-4 text-center">
                                         @if($record->session_id)
                                             <span class="px-3 py-1 rounded-full text-xs font-bold uppercase bg-green-100 text-green-700">
@@ -113,15 +128,16 @@
                                         @endif
                                     </td>
 
-                                    {{-- Action --}}
+                                    {{-- Action (Eye Icon) --}}
                                     <td class="px-6 py-4 text-center">
-                                        <a href="{{ route('admin.classes.detailclass', ['id' => $record->class_id]) }}" class="text-blue-600 hover:text-blue-800 font-medium text-xs hover:underline">
-                                            Manage
+                                        <a href="{{ route('admin.classes.detailclass', ['id' => $record->class_id]) }}" 
+                                            class="text-gray-400 hover:text-blue-600 transition-colors" title="View Details">
+                                            <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                         </a>
                                     </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="6" class="px-6 py-10 text-center text-gray-500">No classes scheduled for this day ({{ \Carbon\Carbon::parse($date)->format('l') }}).</td></tr>
+                                <tr><td colspan="8" class="px-6 py-10 text-center text-gray-500">No classes scheduled for this day ({{ \Carbon\Carbon::parse($date)->format('l') }}).</td></tr>
                             @endforelse
                         </tbody>
                     </table>

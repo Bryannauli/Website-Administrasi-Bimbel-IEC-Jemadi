@@ -20,6 +20,17 @@ class TeacherAttendanceController extends Controller
             'topics' => 'required|string',
         ]);
 
+        // Cek Duplikasi: Apakah sudah ada sesi pada tanggal ini untuk kelas ini?
+        $existingSession = ClassSession::where('class_id', $id)
+                                        ->where('date', $request->date)
+                                        ->first();
+        
+        if ($existingSession) {
+            return redirect()->back()
+                ->with('error', 'Attendance session already exists for this date. Please edit the existing session.')
+                ->withInput(); // Opsional: mempertahankan input
+        }
+
         $session = ClassSession::create([
             'class_id' => $id,
             'date' => $request->date,
@@ -32,7 +43,7 @@ class TeacherAttendanceController extends Controller
             ->with('success', 'New attendance session created!');
     }
 
-    // Menampilkan halaman input/detail absensi
+    // Menampilkan halaman input/detail absensi (Tidak ada perubahan di sini)
     public function sessionDetail($classId, $sessionId)
     {
         $class = ClassModel::findOrFail($classId);
@@ -41,12 +52,12 @@ class TeacherAttendanceController extends Controller
                                     ->firstOrFail();
 
         $students = $class->students()
-                          ->where('is_active', 1)
-                          ->get();
+                        ->where('is_active', 1)
+                        ->get();
 
         $attendanceRecords = AttendanceRecord::where('class_session_id', $sessionId)
-                                             ->pluck('status', 'student_id')
-                                             ->toArray();
+                                            ->pluck('status', 'student_id')
+                                            ->toArray();
 
         $students = $students->map(function ($student) use ($attendanceRecords) {
             $student->current_status = $attendanceRecords[$student->id] ?? null;
@@ -59,7 +70,7 @@ class TeacherAttendanceController extends Controller
         return view('teacher.classes.session-attandance', compact('class', 'session', 'students'));
     }
 
-    // Menyimpan/Update data absensi
+    // Menyimpan/Update data absensi (Tidak ada perubahan di sini)
     public function updateSession(Request $request, $classId, $sessionId)
     {
         $request->validate([
@@ -91,7 +102,7 @@ class TeacherAttendanceController extends Controller
 
             // Redirect kembali ke halaman Detail Kelas
             return redirect()->route('teacher.classes.detail', $classId)
-                             ->with('success', 'Attendance updated successfully.');
+                            ->with('success', 'Attendance updated successfully.');
 
         } catch (\Exception $e) {
             DB::rollBack();

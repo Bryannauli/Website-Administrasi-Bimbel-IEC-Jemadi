@@ -1,5 +1,5 @@
 <div x-show="showHistoryModal" style="display: none;" 
-     class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+    class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
     
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         
@@ -8,8 +8,13 @@
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
         
         {{-- MODAL CONTENT --}}
-        <div x-data="{ isCreating: false }" 
-             class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl w-full">
+        <div x-data="{ 
+            isCreating: false,
+            // Cek apakah sesi hari ini sudah ada (Ambil dari PHP)
+            sessionTodayExists: {{ isset($sessionToday) && $sessionToday ? 'true' : 'false' }},
+            sessionTodayId: {{ isset($sessionToday) && $sessionToday ? $sessionToday->id : 'null' }},
+        }" 
+            class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl w-full">
             
             {{-- HEADER --}}
             <div class="bg-white px-4 pt-5 pb-4 sm:p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 z-10">
@@ -30,16 +35,33 @@
             
             <div class="max-h-[70vh] overflow-y-auto custom-scrollbar bg-gray-50 p-6">
                 
-                {{-- 1. TOMBOL "CREATE NEW" (Hanya muncul jika TIDAK sedang membuat) --}}
-                <button @click="isCreating = true" 
-                    x-show="!isCreating"
-                    x-transition
-                    class="w-full py-3 mb-6 bg-white border-2 border-dashed border-blue-300 rounded-xl text-blue-600 font-bold hover:bg-blue-50 hover:border-blue-400 transition-all flex items-center justify-center gap-2 group shadow-sm">
-                    <span class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                    </span>
-                    Create New Session
-                </button>
+                {{-- 1. TOMBOL "CREATE NEW" (Hanya muncul jika TIDAK sedang membuat DAN sesi hari ini BELUM ada) --}}
+                <template x-if="!sessionTodayExists">
+                    <button @click="isCreating = true" 
+                        x-show="!isCreating"
+                        x-transition
+                        id="createSessionBtn" {{-- ID ini dipanggil dari detail.blade.php --}}
+                        class="w-full py-3 mb-6 bg-white border-2 border-dashed border-blue-300 rounded-xl text-blue-600 font-bold hover:bg-blue-50 hover:border-blue-400 transition-all flex items-center justify-center gap-2 group shadow-sm">
+                        <span class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        </span>
+                        Create New Session
+                    </button>
+                </template>
+                
+                {{-- 1B. ALERT JIKA SESI HARI INI SUDAH ADA --}}
+                <template x-if="sessionTodayExists && !isCreating">
+                    <div class="w-full py-4 mb-6 bg-yellow-50 rounded-xl border border-yellow-200 text-yellow-700 font-medium text-sm text-center shadow-sm">
+                        Session for today already exists. <br>
+                        
+                        {{-- PERBAIKAN: Menggunakan placeholder SESID_PLACEHOLDER --}}
+                        <a :href="`{{ route('teacher.classes.session.detail', ['classId' => $class->id, 'sessionId' => 'SESID_PLACEHOLDER']) }}`.replace('SESID_PLACEHOLDER', sessionTodayId)"
+                           class="text-yellow-800 font-bold hover:underline mt-1 inline-block">
+                           Go to Edit Session
+                        </a>
+                    </div>
+                </template>
+
 
                 {{-- 2. FORM CREATE SESSION (INLINE) --}}
                 <div x-show="isCreating" x-transition class="bg-white p-5 rounded-xl border border-blue-200 shadow-sm relative overflow-hidden">
@@ -52,9 +74,10 @@
                                 {{-- Date Input --}}
                                 <div>
                                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Session Date</label>
+                                    {{-- Pastikan input date hanya bisa diisi hari ini (agar tidak duplikat) --}}
                                     <input type="date" name="date" 
                                            class="w-full rounded-lg border-gray-300 text-gray-700 text-sm focus:ring-blue-500 focus:border-blue-500 shadow-sm" 
-                                           value="{{ date('Y-m-d') }}">
+                                           value="{{ date('Y-m-d') }}" max="{{ date('Y-m-d') }}" required>
                                 </div>
 
                                 {{-- Topic Input --}}
@@ -69,13 +92,13 @@
                                 <div class="flex gap-3 bg-yellow-50 p-3 rounded-lg border border-yellow-100 items-start">
                                     <svg class="w-5 h-5 text-yellow-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                     <p class="text-xs text-yellow-700 leading-snug mt-0.5">
-                                        You will be marked as <strong>Present</strong> automatically.
+                                        You will be marked as <strong>Present</strong> automatically, and you will be redirected to the attendance input page after creation.
                                     </p>
                                 </div>
 
-                                {{-- ACTION BUTTONS (Disini letak Cancel & Save) --}}
+                                {{-- ACTION BUTTONS --}}
                                 <div class="flex gap-3 pt-2">
-                                    {{-- Tombol Cancel (Hanya kembali ke list, tidak tutup modal) --}}
+                                    {{-- Tombol Cancel --}}
                                     <button type="button" @click="isCreating = false" 
                                             class="flex-1 py-2.5 bg-white border border-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-50 transition-colors text-sm">
                                         Cancel

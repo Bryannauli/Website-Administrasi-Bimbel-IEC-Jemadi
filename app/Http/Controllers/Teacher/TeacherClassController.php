@@ -92,16 +92,19 @@ class TeacherClassController extends Controller
         $class = ClassModel::with(['schedules', 'formTeacher', 'localTeacher'])->findOrFail($id);
         
         // 2. Query Siswa (Tanpa Pagination, Urut Student Number)
-        // REVISI: Menggunakan get() dan orderBy student_number
         $students = Student::where('class_id', $id)
             ->where('is_active', true)
             ->orderBy('student_number', 'asc') // <--- URUTKAN BERDASARKAN ID
             ->get();
 
-        // 3. Pagination Sesi & Assessment (Untuk Widget Sidebar/Card)
-        // Tetap menggunakan paginate karena ini hanya untuk widget ringkasan
+        // 3. Ambil Sesi Hari Ini (PENTING untuk tombol Create/Edit)
+        $sessionToday = ClassSession::where('class_id', $id)
+                                    ->where('date', Carbon::today()->format('Y-m-d'))
+                                    ->first();
+
+        // 4. Pagination Sesi & Assessment (Untuk Widget Sidebar/Card)
         $classSessions = ClassSession::where('class_id', $id)
-            ->with('teacher') // Eager load teacher
+            ->with('teacher') 
             ->orderBy('date', 'desc')
             ->get();
 
@@ -110,7 +113,7 @@ class TeacherClassController extends Controller
             ->paginate(5, ['*'], 'assessment_page');
 
         // ====================================================
-        // 4. DATA UNTUK MODAL MATRIX & STATS (FULL REPORT)
+        // 5. DATA UNTUK MODAL MATRIX & STATS (FULL REPORT)
         // ====================================================
         
         // A. Ambil SEMUA sesi (Tanpa pagination) untuk kolom Matrix
@@ -122,7 +125,7 @@ class TeacherClassController extends Controller
         // B. Ambil SEMUA siswa aktif untuk baris Matrix (Konsisten dengan tabel utama)
         $allStudents = Student::where('class_id', $id)
                         ->where('is_active', true)
-                        ->orderBy('student_number', 'asc') // <--- SAMA: URUTKAN ID
+                        ->orderBy('student_number', 'asc') 
                         ->get();
 
         $attendanceMatrix = [];
@@ -177,7 +180,8 @@ class TeacherClassController extends Controller
             // Data Tambahan untuk Modal:
             'allSessions',
             'attendanceMatrix',
-            'studentStats'
+            'studentStats',
+            'sessionToday' // <--- KIRIM DATA SESI HARI INI
         ));
     }
 }

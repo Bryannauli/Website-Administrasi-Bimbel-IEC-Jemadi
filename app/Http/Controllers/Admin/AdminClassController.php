@@ -339,6 +339,8 @@ class AdminClassController extends Controller
             ->select(
                 'c.id as class_id',
                 'c.name as class_name',
+                'c.category', // <-- [BARU] Tambahkan category
+                'c.classroom',
                 'c.start_time',
                 'c.end_time',
                 's.id as session_id',        // NULL jika belum ada sesi
