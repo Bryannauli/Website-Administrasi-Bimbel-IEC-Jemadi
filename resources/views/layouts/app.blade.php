@@ -37,7 +37,7 @@
         {{-- 2. Konten Utama: ml-64 hanya di layar besar (lg:ml-64) --}}
         <div class="flex-1 flex flex-col h-screen overflow-y-auto transition-all duration-300 lg:ml-64">
 
-            <header class="sticky top-0 bg-white shadow-sm w-full z-10">
+            <header class="sticky top-0 bg-white shadow-sm w-full z-30">
                 <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
 
                     <div class="flex items-center space-x-3">

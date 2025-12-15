@@ -146,7 +146,7 @@ class AdminTeacherController extends Controller
         // 3. AMBIL DATA HISTORY (Timeline)
         // Gunakan clone() agar query object dasar tidak berubah
         $history = $query->clone()
-            ->orderBy('date', 'desc')
+            ->orderBy('date', 'asc')
             ->orderBy('start_time', 'asc') // Urutkan jam jika tanggal sama
             ->get();
 

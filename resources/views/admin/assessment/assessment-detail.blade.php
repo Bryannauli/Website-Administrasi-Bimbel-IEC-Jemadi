@@ -114,6 +114,17 @@
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 Finalized (Locked)
                             </span>
+
+                            {{-- TOMBOL PRINT (Hanya muncul saat status FINAL) --}}
+                            <button type="button" 
+                                    onclick="alert('Fungsi print akan diimplementasikan di sini.')"
+                                    class="px-4 py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300 font-bold rounded-lg transition shadow-sm flex items-center gap-2"
+                                    title="Print Final Report">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                </svg>
+                                Print
+                            </button>
                         @endif
 
                         {{-- TOMBOL REVERT TO DRAFT (Bisa dilakukan saat Submitted atau Final) --}}
@@ -300,6 +311,8 @@
                             <thead class="bg-gray-50 text-[10px] text-gray-500 font-bold uppercase border-b border-gray-200 tracking-widest">
                                 <tr>
                                     <th class="px-6 py-4 w-16 text-center">No</th>
+                                    {{-- 1. KOLOM BARU: STUDENT ID --}}
+                                    <th class="px-4 py-4 w-24">Student ID</th>
                                     <th class="px-6 py-4">Student Name</th>
                                     <th class="px-3 py-4 text-center border-l">Vocab</th>
                                     <th class="px-3 py-4 text-center">Grammar</th>
@@ -370,15 +383,14 @@
                                             return 'Insufficient';
                                         },
 
-                                        // UPDATE WARNA SESUAI PERMINTAAN
                                         get predicateColor() {
                                             let p = this.predicate;
-                                            if (p === 'Outstanding')    return 'bg-purple-100 text-purple-700 border-purple-200'; // Ungu
-                                            if (p === 'Distinction')    return 'bg-blue-100 text-blue-700 border-blue-200';       // Biru
-                                            if (p === 'Credit')         return 'bg-green-100 text-green-700 border-green-200';     // Hijau
-                                            if (p === 'Acceptable')     return 'bg-yellow-100 text-yellow-700 border-yellow-200';   // Kuning
-                                            if (p === 'Unsatisfactory') return 'bg-red-100 text-red-700 border-red-200';          // Merah
-                                            if (p === 'Insufficient')   return 'bg-gray-100 text-gray-600 border-gray-200';        // Abu
+                                            if (p === 'Outstanding')    return 'bg-purple-100 text-purple-700 border-purple-200';
+                                            if (p === 'Distinction')    return 'bg-blue-100 text-blue-700 border-blue-200';
+                                            if (p === 'Credit')         return 'bg-green-100 text-green-700 border-green-200';
+                                            if (p === 'Acceptable')     return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+                                            if (p === 'Unsatisfactory') return 'bg-red-100 text-red-700 border-red-200';
+                                            if (p === 'Insufficient')   return 'bg-gray-100 text-gray-600 border-gray-200';
                                             return 'bg-gray-50 text-gray-400 border-gray-100';
                                         }
                                     }"
@@ -387,6 +399,12 @@
                                     <input type="hidden" name="grades[{{ $student['id'] }}][form_id]" value="{{ $student['written']['form_id'] ?? '' }}">
 
                                     <td class="px-6 py-4 text-center text-gray-500 font-medium">{{ $index + 1 }}</td>
+                                    
+                                    {{-- 2. DATA STUDENT ID (Format Mono) --}}
+                                    <td class="px-4 py-4 font-mono text-xs text-gray-500">
+                                        {{ $student['student_number'] ?? '-' }}
+                                    </td>
+
                                     <td class="px-6 py-4 font-bold text-gray-900">{{ $student['name'] }}</td>
                                     
                                     {{-- VOCABULARY (Max 100) --}}

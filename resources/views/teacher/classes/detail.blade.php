@@ -296,8 +296,10 @@
                                 <thead class="bg-gray-50 text-gray-400 text-xs font-medium border-b border-gray-100">
                                     <tr>
                                         <th class="px-4 py-3 font-normal w-12 text-center">No</th>
+                                        {{-- 1. KOLOM ID NUMBER (Dipindah ke kiri) --}}
+                                        <th class="px-4 py-3 font-normal">Student ID</th>
+                                        {{-- 2. KOLOM NAMA (Dipindah ke kanan) --}}
                                         <th class="px-4 py-3 font-normal">Student Name</th>
-                                        <th class="px-4 py-3 font-normal">ID Number</th>
                                         <th class="px-4 py-3 font-normal text-center">Status</th>
                                     </tr>
                                 </thead>
@@ -305,6 +307,11 @@
                                     @forelse($students as $student)
                                         <tr class="hover:bg-gray-50 transition-colors group">
                                             <td class="px-4 py-3 text-center text-gray-400 text-xs">{{ $loop->iteration + $students->firstItem() - 1 }}</td>
+                                            
+                                            {{-- 1. DATA ID NUMBER --}}
+                                            <td class="px-4 py-3 font-mono text-xs text-gray-500">{{ $student->student_number }}</td>
+
+                                            {{-- 2. DATA NAMA (Dengan Avatar) --}}
                                             <td class="px-4 py-3">
                                                 <div class="flex items-center">
                                                     <div class="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs mr-3 border border-blue-200">
@@ -313,7 +320,7 @@
                                                     <span class="font-medium text-gray-900">{{ $student->name }}</span>
                                                 </div>
                                             </td>
-                                            <td class="px-4 py-3 font-mono text-xs text-gray-500">{{ $student->student_number }}</td>
+
                                             <td class="px-4 py-3 text-center">
                                                 @if($student->is_active)
                                                     <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700 border border-green-100">Active</span>

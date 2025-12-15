@@ -11,7 +11,7 @@
         showAssignTeacherModal: false,
         assignTeacherRole: '',
 
-        // 2. STATE FORM DATA (Diperbarui untuk teacher_types)
+        // 2. STATE FORM DATA
         editForm: {
             name: '{{ addslashes($class->name) }}',
             category: '{{ $class->category }}',
@@ -28,7 +28,6 @@
                     '{{ $schedule->day_of_week }}',
                 @endforeach
             ],
-            // LOGIKA BARU: Buat objek teacher_types saat load
             teacher_types: {
                 @foreach($class->schedules as $schedule)
                     '{{ $schedule->day_of_week }}': '{{ $schedule->teacher_type }}',
@@ -95,7 +94,7 @@
             });
         },
 
-        // 6. FUNCTION CONFIRM TOGGLE STATUS (BARU - SWEETALERT)
+        // 6. FUNCTION CONFIRM TOGGLE STATUS
         confirmToggleStatus(studentId, isActive) {
             const action = isActive ? 'DEACTIVATE' : 'ACTIVATE';
             const statusText = isActive ? 'inactive' : 'active';
@@ -185,7 +184,7 @@
                 </ol>
             </nav>
 
-            {{-- HEADER TITLE & BUTTON (GRADIENT BIRU-INDIGO) --}}
+            {{-- HEADER TITLE & BUTTON --}}
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent inline-block">
                     Class: {{ $class->name ?? 'Detail' }}
@@ -217,7 +216,6 @@
                                             {{ \Carbon\Carbon::parse($class->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($class->end_time)->format('H:i') }}
                                         </span>
                                         <span class="text-gray-300">|</span>
-                                        {{-- TAMPILAN BARU: Hari dan Tipe Guru --}}
                                         <div class="flex flex-wrap gap-1">
                                             @forelse($class->schedules as $schedule)
                                                 <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border 
@@ -230,7 +228,6 @@
                                                 <span class="text-gray-400 italic text-sm">No Schedule</span>
                                             @endforelse
                                         </div>
-                                        {{-- END TAMPILAN BARU --}}
                                     </div>
                                     <div class="flex items-center gap-2 text-sm text-gray-500">
                                         <span>{{ $class->classroom ?? 'No Classroom' }}</span>
@@ -330,7 +327,7 @@
                         </div>
                     </div>
 
-                    {{-- B. TEACHER ATTENDANCE (SAMA) --}}
+                    {{-- B. TEACHER ATTENDANCE --}}
                     <div class="lg:col-span-1 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg shadow-blue-200 p-6 text-white flex flex-col justify-between relative overflow-hidden">
                         <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
                         <div>
@@ -366,9 +363,9 @@
                 {{-- 3. ROW 2: STUDENTS & STUDENT ATTENDANCE --}}
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     
-                    {{-- C. LIST STUDENTS TABLE (SAMA) --}}
-                    <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col min-h-[400px]">
-                        <div class="flex justify-between items-center mb-5">
+                    {{-- C. LIST STUDENTS TABLE (FIXED: Added max-height & scroll) --}}
+                    <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col h-full">
+                        <div class="flex justify-between items-center mb-5 shrink-0">
                             <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
                                 Enrolled Students
                                 <span class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-0.5 rounded-full ml-2">
@@ -382,18 +379,19 @@
                             </button>
                         </div>
 
-                        <div class="overflow-x-auto flex-1 custom-scrollbar">
-                            <table class="w-full text-left border-collapse">
-                                <thead class="bg-gray-50 text-gray-400 text-xs font-medium border-b border-gray-100 sticky top-0 z-10">
+                        {{-- CONTAINER SCROLLABLE BARU --}}
+                        <div class="overflow-x-auto overflow-y-auto max-h-[500px] flex-1 custom-scrollbar border border-gray-50 rounded-lg">
+                            <table class="w-full text-left border-collapse relative">
+                                <thead class="bg-gray-50 text-gray-400 text-xs font-medium border-b border-gray-100 sticky top-0 z-10 shadow-sm">
                                     <tr>
-                                        <th class="px-4 py-3 font-normal w-12">No</th>
-                                        <th class="px-4 py-3 font-normal">Student ID</th>
-                                        <th class="px-4 py-3 font-normal">Name</th>
-                                        <th class="px-4 py-3 font-normal">Status</th>
-                                        <th class="px-4 py-3 font-normal text-center w-28">Action</th>
+                                        <th class="px-4 py-3 font-normal w-12 bg-gray-50">No</th>
+                                        <th class="px-4 py-3 font-normal bg-gray-50">Student ID</th>
+                                        <th class="px-4 py-3 font-normal bg-gray-50">Name</th>
+                                        <th class="px-4 py-3 font-normal bg-gray-50">Status</th>
+                                        <th class="px-4 py-3 font-normal text-center w-28 bg-gray-50">Action</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-gray-100 text-sm text-gray-800">
+                                <tbody class="divide-y divide-gray-100 text-sm text-gray-800 bg-white">
                                     @forelse($class->students ?? [] as $index => $student)
                                     <tr class="transition group {{ $student->is_active ? 'hover:bg-gray-50' : 'bg-red-50 hover:bg-red-100' }}">
                                         
@@ -454,14 +452,13 @@
                         </div>
                     </div>
 
-                    {{-- D. STUDENT ATTENDANCE --}}
+                    {{-- D. STUDENT ATTENDANCE (FIXED: Sticky footer button) --}}
                     <div class="lg:col-span-1 bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col h-full">
-                        <div class="flex justify-between items-start mb-4"> {{-- Ubah items-center jadi items-start agar rapi --}}
+                        <div class="flex justify-between items-start mb-4 shrink-0">
                             <div>
                                 <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Attendance</h4>
                                 <h3 class="text-xl font-bold text-gray-800">Last Session</h3>
                                 
-                                {{-- PERBAIKAN: MENAMBAHKAN TANGGAL SESI TERAKHIR --}}
                                 @if($lastSession)
                                     <p class="text-xs text-gray-400 mt-0.5">
                                         {{ \Carbon\Carbon::parse($lastSession->date)->format('d M Y') }}
@@ -484,7 +481,8 @@
                             @endif
                         </div>
 
-                        <div class="flex-1 overflow-y-auto custom-scrollbar pr-1 mb-4 max-h-[300px]">
+                        {{-- Bagian Tengah (List Absentees) --}}
+                        <div class="flex-1 overflow-y-auto custom-scrollbar pr-1 mb-4 min-h-[150px]">
                             @if($lastSession && $lastSession->records->count() > 0)
                                 @php $absentees = $lastSession->records->whereIn('status', ['absent', 'sick', 'permission']); @endphp
                                 @if($absentees->count() > 0)
@@ -505,9 +503,12 @@
                             @endif
                         </div>
 
-                        <button @click="showStudentStatsModal = true" class="w-full py-2.5 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 transition shadow-sm shadow-green-200 flex items-center justify-center gap-2">
-                            View Full Report <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                        </button>
+                        {{-- Bagian Bawah (Tombol) - Sticky Footer --}}
+                        <div class="mt-auto pt-4 border-t border-gray-50">
+                            <button @click="showStudentStatsModal = true" class="w-full py-2.5 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 transition shadow-sm shadow-green-200 flex items-center justify-center gap-2">
+                                View Full Report <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -521,11 +522,9 @@
                         
                         {{-- MID TERM CARD --}}
                         @php
-                            // Ambil data session Mid Term dari relasi
                             $midSession = $class->assessmentSessions->where('type', 'mid')->first();
-                            $midStatus = $midSession->status ?? 'draft'; // Default draft jika belum ada
+                            $midStatus = $midSession->status ?? 'draft'; 
                             
-                            // Logika Warna Badge
                             $midColor = match($midStatus) {
                                 'submitted' => 'bg-blue-100 text-blue-700 border-blue-200',
                                 'final'     => 'bg-purple-100 text-purple-700 border-purple-200',
@@ -534,7 +533,6 @@
                         @endphp
                         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden group hover:border-blue-300 hover:shadow-md transition-all">
                             
-                            {{-- HEADER CARD: Title & Status --}}
                             <div class="flex justify-between items-start mb-4">
                                 <div>
                                     <h4 class="text-lg font-bold text-gray-800">Mid Term</h4>
@@ -554,7 +552,6 @@
                                     {{ $midStatus == 'draft' ? 'Input Grades' : 'View Grades' }}
                                 </a>
                                 
-                                {{-- Tombol Print (Hanya aktif jika Final/Submitted mungkin?) --}}
                                 <button disabled class="p-2.5 text-gray-400 bg-gray-100 rounded-lg cursor-not-allowed" title="Print Report Card">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                                 </button>
@@ -563,11 +560,9 @@
 
                         {{-- FINAL TERM CARD --}}
                         @php
-                            // Ambil data session Final Term
                             $finalSession = $class->assessmentSessions->where('type', 'final')->first();
                             $finalStatus = $finalSession->status ?? 'draft'; 
 
-                            // Logika Warna Badge
                             $finalColor = match($finalStatus) {
                                 'submitted' => 'bg-indigo-100 text-indigo-700 border-indigo-200',
                                 'final'     => 'bg-purple-100 text-purple-700 border-purple-200',
@@ -576,7 +571,6 @@
                         @endphp
                         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden group hover:border-indigo-300 hover:shadow-md transition-all">
                             
-                            {{-- HEADER CARD: Title & Status --}}
                             <div class="flex justify-between items-start mb-4">
                                 <div>
                                     <h4 class="text-lg font-bold text-gray-800">Final Term</h4>
@@ -603,27 +597,23 @@
                     </div>
                 </div>
             </div>
-        </div> {{-- Penutup Container Konten --}}
+        </div> 
 
-
-        {{-- ====================================== --}}
         {{-- INCLUDE MODALS (PARTIALS) --}}
-        {{-- ====================================== --}}
-        
         @include('admin.classes.partials.assign-teacher-modal')
         @include('admin.classes.partials.assign-student-modal', ['class' => $class, 'availableStudents' => $availableStudents])
         @include('admin.classes.partials.activity-history-modal', ['teachingLogs' => $teachingLogs])
         @include('admin.classes.partials.attendance-modal', ['studentStats' => $studentStats, 'teachingLogs' => $teachingLogs, 'attendanceMatrix' => $attendanceMatrix])
         @include('admin.classes.partials.edit-class-modal', ['teachers' => $teachers, 'categories' => $categories, 'years' => $years])
 
-        {{-- FORM HIDDEN UNTUK TOGGLE STATUS (DIPANGGIL OLEH SWEETALERT) --}}
+        {{-- FORM HIDDEN UNTUK TOGGLE STATUS --}}
         <form id="toggleStatusForm" method="POST" action="#" style="display: none;">
             @csrf @method('PATCH')
         </form>
 
-    </div> {{-- Penutup Wrapper Utama x-data --}}
+    </div>
 
-    {{-- SWEETALERT FLASH MESSAGE HANDLER --}}
+    {{-- SWEETALERT --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -649,6 +639,4 @@
             }
         });
     </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </x-app-layout>

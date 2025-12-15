@@ -35,8 +35,8 @@ class StudentSeeder extends Seeder
             }
             // =================================================================
 
-            // Random jumlah siswa antara 4 sampai 6 per kelas
-            $jumlahSiswa = rand(4, 6);
+            // Random jumlah siswa antara 6 sampai 15 per kelas
+            $jumlahSiswa = rand(6, 15);
 
             for ($i = 1; $i <= $jumlahSiswa; $i++) {
                 

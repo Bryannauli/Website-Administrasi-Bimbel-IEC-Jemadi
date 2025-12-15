@@ -145,6 +145,7 @@ class AdminAssessmentController extends Controller
             return [
                 'id' => $student->id,
                 'name' => $student->name,
+                'student_number' => $student->student_number,
                 'written' => [
                     'form_id' => $written->form_id ?? null,
                     'vocabulary' => $written->vocabulary ?? null,
