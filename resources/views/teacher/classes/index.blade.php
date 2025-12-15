@@ -27,7 +27,7 @@
             <div class="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
                 <div>
                     <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent inline-block">
-                        My Classes
+                        Active Classes
                     </h1>
                     <p class="text-gray-500 text-sm mt-1">View and manage attendance for all active classes.</p>
                 </div>

@@ -379,7 +379,7 @@
                             </button>
                         </div>
 
-                        {{-- CONTAINER SCROLLABLE BARU --}}
+                        {{-- TABLE STUDENT --}}
                         <div class="overflow-x-auto overflow-y-auto max-h-[500px] flex-1 custom-scrollbar border border-gray-50 rounded-lg">
                             <table class="w-full text-left border-collapse relative">
                                 <thead class="bg-gray-50 text-gray-400 text-xs font-medium border-b border-gray-100 sticky top-0 z-10 shadow-sm">

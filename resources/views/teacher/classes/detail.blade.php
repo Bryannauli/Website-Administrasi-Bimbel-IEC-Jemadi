@@ -274,53 +274,47 @@
                     </div>
 
                     {{-- C. STUDENT LIST (Main Content) (Mobile: Order-2) --}}
-                    <div class="order-2 lg:order-1 lg:col-span-2 bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col">
+                    <div class="order-2 lg:order-1 lg:col-span-2 bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col min-h-[400px]">
                         <div class="flex justify-between items-center mb-5">
                             <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
                                 Enrolled Students
+                                {{-- Gunakan count() karena data diambil dengan get() --}}
                                 <span class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-0.5 rounded-full ml-2">
-                                    {{ $students->total() }}
+                                    {{ $students->count() }}
                                 </span>
                             </h3>
                             
-                            <form method="GET" action="{{ url()->current() }}" class="flex items-center text-xs">
-                                <select name="per_page" onchange="this.form.submit()" class="border-gray-200 bg-gray-50 rounded-lg text-xs py-1.5 pl-2 pr-7 focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10 Rows</option>
-                                    <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25 Rows</option>
-                                </select>
-                            </form>
+                            {{-- FILTER ROWS DIHAPUS --}}
                         </div>
 
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead class="bg-gray-50 text-gray-400 text-xs font-medium border-b border-gray-100">
+                        {{-- WRAPPER TABEL SCROLLABLE --}}
+                        {{-- max-h-[500px] + overflow-y-auto agar bisa discroll vertikal --}}
+                        <div class="overflow-x-auto overflow-y-auto max-h-[500px] flex-1 custom-scrollbar border border-gray-50 rounded-lg">
+                            <table class="w-full text-left border-collapse relative">
+                                {{-- THEAD STICKY --}}
+                                <thead class="bg-gray-50 text-gray-400 text-xs font-medium border-b border-gray-100 sticky top-0 z-10 shadow-sm">
                                     <tr>
-                                        <th class="px-4 py-3 font-normal w-12 text-center">No</th>
-                                        {{-- 1. KOLOM ID NUMBER (Dipindah ke kiri) --}}
-                                        <th class="px-4 py-3 font-normal">Student ID</th>
-                                        {{-- 2. KOLOM NAMA (Dipindah ke kanan) --}}
-                                        <th class="px-4 py-3 font-normal">Student Name</th>
-                                        <th class="px-4 py-3 font-normal text-center">Status</th>
+                                        <th class="px-4 py-3 font-normal w-12 text-center bg-gray-50">No</th>
+                                        <th class="px-4 py-3 font-normal bg-gray-50">Student ID</th>
+                                        <th class="px-4 py-3 font-normal bg-gray-50">Student Name</th>
+                                        <th class="px-4 py-3 font-normal text-center bg-gray-50">Status</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-gray-100 text-sm text-gray-800">
-                                    @forelse($students as $student)
-                                        <tr class="hover:bg-gray-50 transition-colors group">
-                                            <td class="px-4 py-3 text-center text-gray-400 text-xs">{{ $loop->iteration + $students->firstItem() - 1 }}</td>
+                                <tbody class="divide-y divide-gray-100 text-sm text-gray-800 bg-white">
+                                    @forelse($students as $index => $student)
+                                        <tr class="transition group {{ $student->is_active ? 'hover:bg-gray-50' : 'bg-red-50 hover:bg-red-100' }}">
+                                            {{-- NOMOR URUT BIASA --}}
+                                            <td class="px-4 py-3 text-center text-gray-400 text-xs">{{ $index + 1 }}</td>
                                             
-                                            {{-- 1. DATA ID NUMBER --}}
+                                            {{-- ID NUMBER --}}
                                             <td class="px-4 py-3 font-mono text-xs text-gray-500">{{ $student->student_number }}</td>
 
-                                            {{-- 2. DATA NAMA (Dengan Avatar) --}}
-                                            <td class="px-4 py-3">
-                                                <div class="flex items-center">
-                                                    <div class="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs mr-3 border border-blue-200">
-                                                        {{ substr($student->name, 0, 1) }}
-                                                    </div>
-                                                    <span class="font-medium text-gray-900">{{ $student->name }}</span>
-                                                </div>
+                                            {{-- NAMA (TANPA ICON) --}}
+                                            <td class="px-4 py-3 font-medium text-gray-900">
+                                                {{ $student->name }}
                                             </td>
 
+                                            {{-- STATUS --}}
                                             <td class="px-4 py-3 text-center">
                                                 @if($student->is_active)
                                                     <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700 border border-green-100">Active</span>
@@ -331,7 +325,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="4" class="px-6 py-10 text-center text-gray-400 italic bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                                            <td colspan="4" class="px-6 py-12 text-center text-gray-400 italic bg-gray-50">
                                                 No students enrolled.
                                             </td>
                                         </tr>
@@ -340,11 +334,7 @@
                             </table>
                         </div>
                         
-                        @if($students->hasPages())
-                            <div class="pt-4 mt-auto border-t border-gray-100">
-                                {{ $students->links() }}
-                            </div>
-                        @endif
+                        {{-- PAGINATION LINKS DIHAPUS --}}
                     </div>
 
                 </div>

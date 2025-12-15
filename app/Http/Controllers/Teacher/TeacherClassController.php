@@ -86,28 +86,24 @@ class TeacherClassController extends Controller
         ]);
     }
 
-    /**
-     * Menampilkan Detail Kelas (Termasuk Matrix & Stats)
-     */
     public function detail(Request $request, $id)
     {
         // 1. Load Data Kelas Utama
         $class = ClassModel::with(['schedules', 'formTeacher', 'localTeacher'])->findOrFail($id);
         
-        // 2. Pagination Siswa (Untuk Tabel Utama)
-        $perPage = $request->input('per_page', 10);     
+        // 2. Query Siswa (Tanpa Pagination, Urut Student Number)
+        // REVISI: Menggunakan get() dan orderBy student_number
         $students = Student::where('class_id', $id)
             ->where('is_active', true)
-            ->orderBy('name', 'asc')
-            ->orderBy('student_number', 'asc')
-            ->paginate($perPage, ['*'], 'student_page') 
-            ->appends(request()->except('student_page'));
+            ->orderBy('student_number', 'asc') // <--- URUTKAN BERDASARKAN ID
+            ->get();
 
         // 3. Pagination Sesi & Assessment (Untuk Widget Sidebar/Card)
+        // Tetap menggunakan paginate karena ini hanya untuk widget ringkasan
         $classSessions = ClassSession::where('class_id', $id)
             ->with('teacher') // Eager load teacher
             ->orderBy('date', 'desc')
-            ->paginate(5, ['*'], 'attendance_page');
+            ->get();
 
         $assessments = AssessmentSession::where('class_id', $id)
             ->orderBy('date', 'desc')
@@ -123,10 +119,10 @@ class TeacherClassController extends Controller
                         ->orderBy('date', 'desc')
                         ->get();
 
-        // B. Ambil SEMUA siswa aktif untuk baris Matrix
+        // B. Ambil SEMUA siswa aktif untuk baris Matrix (Konsisten dengan tabel utama)
         $allStudents = Student::where('class_id', $id)
                         ->where('is_active', true)
-                        ->orderBy('name', 'asc')
+                        ->orderBy('student_number', 'asc') // <--- SAMA: URUTKAN ID
                         ->get();
 
         $attendanceMatrix = [];
@@ -149,7 +145,6 @@ class TeacherClassController extends Controller
         foreach ($allSessions as $session) {
             foreach ($session->records as $record) {
                 // 1. Isi Matrix: [student_id][session_id] = status
-                // Ini digunakan di view untuk menentukan warna/ikon sel
                 $attendanceMatrix[$record->student_id][$session->id] = $record->status;
 
                 // 2. Hitung Stats (Hanya jika siswa masih terdaftar di array stats)
@@ -171,7 +166,7 @@ class TeacherClassController extends Controller
                 : 0;
         }
         
-        // F. Ubah array Stats ke Collection Object agar mudah di-loop di Blade ($stat->name)
+        // F. Ubah array Stats ke Collection Object
         $studentStats = collect($studentStats)->map(fn($item) => (object) $item);
 
         return view('teacher.classes.detail', compact(
