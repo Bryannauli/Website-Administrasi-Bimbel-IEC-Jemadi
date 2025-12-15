@@ -17,24 +17,25 @@ class AdminStudentController extends Controller
      */
     public function index(Request $request)
     {
-        // 1. Ambil data untuk filter dropdown
+        // 1. AMBIL DATA FILTER (Dari ClassModel, karena Student tidak punya kolom ini)
+        
+        // List Kelas untuk dropdown
         $classes = ClassModel::orderBy('name', 'asc')->get();
         
-        // Ambil tahun angkatan unik dari data siswa
-        $years = Student::select('academic_year')
+        // Ambil tahun unik dari tabel CLASSES
+        $years = ClassModel::select('academic_year')
                         ->whereNotNull('academic_year')
                         ->distinct()
                         ->orderBy('academic_year', 'desc')
                         ->pluck('academic_year');
                         
-        // Ambil kategori unik (jika ada kolom category di tabel students)
-        // Jika tidak ada di tabel students, sesuaikan sumber datanya (misal hardcode atau dari tabel kelas)
-        $categories = Student::select('category')
+        // Ambil kategori unik dari tabel CLASSES
+        $categories = ClassModel::select('category')
                         ->whereNotNull('category')
                         ->distinct()
                         ->pluck('category');
 
-        // 2. Mulai Query Siswa
+        // 2. QUERY SISWA
         $query = Student::query();
 
         // --- FILTERING ---
@@ -48,7 +49,7 @@ class AdminStudentController extends Controller
             });
         }
 
-        // Filter Kelas
+        // Filter Kelas (Langsung ID)
         if ($request->filled('class_id')) {
             if ($request->class_id == 'no_class') {
                 $query->whereNull('class_id');
@@ -57,14 +58,18 @@ class AdminStudentController extends Controller
             }
         }
 
-        // Filter Tahun Angkatan
+        // Filter Tahun Angkatan (Via Relasi Class)
         if ($request->filled('academic_year')) {
-            $query->where('academic_year', $request->academic_year);
+            $query->whereHas('classModel', function($q) use ($request) {
+                $q->where('academic_year', $request->academic_year);
+            });
         }
 
-        // Filter Kategori
+        // Filter Kategori (Via Relasi Class)
         if ($request->filled('category')) {
-            $query->where('category', $request->category);
+            $query->whereHas('classModel', function($q) use ($request) {
+                $q->where('category', $request->category);
+            });
         }
 
         // Filter Status Aktif/Inaktif
@@ -76,9 +81,8 @@ class AdminStudentController extends Controller
             }
         }
 
-        // --- SORTING (LOGIKA DIPERBAIKI) ---
-        // Default ke 'newest' jika tidak ada input 'sort'
-        $sort = $request->input('sort', 'newest');
+        // --- SORTING ---
+        $sort = $request->input('sort', 'newest'); // Default newest
 
         switch ($sort) {
             case 'oldest':
@@ -98,21 +102,20 @@ class AdminStudentController extends Controller
                 break;
             case 'newest':
             default:
-                // Default: Data terbaru di paling atas
                 $query->latest(); 
                 break;
         }
 
-        // 3. Eksekusi Query dengan Pagination
-        // with('classModel') untuk eager loading data kelas (mencegah N+1 query)
+        // 3. EKSEKUSI QUERY
+        // Gunakan with('classModel') untuk mencegah N+1 Query problem
         $students = $query->with('classModel')->paginate(10)->withQueryString();
 
-        // 4. Hitung Statistik (Opsional, untuk card di atas tabel)
+        // 4. STATISTIK (Opsional)
         $globalTotal = Student::count();
         $totalActive = Student::where('is_active', true)->count();
         $totalInactive = Student::where('is_active', false)->count();
 
-        return view('admin.student.index', compact(
+        return view('admin.student.student', compact(
             'students', 
             'classes', 
             'years', 

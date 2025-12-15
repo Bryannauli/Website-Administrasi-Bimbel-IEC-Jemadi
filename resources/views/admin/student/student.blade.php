@@ -254,11 +254,12 @@
                                 </select>
                             </div>
 
-                            {{-- Sort Filter --}}
+                            {{-- Sort Filter (DIPERBAIKI) --}}
                             <div class="relative flex-grow sm:flex-grow-0">
                                 <select name="sort" onchange="this.form.submit()" 
                                         class="h-10 w-full sm:w-auto px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none">
-                                    <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Newest</option>
+                                    {{-- Menggunakan request('sort', 'newest') agar 'Newest' terpilih by default --}}
+                                    <option value="newest" {{ request('sort', 'newest') == 'newest' ? 'selected' : '' }}>Newest</option>
                                     <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest</option>
                                     <option value="number_asc" {{ request('sort') == 'number_asc' ? 'selected' : '' }}>ID (0-9)</option>
                                     <option value="number_desc" {{ request('sort') == 'number_desc' ? 'selected' : '' }}>ID (9-0)</option>
@@ -405,8 +406,8 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Gunakan json_encode untuk keamanan syntax JS
-            const successMessage = <?php json_encode(session('success')) ?>;
-            const errorMessage   = <?php json_encode(session('error')) ?>;
+            const successMessage = <?php echo json_encode(session('success')); ?>;
+            const errorMessage   = <?php echo json_encode(session('error')); ?>;
 
             if (successMessage) {
                 Swal.fire({
