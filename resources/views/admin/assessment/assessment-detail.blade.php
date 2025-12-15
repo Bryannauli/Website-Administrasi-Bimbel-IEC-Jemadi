@@ -1,11 +1,7 @@
 <x-app-layout>
     <x-slot name="header"></x-slot>
 
-    {{-- 
-        SETUP ALPINE JS UTAMA
-        State: isEditing (Mode Edit/Baca), assessmentType (mid/final)
-        Logika: Jika ada request 'mode=edit' ATAU ada error validasi, paksa masuk mode EDIT.
-    --}}
+    {{-- SETUP ALPINE JS --}}
     <div class="py-6" x-data="{ 
         isEditing: {{ (request('mode') == 'edit' || $errors->any()) ? 'true' : 'false' }},
         assessmentType: '{{ $type }}' 
@@ -13,7 +9,7 @@
 
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
-            {{-- 1. BREADCRUMB NAVIGATION --}}
+            {{-- 1. BREADCRUMB --}}
             <nav class="flex mb-5" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-3">
                     <li class="inline-flex items-center">
@@ -60,7 +56,22 @@
                     <h2 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                         Assessment Details: {{ ucfirst($type) }}
                     </h2>
-                    <p class="text-gray-500 text-sm mt-1">Class: <span class="font-bold text-gray-800">{{ $class->name }}</span></p>
+                    
+                    {{-- Nama Kelas --}}
+                    <p class="text-gray-500 text-sm mt-1">
+                        Class: <span class="font-bold text-gray-800">{{ $class->name }}</span>
+                    </p>
+
+                    {{-- Status Badge (Di bawah Nama Kelas) --}}
+                    <div class="mt-1.5 flex items-center">
+                        <span class="text-gray-500 text-sm mr-2">Status:</span>
+                        <span class="uppercase font-bold px-2.5 py-0.5 rounded text-[10px] tracking-wider
+                            {{ $session->status === 'draft' ? 'bg-yellow-100 text-yellow-700' : '' }}
+                            {{ $session->status === 'submitted' ? 'bg-blue-100 text-blue-700' : '' }}
+                            {{ $session->status === 'final' ? 'bg-purple-100 text-purple-700' : '' }}">
+                            {{ $session->status }}
+                        </span>
+                    </div>
                 </div>
                 
                 {{-- FORM TERSEMBUNYI UNTUK QUICK ACTION (Read Mode) --}}

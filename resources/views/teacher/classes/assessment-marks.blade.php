@@ -45,16 +45,22 @@
                     <h2 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                         Assessment: {{ $assessment->type == 'mid' ? 'Mid Term' : 'Final Exam' }}
                     </h2>
+                    
+                    {{-- Nama Kelas --}}
                     <p class="text-gray-500 text-sm mt-1">
-                        Class: <span class="font-bold text-gray-800">{{ $class->name }}</span> | 
-                        Status: 
-                        <span class="uppercase font-bold px-2 py-0.5 rounded text-[10px] tracking-wider
+                        Class: <span class="font-bold text-gray-800">{{ $class->name }}</span>
+                    </p>
+
+                    {{-- Status Badge (Pindah ke Bawah Nama Kelas) --}}
+                    <div class="mt-1.5 flex items-center">
+                        <span class="text-gray-500 text-sm mr-2">Status:</span>
+                        <span class="uppercase font-bold px-2.5 py-0.5 rounded text-[10px] tracking-wider
                             {{ $assessment->status === 'draft' ? 'bg-yellow-100 text-yellow-700' : '' }}
                             {{ $assessment->status === 'submitted' ? 'bg-blue-100 text-blue-700' : '' }}
                             {{ $assessment->status === 'final' ? 'bg-purple-100 text-purple-700' : '' }}">
                             {{ $assessment->status }}
                         </span>
-                    </p>
+                    </div>
                 </div>
                 
                 {{-- TOMBOL EDIT UTAMA (Hanya Muncul jika Draft dan tidak sedang edit) --}}
