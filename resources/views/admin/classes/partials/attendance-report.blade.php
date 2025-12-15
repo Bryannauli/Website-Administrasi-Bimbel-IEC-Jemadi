@@ -33,12 +33,12 @@
         .report-table {
             width: 100%;
             border-collapse: collapse;
-            font-family: 'Times New Roman', Times, serif; /* Font formal */
+            font-family: 'Times New Roman', Times, serif;
         }
         
         .report-table th, 
         .report-table td {
-            border: 1px solid #000; /* Border hitam tegas */
+            border: 1px solid #000;
             padding: 4px;
             font-size: 11px;
         }
@@ -50,8 +50,6 @@
             font-size: 11px;
             font-family: 'Arial', sans-serif;
         }
-        
-        /* Diagonal line simulation (opsional, tidak dipakai agar rapi) */
     </style>
 </head>
 <body class="bg-gray-200 p-4 font-sans">
@@ -66,7 +64,7 @@
             </h1>
         </div>
 
-        {{-- 2. INFORMASI KELAS & LEGEND (Meniru kotak di atas tabel foto) --}}
+        {{-- 2. INFORMASI KELAS & LEGEND --}}
         <div class="flex flex-row mb-2 gap-2">
             
             {{-- KOTAK KIRI: Marking Guide (Legend) --}}
@@ -82,52 +80,63 @@
             </div>
 
             {{-- KOTAK KANAN: Class Info --}}
+            {{-- PERUBAHAN: Menggunakan Grid 2 Kolom (Kiri & Kanan) --}}
             <div class="info-box w-2/3">
-                <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
-                    <div class="flex">
-                        <span class="w-24 font-bold">TERM:</span>
-                        <span class="border-b border-black border-dotted flex-1">{{ date('Y') }}</span>
+                <div class="grid grid-cols-2 gap-x-6 h-full">
+                    
+                    {{-- KOLOM KIRI (Info Kelas) --}}
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-end">
+                            <span class="w-24 font-bold shrink-0">TERM A/B:</span>
+                            <span class="border-b border-black border-dotted flex-1 truncate">{{ $class->term ?? date('Y') }}</span>
+                        </div>
+                        <div class="flex items-end">
+                            <span class="w-24 font-bold shrink-0">CLASS:</span>
+                            <span class="border-b border-black border-dotted flex-1 truncate">{{ $class->name ?? '-' }}</span>
+                        </div>
+                        <div class="flex items-end">
+                            <span class="w-24 font-bold shrink-0">CLASS TIMES:</span>
+                            <span class="border-b border-black border-dotted flex-1 truncate">{{ $class->times ?? '-' }}</span>
+                        </div>
                     </div>
-                    <div class="flex">
-                        <span class="w-24 font-bold">CLASS:</span>
-                        <span class="border-b border-black border-dotted flex-1">{{ $class->name ?? '-' }}</span>
+
+                    {{-- KOLOM KANAN (Info Guru) --}}
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-end">
+                            <span class="w-28 font-bold shrink-0">FORM TEACHER:</span>
+                            <span class="border-b border-black border-dotted flex-1 truncate">{{ $teacherName ?? '-' }}</span>
+                        </div>
+                        <div class="flex items-end">
+                            <span class="w-28 font-bold shrink-0">LOCAL TEACHER:</span>
+                            <span class="border-b border-black border-dotted flex-1 truncate">{{ $localTeacher ?? '-' }}</span>
+                        </div>
+                        <div class="flex items-end">
+                            <span class="w-28 font-bold shrink-0">TOTAL SESSIONS:</span>
+                            <span class="border-b border-black border-dotted flex-1 truncate">{{ count($teachingLogs) }}</span>
+                        </div>
                     </div>
-                    <div class="flex">
-                        <span class="w-24 font-bold">TEACHER:</span>
-                        <span class="border-b border-black border-dotted flex-1">{{ $teacherName ?? '-' }}</span>
-                    </div>
-                    <div class="flex">
-                        <span class="w-24 font-bold">TOTAL SESSIONS:</span>
-                        <span class="border-b border-black border-dotted flex-1">{{ $teachingLogs->count() }}</span>
-                    </div>
+
                 </div>
             </div>
         </div>
 
-        {{-- 3. TABEL UTAMA (GRID KETAT) --}}
+        {{-- 3. TABEL UTAMA --}}
         <table class="report-table">
             <thead>
-                {{-- HEADER ROW 1: Judul Kolom Besar --}}
                 <tr class="bg-gray-100 text-center">
                     <th rowspan="2" class="w-8">No</th>
-                    <th rowspan="2" class="w-20">ID No</th>
+                    <th rowspan="2" class="w-20">Student's ID No</th>
                     <th rowspan="2" class="w-48 text-left px-2">Student Name</th>
-                    {{-- Meeting No Span --}}
-                    <th colspan="{{ $teachingLogs->count() }}" class="h-6">Meeting No / Date</th>
+                    <th colspan="{{ count($teachingLogs) }}" class="h-6">Meeting No / Date</th>
                     <th rowspan="2" class="w-10 text-[10px]">Total<br>Pres</th>
                     <th rowspan="2" class="w-10 text-[10px]">%</th>
                 </tr>
-
-                {{-- HEADER ROW 2: Tanggal-tanggal (Miring agar muat) --}}
                 <tr class="bg-gray-50">
                     @foreach($teachingLogs as $index => $session)
                         <th class="w-8 text-center bg-white align-bottom pb-1 relative group h-24 whitespace-nowrap">
-                            {{-- Angka Pertemuan (1, 2, 3...) --}}
                             <div class="absolute top-1 left-0 right-0 text-[9px] font-bold bg-gray-100 border-b border-gray-300">
                                 {{ $index + 1 }}
                             </div>
-                            
-                            {{-- Tanggal (Rotasi Teks vertikal agar muat banyak) --}}
                             <div class="writing-vertical-lr transform rotate-180 h-16 w-full flex items-center justify-center text-[10px]">
                                 {{ \Carbon\Carbon::parse($session->date)->format('d/m') }}
                             </div>
@@ -138,29 +147,20 @@
             <tbody>
                 @foreach($studentStats as $index => $stat)
                     <tr>
-                        {{-- No --}}
                         <td class="text-center bg-gray-50 font-bold">{{ $index + 1 }}</td>
-                        
-                        {{-- ID --}}
                         <td class="text-center font-mono text-[10px]">{{ $stat->student_number }}</td>
-                        
-                        {{-- Name --}}
                         <td class="uppercase font-semibold text-[10px] truncate max-w-[150px]">
                             {{ $stat->name }}
                         </td>
-
-                        {{-- Loop Attendance Status --}}
                         @foreach($teachingLogs as $session)
                             @php
                                 $status = $attendanceMatrix[$stat->student_id][$session->session_id] ?? '-';
-                                
-                                // Simbol sesuai Marking Guide di foto
                                 $symbol = match($status) {
-                                    'present' => '/',      // Sesuai foto (Garis miring)
+                                    'present' => '/',
                                     'late' => 'L',
                                     'sick' => 'S',
                                     'permission' => 'P',
-                                    'absent' => 'O',     // Sesuai foto (Lingkaran/O)
+                                    'absent' => 'O',
                                     default => ''
                                 };
                             @endphp
@@ -168,8 +168,6 @@
                                 {{ $symbol }}
                             </td>
                         @endforeach
-
-                        {{-- Total Present (Hitung manual) --}}
                         @php
                             $presentCount = 0;
                             foreach($teachingLogs as $s) {
@@ -178,23 +176,19 @@
                             }
                         @endphp
                         <td class="text-center bg-gray-50">{{ $presentCount }}</td>
-
-                        {{-- Persentase --}}
                         <td class="text-center font-bold text-[10px]">
                             {{ round($stat->percentage) }}%
                         </td>
                     </tr>
                 @endforeach
                 
-                {{-- Baris Kosong Pelengkap (Opsional, biar tabel terlihat penuh sampai bawah) --}}
+                {{-- Baris Kosong Pelengkap --}}
                 @for($i = 0; $i < (20 - count($studentStats)); $i++)
                     <tr>
                         <td class="text-center">&nbsp;</td>
                         <td></td>
                         <td></td>
-                        @foreach($teachingLogs as $session)
-                            <td></td>
-                        @endforeach
+                        @foreach($teachingLogs as $session) <td></td> @endforeach
                         <td></td>
                         <td></td>
                     </tr>
@@ -202,7 +196,7 @@
             </tbody>
         </table>
         
-        {{-- FOOTER TOMBOL (HANYA MUNCUL DI LAYAR) --}}
+        {{-- FOOTER TOMBOL --}}
         <div class="no-print fixed bottom-10 right-10 flex gap-4">
             <a href="{{ url()->previous() }}" class="bg-gray-500 text-white px-6 py-3 rounded-full shadow-lg hover:bg-gray-600 font-bold">
                 Back
@@ -211,10 +205,8 @@
                 <i class="fas fa-print mr-2"></i> Print Report
             </button>
         </div>
-
     </div>
 
-    {{-- Script untuk rotasi teks vertikal jika Tailwind tidak support secara default --}}
     <style>
         .writing-vertical-lr {
             writing-mode: vertical-lr;

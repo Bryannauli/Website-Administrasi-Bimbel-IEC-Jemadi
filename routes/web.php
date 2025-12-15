@@ -1,22 +1,23 @@
 <?php
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
 // use App\Http\Controllers\AssessmentFormController; // Tidak Terpakai
 
 // Admin Controllers
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Admin\AdminAssessmentController; // Controller Baru (Manage Grades per Class)
 use App\Http\Controllers\Admin\AdminClassController;
-use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminStudentController;
 use App\Http\Controllers\Admin\AdminTeacherController;
+use App\Http\Controllers\Admin\AdminDashboardController;
 
 // Teacher Controllers
-use App\Http\Controllers\Teacher\TeacherAttendanceController;
-use App\Http\Controllers\Teacher\TeacherAssessmentController;
 use App\Http\Controllers\Teacher\TeacherClassController;
 use App\Http\Controllers\Teacher\TeacherDashboardController;
+use App\Http\Controllers\Teacher\TeacherAssessmentController;
+use App\Http\Controllers\Teacher\TeacherAttendanceController;
+use App\Http\Controllers\Admin\AdminAssessmentController; // Controller Baru (Manage Grades per Class)
 
 
 /* ROOT DAN DASHBOARD */
@@ -48,6 +49,69 @@ Route::middleware(['auth', 'verified', 'admin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
+
+// Ini rute untuk ngecek tampilannya doang, kalau nanti dah disambung ke db 
+// hapus aja rutenya yaa
+// soalnya belum nyambung ke db
+// cara ceknya buka di browser: 127.0..../admin/cek-tampilan
+Route::get('/cek-tampilan', function () {    
+    // 1. DATA KELAS (Lengkap dengan Time & Days)
+    $class = (object) [
+        'name' => 'STEP 4 - ENGLISH CONVERSATION',
+        'term' => 'JUL - DEC ' . date('Y'),
+        'times' => '17:00 - 18:30', // <--- Dummy Time
+        'days' => 'Mon & Wed',
+    ];
+
+    // 2. DATA GURU
+    $teacherName = 'Mr. Richard';      // Form Teacher
+    $localTeacher = 'Ms. Sarah';       // Dummy Local Teacher
+
+    // 3. DUMMY SESI (16 Pertemuan)
+    $teachingLogs = collect([]);
+    $startDate = Carbon::create(2025, 7, 1);
+    
+    for ($i = 0; $i < 16; $i++) {
+        $teachingLogs->push((object)[
+            'session_id' => $i + 1,
+            'date' => $startDate->copy()->addDays($i * 3)->format('Y-m-d'),
+        ]);
+    }
+
+    // 4. DUMMY SISWA & ABSENSI
+    $studentNames = ['Ferdinand', 'Evelyn', 'Dally Sta', 'Erlina', 'Joceline', 'Bryan', 'Michael'];
+    $studentStats = collect([]);
+    $attendanceMatrix = []; 
+
+    foreach ($studentNames as $index => $name) {
+        $studentId = $index + 1;
+        $studentStats->push((object)[
+            'student_id' => $studentId,
+            'name' => $name,
+            'student_number' => 'ST-' . (202500 + $studentId),
+            'percentage' => rand(70, 100),
+        ]);
+
+        foreach ($teachingLogs as $log) {
+            $rand = rand(1, 10);
+            if ($rand <= 7) $status = 'present';     
+            elseif ($rand == 8) $status = 'late';    
+            elseif ($rand == 9) $status = 'absent';   
+            else $status = 'permission';             
+            $attendanceMatrix[$studentId][$log->session_id] = $status;
+        }
+    }
+
+    // Return ke View
+    return view('admin.classes.partials.attendance-report', [ 
+        'class' => $class,
+        'teacherName' => $teacherName,
+        'localTeacher' => $localTeacher, // <--- Kirim variable baru
+        'teachingLogs' => $teachingLogs,
+        'studentStats' => $studentStats,
+        'attendanceMatrix' => $attendanceMatrix
+    ]);
+});
 
         /* DASHBOARD */
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
