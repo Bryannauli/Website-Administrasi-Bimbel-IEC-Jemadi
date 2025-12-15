@@ -10,18 +10,15 @@ use App\Models\Student;
 use App\Models\ClassSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator; // <--- Import Validator
+use Illuminate\Support\Facades\Validator;
 
 class AdminClassController extends Controller
 {
-    /**
-     * Menampilkan daftar kelas
-     */
     public function index(Request $request)
     {
         $query = ClassModel::with(['formTeacher', 'localTeacher', 'schedules']);
 
-        // 1. Filter Search Text
+        // ... (Filter Logic sama) ...
         if ($request->has('search') && $request->search != '') {
             $searchTerm = $request->search;
             $query->where(function($q) use ($searchTerm) {
@@ -29,20 +26,15 @@ class AdminClassController extends Controller
                     ->orWhere('classroom', 'LIKE', "%{$searchTerm}%");
             });
         }
-        
-        // 2. Filters Utama
         if ($request->filled('academic_year')) {
             $query->where('academic_year', $request->academic_year);
         }
         if ($request->filled('category')) {
             $query->where('category', $request->category);
         }
-        // [BARU] Filter Specific Class Name
         if ($request->filled('class_name')) {
             $query->where('name', $request->class_name);
         }
-        
-        // 3. Filter Status
         if (!$request->has('status')) {
             $query->where('is_active', true);
         } elseif ($request->filled('status')) {
@@ -53,7 +45,6 @@ class AdminClassController extends Controller
             }
         }
         
-        // 4. Sorting
         $sort = $request->query('sort', 'newest'); 
         switch ($sort) {
             case 'oldest': $query->orderBy('created_at', 'asc'); break;
@@ -62,40 +53,25 @@ class AdminClassController extends Controller
             case 'newest': default: $query->orderBy('created_at', 'desc'); break;
         }
 
-        // --- DATA PENDUKUNG DROPDOWN (DINAMIS) ---
         $categories = ['pre_level', 'level', 'step', 'private'];
         $years = ClassModel::select('academic_year')->distinct()->pluck('academic_year')->sortDesc();
 
-        // [LOGIKA BARU] Ambil List Nama Kelas untuk Dropdown
-        // Query ini dipengaruhi oleh filter Category & Year yang sedang aktif
         $classNameQuery = ClassModel::select('name')->distinct()->orderBy('name', 'asc');
-
-        if ($request->filled('category')) {
-            $classNameQuery->where('category', $request->category);
-        }
-        if ($request->filled('academic_year')) {
-            $classNameQuery->where('academic_year', $request->academic_year);
-        }
-        
-        // Ambil hasil pluck
+        if ($request->filled('category')) $classNameQuery->where('category', $request->category);
+        if ($request->filled('academic_year')) $classNameQuery->where('academic_year', $request->academic_year);
         $classNames = $classNameQuery->pluck('name'); 
 
-        // Execute Pagination
         $classes = $query->paginate(10);
         $classes->appends($request->all());
 
         $teachers = User::where('is_teacher', true)->orderBy('name', 'asc')->get();
 
-        // Jangan lupa kirim $classNames ke view
         return view('admin.classes.class', compact('classes', 'teachers', 'years', 'categories', 'classNames'));
     }
 
-    /**
-     * Menyimpan Data Kelas Baru
-     */
     public function store(Request $request)
     {
-        // Validasi untuk Create
+        // ... (Logic Store sama) ...
         $request->validate([
             'category' => 'required|string',
             'name' => 'required|string|max:100',
@@ -113,7 +89,6 @@ class AdminClassController extends Controller
         ]);
 
         try {
-            // Siapkan JSON Schedule
             $scheduleData = [];
             $teacherTypes = $request->input('teacher_types', []);
 
@@ -126,7 +101,6 @@ class AdminClassController extends Controller
             
             $jsonSchedule = json_encode($scheduleData); 
 
-            // Panggil Stored Procedure
             DB::statement('SET @newClassId = 0');
             DB::statement('CALL p_CreateClass(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, @newClassId)', [
                 $request->category,
@@ -153,14 +127,10 @@ class AdminClassController extends Controller
         }
     }
 
-    /**
-     * Update Data Kelas (REFACTORED: Menggunakan Validator Manual)
-     */
     public function update(Request $request, $id)
     {
+        // ... (Logic Update sama) ...
         $class = ClassModel::findOrFail($id);
-
-        // 1. Definisikan Validator
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:100',
             'classroom' => 'required|string|max:50',
@@ -174,18 +144,14 @@ class AdminClassController extends Controller
             'teacher_types' => 'nullable|array',
         ]);
 
-        // 2. Cek apakah Validasi Gagal?
         if ($validator->fails()) {
             return back()
                 ->withErrors($validator)
-                // Kirim input lama + ID agar modal edit tahu siapa yang diedit
                 ->withInput($request->all() + ['id' => $id]) 
-                // Flag untuk membuka modal edit di frontend
                 ->with('edit_failed', true);
         }
 
         try {
-            // 3. Update Data Utama
             $class->update([
                 'category' => $request->category,
                 'name' => $request->name,
@@ -200,15 +166,12 @@ class AdminClassController extends Controller
                 'is_active' => $request->status == 'active' ? true : false,
             ]);
         
-            // 4. Sync Jadwal Hari
             $class->schedules()->delete(); 
         
             if ($request->has('days')) {
                 $teacherTypes = $request->input('teacher_types', []);
-
                 foreach ($request->days as $day) {
                     $type = $teacherTypes[$day] ?? 'form';
-                    
                     Schedule::create([
                         'class_id' => $class->id,
                         'day_of_week' => $day,
@@ -229,10 +192,24 @@ class AdminClassController extends Controller
 
     public function detailClass(Request $request, $id)
     {
-        $class = ClassModel::with(['schedules', 'formTeacher', 'localTeacher', 'students', 'assessmentSessions'])->findOrFail($id);
+        // 1. UPDATE: Tambahkan sorting student_number pada relasi students
+        $class = ClassModel::with([
+            'schedules', 
+            'formTeacher', 
+            'localTeacher', 
+            'students' => function($q) { 
+                $q->orderBy('student_number', 'asc'); // <<< SORT BY ID
+            }, 
+            'assessmentSessions'
+        ])->findOrFail($id);
+        
         $class->students_count = $class->students->count();
 
-        $query = \App\Models\Student::where('is_active', true)->whereNull('class_id')->orderBy('name', 'asc');
+        // 2. UPDATE: availableStudents juga di-sort by student_number
+        $query = \App\Models\Student::where('is_active', true)
+            ->whereNull('class_id')
+            ->orderBy('student_number', 'asc'); // <<< SORT BY ID
+
         if ($request->filled('search_student')) {
             $search = $request->search_student;
             $query->where(function($q) use ($search) {
@@ -245,6 +222,7 @@ class AdminClassController extends Controller
 
         $lastSession = ClassSession::where('class_id', $id)->with('teacher')->orderBy('date', 'desc')->orderBy('created_at', 'desc')->first();
             
+        // Procedure ini sudah diupdate di langkah sebelumnya utk sort by ID
         $studentStats = DB::select('CALL p_get_class_attendance_stats(?)', [$id]);
         
         $rawLogs = ClassSession::where('class_id', $id)->with(['records:id,class_session_id,student_id,status'])->get();
@@ -255,7 +233,6 @@ class AdminClassController extends Controller
             }
         }
 
-        // Data pendukung form edit di detail class
         $categories = ['pre_level', 'level', 'step', 'private'];
         $years = ClassModel::select('academic_year')->distinct()->pluck('academic_year')->sortDesc();
         $teachers = User::where('is_teacher', true)->orderBy('name', 'asc')->get();
@@ -266,6 +243,8 @@ class AdminClassController extends Controller
         ));
     }
 
+    // ... (Method lain toggleStatus, delete, assignStudent, dll tetap sama) ...
+    
     public function toggleStatus($id)
     {
         $class = ClassModel::findOrFail($id);
@@ -318,39 +297,32 @@ class AdminClassController extends Controller
 
     public function dailyRecap(Request $request)
     {
-        // 1. Ambil Tanggal Filter (Default: Hari Ini)
         $date = $request->input('date', \Carbon\Carbon::today()->format('Y-m-d'));
-        
-        // 2. Tentukan Hari (Monday, Tuesday, dst)
         $dayOfWeek = \Carbon\Carbon::parse($date)->format('l');
 
-        // 3. Query Jadwal (Schedules) join ke Classes
-        // Lalu Left Join ke Session untuk cek apakah sudah ada sesi hari ini
         $records = DB::table('schedules as sch')
             ->join('classes as c', 'sch.class_id', '=', 'c.id')
             ->leftJoin('class_sessions as s', function($join) use ($date) {
                 $join->on('c.id', '=', 's.class_id')
                      ->where('s.date', '=', $date);
             })
-            ->leftJoin('users as t', 's.teacher_id', '=', 't.id') // Ambil guru dari sesi (jika ada)
+            ->leftJoin('users as t', 's.teacher_id', '=', 't.id') 
             ->where('sch.day_of_week', $dayOfWeek)
-            ->where('c.is_active', 1)   // Hanya tampilkan kelas aktif
+            ->where('c.is_active', 1)   
             ->whereNull('c.deleted_at')
             ->select(
                 'c.id as class_id',
                 'c.name as class_name',
-                'c.category', // <-- [BARU] Tambahkan category
+                'c.category', 
                 'c.classroom',
                 'c.start_time',
                 'c.end_time',
-                's.id as session_id',        // NULL jika belum ada sesi
-                't.name as teacher_name',    // NULL jika belum ada sesi/guru
-                'sch.teacher_type'           // form/local (info tambahan jika perlu)
+                's.id as session_id',        
+                't.name as teacher_name',    
+                'sch.teacher_type'           
             )
             ->orderBy('c.start_time', 'asc')
             ->paginate(20)->withQueryString();
-
-        // Statistik dihapus sesuai request
 
         return view('admin.classes.daily-recap', compact('records', 'date'));
     }

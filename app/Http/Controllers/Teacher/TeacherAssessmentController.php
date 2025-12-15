@@ -33,9 +33,10 @@ class TeacherAssessmentController extends Controller
             ->orderBy('name', 'asc')
             ->get();
 
+        // UPDATE: Mengurutkan berdasarkan student_number
         $students = Student::where('class_id', $classId)
             ->where('is_active', true)
-            ->orderBy('name', 'asc')
+            ->orderBy('student_number', 'asc') // <-- Perubahan disini
             ->get();
 
         foreach ($students as $student) {
@@ -68,7 +69,6 @@ class TeacherAssessmentController extends Controller
             'topic' => 'nullable|string|max:200',
             'action_type' => 'required|in:save,submit', // Validasi tombol aksi
             'marks' => 'array',
-            // ... validasi marks sama seperti sebelumnya ...
             'marks.*.vocabulary' => 'nullable|numeric|min:0|max:100',
             'marks.*.grammar'    => 'nullable|numeric|min:0|max:100',
             'marks.*.listening'  => 'nullable|numeric|min:0|max:100',
@@ -144,7 +144,6 @@ class TeacherAssessmentController extends Controller
                          ->with('success', $msg);
     }
     
-    // ... storeAssessment tetap sama ...
     public function storeAssessment(Request $request, $classId)
     {
         $request->validate([

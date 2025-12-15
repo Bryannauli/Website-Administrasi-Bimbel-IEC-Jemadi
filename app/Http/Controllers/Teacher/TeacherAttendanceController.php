@@ -28,7 +28,7 @@ class TeacherAttendanceController extends Controller
         if ($existingSession) {
             return redirect()->back()
                 ->with('error', 'Attendance session already exists for this date. Please edit the existing session.')
-                ->withInput(); // Opsional: mempertahankan input
+                ->withInput();
         }
 
         $session = ClassSession::create([
@@ -43,7 +43,7 @@ class TeacherAttendanceController extends Controller
             ->with('success', 'New attendance session created!');
     }
 
-    // Menampilkan halaman input/detail absensi (Tidak ada perubahan di sini)
+    // Menampilkan halaman input/detail absensi
     public function sessionDetail($classId, $sessionId)
     {
         $class = ClassModel::findOrFail($classId);
@@ -51,8 +51,10 @@ class TeacherAttendanceController extends Controller
                                     ->where('id', $sessionId)
                                     ->firstOrFail();
 
+        // UPDATE: Mengurutkan berdasarkan student_number
         $students = $class->students()
                         ->where('is_active', 1)
+                        ->orderBy('student_number', 'asc') // <-- Perubahan disini (sebelumnya tidak ada sort)
                         ->get();
 
         $attendanceRecords = AttendanceRecord::where('class_session_id', $sessionId)
@@ -70,7 +72,7 @@ class TeacherAttendanceController extends Controller
         return view('teacher.classes.session-attandance', compact('class', 'session', 'students'));
     }
 
-    // Menyimpan/Update data absensi (Tidak ada perubahan di sini)
+    // Menyimpan/Update data absensi
     public function updateSession(Request $request, $classId, $sessionId)
     {
         $request->validate([

@@ -87,7 +87,7 @@ return new class extends Migration
                 LEFT JOIN attendance_records ar ON s.id = ar.student_id
                 WHERE s.class_id = classId
                 GROUP BY s.id, s.name, s.student_number, s.is_active
-                ORDER BY s.name ASC;
+                ORDER BY s.student_number ASC; -- <<< UPDATE: SORT BY STUDENT NUMBER
             END
         ");
 
@@ -172,32 +172,7 @@ return new class extends Migration
         ');
 
         // ==========================================
-        // 7. VIEW: Class Activity Logs (UPDATE KRITIS: Pakai class_sessions & comment)
-        // ==========================================
-        DB::unprepared("
-            CREATE OR REPLACE VIEW v_class_activity_logs AS
-            SELECT 
-                s.id AS session_id,
-                s.class_id,             
-                s.date,
-                s.comment AS comment,    
-                u.name AS teacher_name,
-                u.id AS teacher_id,
-                COUNT(r.id) AS total_students,
-                SUM(CASE WHEN r.status IN ('present', 'late') THEN 1 ELSE 0 END) AS present_count,
-                CASE 
-                    WHEN COUNT(r.id) > 0 THEN ROUND((SUM(CASE WHEN r.status IN ('present', 'late') THEN 1 ELSE 0 END) / COUNT(r.id)) * 100)
-                    ELSE 0 
-                END AS attendance_percentage
-
-            FROM class_sessions s  
-            LEFT JOIN users u ON s.teacher_id = u.id 
-            LEFT JOIN attendance_records r ON s.id = r.class_session_id 
-            GROUP BY s.id, s.class_id, s.date, s.comment, u.name, u.id;
-        ");
-
-        // ==========================================
-        // 8. PROCEDURE: Create Class (BARU: Pindahkan Logic Store ke Sini)
+        // 7. PROCEDURE: Create Class
         // ==========================================
         DB::unprepared("
             DROP PROCEDURE IF EXISTS p_CreateClass;
@@ -212,7 +187,7 @@ return new class extends Migration
                 IN p_local_teacher_id BIGINT,
                 IN p_start_time TIME,
                 IN p_end_time TIME,
-                IN p_schedules JSON,  -- PARAMETER BARU: JSON STRING
+                IN p_schedules JSON,  
                 OUT p_new_class_id BIGINT
             )
             BEGIN
@@ -226,7 +201,7 @@ return new class extends Migration
                     RESIGNAL;
                 END;
 
-                START TRANSACTION; -- Transaction dimulai DI SINI, bukan di PHP
+                START TRANSACTION; 
 
                 -- A. Insert Data Kelas
                 INSERT INTO classes (
@@ -257,7 +232,7 @@ return new class extends Migration
                     )
                 ) AS jt;
 
-                -- C. Otomatisasi Assessment (Sama seperti sebelumnya)
+                -- C. Otomatisasi Assessment
                 SET v_interviewer_id = p_local_teacher_id;
 
                 INSERT INTO assessment_sessions (class_id, type, date, status, created_at, updated_at)
@@ -272,12 +247,12 @@ return new class extends Migration
                 INSERT INTO speaking_tests (assessment_session_id, date, topic, interviewer_id, created_at, updated_at)
                 VALUES (final_session_id, NULL, NULL, v_interviewer_id, NOW(), NOW());
 
-                COMMIT; -- Commit dilakukan DI SINI
+                COMMIT; 
             END
         ");
 
         // ==========================================
-        // 9. PROCEDURE: Teacher Global Stats (BARU)
+        // 8. PROCEDURE: Teacher Global Stats
         // ==========================================
         DB::unprepared('
             DROP PROCEDURE IF EXISTS p_get_teacher_global_stats;
@@ -307,9 +282,8 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Drop semua procedure dan view saat rollback
-        DB::unprepared('DROP PROCEDURE IF EXISTS p_CreateClass'); // Hapus procedure baru
-        DB::unprepared('DROP VIEW IF EXISTS v_class_activity_logs');
+        // Drop semua procedure
+        DB::unprepared('DROP PROCEDURE IF EXISTS p_CreateClass'); 
         DB::unprepared('DROP PROCEDURE IF EXISTS p_UpdateStudentGrade');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_GetDashboardStats');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_GetAttendanceStats');

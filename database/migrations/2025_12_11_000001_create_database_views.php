@@ -101,7 +101,7 @@ return new class extends Migration
         ");
 
         // ==========================================
-        // 6. View: v_student_grades (UPDATED - JOIN SPEAKING)
+        // 6. View: v_student_grades (UPDATED - ORDER BY Student Number)
         // ==========================================
         DB::unprepared("
             CREATE OR REPLACE VIEW v_student_grades AS
@@ -152,7 +152,8 @@ return new class extends Migration
             JOIN classes c ON asess.class_id = c.id
             LEFT JOIN speaking_tests st ON asess.id = st.assessment_session_id
             LEFT JOIN speaking_test_results str ON st.id = str.speaking_test_id AND af.student_id = str.student_id
-            LEFT JOIN users u ON st.interviewer_id = u.id;
+            LEFT JOIN users u ON st.interviewer_id = u.id
+            ORDER BY s.student_number ASC;
         ");
 
         // ==========================================
