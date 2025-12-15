@@ -17,22 +17,58 @@ class AdminStudentController extends Controller
      */
     public function index(Request $request)
     {
-        // 1. Data Pendukung Filter (Dropdown)
-        $years = ClassModel::select('academic_year')->distinct()->orderBy('academic_year', 'desc')->pluck('academic_year');
-        $categories = ClassModel::select('category')->distinct()->pluck('category');
+        // 1. Ambil data untuk filter dropdown
+        $classes = ClassModel::orderBy('name', 'asc')->get();
+        
+        // Ambil tahun angkatan unik dari data siswa
+        $years = Student::select('academic_year')
+                        ->whereNotNull('academic_year')
+                        ->distinct()
+                        ->orderBy('academic_year', 'desc')
+                        ->pluck('academic_year');
+                        
+        // Ambil kategori unik (jika ada kolom category di tabel students)
+        // Jika tidak ada di tabel students, sesuaikan sumber datanya (misal hardcode atau dari tabel kelas)
+        $categories = Student::select('category')
+                        ->whereNotNull('category')
+                        ->distinct()
+                        ->pluck('category');
 
-        $classQuery = ClassModel::orderBy('name', 'asc');
-        if ($request->filled('academic_year')) $classQuery->where('academic_year', $request->academic_year);
-        if ($request->filled('category')) $classQuery->where('category', $request->category);
-        $classes = $classQuery->get();
+        // 2. Mulai Query Siswa
+        $query = Student::query();
 
-        // 2. Query Utama Siswa
-        $query = Student::with('classModel');
+        // --- FILTERING ---
+        
+        // Filter Pencarian (Nama atau ID)
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('student_number', 'like', "%{$search}%");
+            });
+        }
 
-        // --- FILTER LOGIC ---
-        if (!$request->has('status')) {
-            $query->where('is_active', true); 
-        } elseif ($request->filled('status')) {
+        // Filter Kelas
+        if ($request->filled('class_id')) {
+            if ($request->class_id == 'no_class') {
+                $query->whereNull('class_id');
+            } else {
+                $query->where('class_id', $request->class_id);
+            }
+        }
+
+        // Filter Tahun Angkatan
+        if ($request->filled('academic_year')) {
+            $query->where('academic_year', $request->academic_year);
+        }
+
+        // Filter Kategori
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
+        }
+
+        // Filter Status Aktif/Inaktif
+        if ($request->filled('status')) {
             if ($request->status == 'active') {
                 $query->where('is_active', true);
             } elseif ($request->status == 'inactive') {
@@ -40,54 +76,50 @@ class AdminStudentController extends Controller
             }
         }
 
-        if ($request->filled('academic_year') && $request->class_id != 'no_class') {
-            $query->whereHas('classModel', fn($q) => $q->where('academic_year', $request->academic_year));
-        }
+        // --- SORTING (LOGIKA DIPERBAIKI) ---
+        // Default ke 'newest' jika tidak ada input 'sort'
+        $sort = $request->input('sort', 'newest');
 
-        if ($request->filled('category') && $request->class_id != 'no_class') {
-            $query->whereHas('classModel', fn($q) => $q->where('category', $request->category));
-        }
-
-        if ($request->filled('class_id')) {
-            $request->class_id == 'no_class'
-                ? $query->whereNull('class_id')
-                : $query->where('class_id', $request->class_id);
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(fn($q) => $q->where('name', 'LIKE', "%$search%")
-                                    ->orWhere('student_number', 'LIKE', "%$search%"));
-        }
-
-        // --- SORTING (UPDATED) ---
-        $sort = $request->get('sort', 'number_asc'); // <<< Default jadi number_asc (ID)
         switch ($sort) {
-            case 'name_asc': $query->orderBy('name', 'asc'); break;
-            case 'name_desc': $query->orderBy('name', 'desc'); break;
-            case 'number_desc': $query->orderBy('student_number', 'desc'); break;
-            case 'oldest': $query->orderBy('created_at', 'asc'); break;
-            case 'newest': $query->orderBy('created_at', 'desc'); break;
-            case 'number_asc': 
-            default: 
-                $query->orderBy('student_number', 'asc'); // <<< Default Sort by ID
+            case 'oldest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'number_asc':
+                $query->orderBy('student_number', 'asc');
+                break;
+            case 'number_desc':
+                $query->orderBy('student_number', 'desc');
+                break;
+            case 'name_asc':
+                $query->orderBy('name', 'asc');
+                break;
+            case 'name_desc':
+                $query->orderBy('name', 'desc');
+                break;
+            case 'newest':
+            default:
+                // Default: Data terbaru di paling atas
+                $query->latest(); 
                 break;
         }
 
-        // 3. Eksekusi Query & Pagination
-        $students = $query->paginate(10)->appends($request->query());
+        // 3. Eksekusi Query dengan Pagination
+        // with('classModel') untuk eager loading data kelas (mencegah N+1 query)
+        $students = $query->with('classModel')->paginate(10)->withQueryString();
 
-        // 4. Hitung Statistik Global
-        DB::statement('CALL p_get_student_global_stats(@total, @active, @inactive)');
-        $stats = DB::select('SELECT @total AS total, @active AS active, @inactive AS inactive');
-        
-        $globalTotal = $stats[0]->total;
-        $totalActive = $stats[0]->active;
-        $totalInactive = $stats[0]->inactive;
+        // 4. Hitung Statistik (Opsional, untuk card di atas tabel)
+        $globalTotal = Student::count();
+        $totalActive = Student::where('is_active', true)->count();
+        $totalInactive = Student::where('is_active', false)->count();
 
-        return view('admin.student.student', compact(
-            'students', 'classes', 'years', 'categories',
-            'totalActive', 'totalInactive', 'globalTotal'
+        return view('admin.student.index', compact(
+            'students', 
+            'classes', 
+            'years', 
+            'categories', 
+            'globalTotal', 
+            'totalActive', 
+            'totalInactive'
         ));
     }
 

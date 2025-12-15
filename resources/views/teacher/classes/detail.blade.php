@@ -335,15 +335,18 @@
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 text-sm text-gray-800 bg-white">
                                     @forelse($students as $index => $student)
+                                        {{-- 1. ROW BACKGROUND: Jika Inactive jadi merah muda --}}
                                         <tr class="transition group {{ $student->is_active ? 'hover:bg-gray-50' : 'bg-red-50 hover:bg-red-100' }}">
-                                            {{-- NOMOR URUT BIASA --}}
+                                            
+                                            {{-- NOMOR URUT --}}
                                             <td class="px-4 py-3 text-center text-gray-400 text-xs">{{ $index + 1 }}</td>
                                             
                                             {{-- ID NUMBER --}}
                                             <td class="px-4 py-3 font-mono text-xs text-gray-500">{{ $student->student_number }}</td>
 
-                                            {{-- NAMA (TANPA ICON) --}}
-                                            <td class="px-4 py-3 font-medium text-gray-900">
+                                            {{-- NAMA SISWA (UPDATE DISINI) --}}
+                                            {{-- Jika active: Hitam biasa. Jika inactive: Merah tua + Coret merah --}}
+                                            <td class="px-4 py-3 font-medium transition-colors {{ $student->is_active ? 'text-gray-900' : 'text-red-800 line-through decoration-red-500' }}">
                                                 {{ $student->name }}
                                             </td>
 
@@ -450,7 +453,7 @@
                             <div>
                                 @if($finalSession)
                                     <a href="{{ route('teacher.classes.assessment.detail', ['classId' => $class->id, 'assessmentId' => $finalSession->id]) }}" 
-                                       class="w-full inline-flex justify-center items-center px-4 py-3 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 gap-2">
+                                        class="w-full inline-flex justify-center items-center px-4 py-3 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 gap-2">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                         {{ $finalStatus == 'draft' ? 'Input Grades' : 'View Grades' }}
                                     </a>
