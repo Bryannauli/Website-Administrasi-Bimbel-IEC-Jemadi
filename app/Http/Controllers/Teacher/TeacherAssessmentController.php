@@ -8,6 +8,10 @@ use App\Models\ClassModel;
 use App\Models\Student;
 use App\Models\AssessmentSession;
 use App\Models\AssessmentForm;
+use App\Models\SpeakingTest; // Tambahkan Model
+use App\Models\User; // Tambahkan Model
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class TeacherAssessmentController extends Controller
 {
@@ -17,6 +21,19 @@ class TeacherAssessmentController extends Controller
         $class = ClassModel::findOrFail($classId);
         $assessment = AssessmentSession::with('forms')->findOrFail($assessmentId);
 
+        // 1. Ambil data Speaking Test (Create if not exists agar tidak error di view)
+        $speakingTest = SpeakingTest::firstOrCreate(
+            ['assessment_session_id' => $assessment->id],
+            ['date' => null, 'interviewer_id' => $class->local_teacher_id] // Default ke teacher kelas
+        );
+
+        // 2. Ambil daftar Guru untuk Dropdown Interviewer
+        $teachers = User::where('is_teacher', true)
+            ->where('is_active', true)
+            ->orderBy('name', 'asc')
+            ->get();
+
+        // 3. Ambil Siswa
         $students = Student::where('class_id', $classId)
             ->where('is_active', true)
             ->orderBy('name', 'asc')
@@ -27,67 +44,122 @@ class TeacherAssessmentController extends Controller
             $student->form = $form; 
         }
 
-        return view('teacher.classes.assessment-marks', compact('class', 'assessment', 'students'));
+        // Kirim $speakingTest dan $teachers ke View
+        return view('teacher.classes.assessment-marks', compact('class', 'assessment', 'students', 'speakingTest', 'teachers'));
     }
 
-    // Menyimpan Nilai (Per Skill)
+    // Menyimpan Nilai & Info Assessment
     public function updateAssessmentMarks(Request $request, $classId, $assessmentId)
     {
+        // 1. Validasi Input (Termasuk Header Info)
         $request->validate([
+            'written_date' => 'required|date',
+            'speaking_date' => 'nullable|date',
+            'interviewer_id' => 'nullable|exists:users,id',
+            'topic' => 'nullable|string|max:200',
+
             'marks' => 'array',
             'marks.*.vocabulary' => 'nullable|numeric|min:0|max:100',
             'marks.*.grammar'    => 'nullable|numeric|min:0|max:100',
             'marks.*.listening'  => 'nullable|numeric|min:0|max:100',
-            'marks.*.speaking'   => 'nullable|numeric|min:0|max:100',
+            'marks.*.speaking_content' => 'nullable|numeric|min:0|max:50',
+            'marks.*.speaking_participation' => 'nullable|numeric|min:0|max:50',
             'marks.*.reading'    => 'nullable|numeric|min:0|max:100',
             'marks.*.spelling'   => 'nullable|numeric|min:0|max:100',
         ]);
 
-        foreach ($request->marks as $studentId => $scores) {
-            AssessmentForm::updateOrCreate(
+        DB::transaction(function () use ($request, $assessmentId) {
+            // 2. Update Header Info (Assessment Session - Written Date)
+            $session = AssessmentSession::findOrFail($assessmentId);
+            $session->update([
+                'date' => $request->written_date
+            ]);
+
+            // 3. Update Header Info (Speaking Test)
+            SpeakingTest::updateOrCreate(
+                ['assessment_session_id' => $assessmentId],
                 [
-                    'assessment_session_id' => $assessmentId,
-                    'student_id' => $studentId,
-                ],
-                [
-                    'vocabulary' => $scores['vocabulary'] ?? null,
-                    'grammar'    => $scores['grammar'] ?? null,
-                    'listening'  => $scores['listening'] ?? null,
-                    'speaking'   => $scores['speaking'] ?? null,
-                    'reading'    => $scores['reading'] ?? null,
-                    'spelling'   => $scores['spelling'] ?? null,
+                    'date' => $request->speaking_date,
+                    'interviewer_id' => $request->interviewer_id,
+                    'topic' => $request->topic
                 ]
             );
-        }
+            
+            // Ambil ID speaking test yang baru saja diupdate/create
+            $speakingTest = SpeakingTest::where('assessment_session_id', $assessmentId)->first();
 
-        // Redirect kembali ke halaman Detail Kelas
+            // 4. Loop Simpan Nilai Siswa
+            if ($request->has('marks')) {
+                foreach ($request->marks as $studentId => $scores) {
+                    
+                    // Hitung Total Speaking
+                    $sContent = $scores['speaking_content'] ?? 0;
+                    $sPartic = $scores['speaking_participation'] ?? 0;
+                    $totalSpeaking = ($scores['speaking_content'] !== null || $scores['speaking_participation'] !== null) 
+                        ? $sContent + $sPartic 
+                        : null;
+
+                    // Panggil Procedure (Atau pakai logic Eloquent seperti sebelumnya, disini saya pakai Eloquent agar aman)
+                    
+                    // A. Simpan Speaking Detail
+                    DB::table('speaking_test_results')->updateOrInsert(
+                        ['speaking_test_id' => $speakingTest->id, 'student_id' => $studentId],
+                        [
+                            'content_score' => $scores['speaking_content'] ?? null,
+                            'participation_score' => $scores['speaking_participation'] ?? null,
+                            'updated_at' => now()
+                        ]
+                    );
+
+                    // B. Simpan Form Utama
+                    AssessmentForm::updateOrCreate(
+                        [
+                            'assessment_session_id' => $assessmentId,
+                            'student_id' => $studentId,
+                        ],
+                        [
+                            'vocabulary' => $scores['vocabulary'] ?? null,
+                            'grammar'    => $scores['grammar'] ?? null,
+                            'listening'  => $scores['listening'] ?? null,
+                            'speaking'   => $totalSpeaking, // Total Score
+                            'reading'    => $scores['reading'] ?? null,
+                            'spelling'   => $scores['spelling'] ?? null,
+                        ]
+                    );
+                }
+            }
+        });
+
         return redirect()->route('teacher.classes.detail', $classId)
-                         ->with('success', 'Assessment marks updated successfully!');
+                         ->with('success', 'Assessment marks and details updated successfully!');
     }
 
-        // Menyimpan sesi penilaian baru (Mid Term / Final)
+    // Function storeAssessment tetap sama...
     public function storeAssessment(Request $request, $classId)
     {
-        // 1. Validasi Input
         $request->validate([
-            'type' => 'required|in:mid,final', // Tipe harus 'mid' atau 'final'
+            'type' => 'required|in:mid,final',
             'date' => 'required|date',
         ]);
 
-        // Pastikan kelas ada
         ClassModel::findOrFail($classId);
 
-        // 2. Simpan ke database
         $assessmentSession = AssessmentSession::create([
             'class_id' => $classId,
             'type' => $request->type,
             'date' => $request->date,
         ]);
+        
+        // Create Speaking Test Placeholder agar tidak null saat dibuka
+        SpeakingTest::create([
+            'assessment_session_id' => $assessmentSession->id,
+            'date' => null, // Guru nanti isi sendiri
+            'interviewer_id' => Auth::id() // Default ke penginput
+        ]);
 
-        // 3. Redirect kembali ke halaman detail kelas dengan pesan sukses
         $typeLabel = ($request->type == 'mid') ? 'Mid Term Exam' : 'Final Exam';
         
         return redirect()->route('teacher.classes.detail', $classId)
-                         ->with('success', $typeLabel . ' scheduled successfully on ' . \Carbon\Carbon::parse($request->date)->format('d F Y') . '.');
+                         ->with('success', $typeLabel . ' scheduled successfully.');
     }
 }
