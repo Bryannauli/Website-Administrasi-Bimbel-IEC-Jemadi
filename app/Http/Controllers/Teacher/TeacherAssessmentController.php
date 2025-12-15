@@ -8,32 +8,31 @@ use App\Models\ClassModel;
 use App\Models\Student;
 use App\Models\AssessmentSession;
 use App\Models\AssessmentForm;
-use App\Models\SpeakingTest; // Tambahkan Model
-use App\Models\User; // Tambahkan Model
+use App\Models\SpeakingTest;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
 class TeacherAssessmentController extends Controller
 {
-    // Menampilkan Halaman Input Nilai
     public function assessmentDetail($classId, $assessmentId)
     {
-        $class = ClassModel::findOrFail($classId);
+        // 1. Load Form Teacher (Wali Kelas)
+        $class = ClassModel::with('formTeacher')->findOrFail($classId);
+        
         $assessment = AssessmentSession::with('forms')->findOrFail($assessmentId);
 
-        // 1. Ambil data Speaking Test (Create if not exists agar tidak error di view)
         $speakingTest = SpeakingTest::firstOrCreate(
             ['assessment_session_id' => $assessment->id],
-            ['date' => null, 'interviewer_id' => $class->local_teacher_id] // Default ke teacher kelas
+            ['date' => null, 'interviewer_id' => $class->local_teacher_id]
         );
+        $speakingTest->load('interviewer');
 
-        // 2. Ambil daftar Guru untuk Dropdown Interviewer
         $teachers = User::where('is_teacher', true)
             ->where('is_active', true)
             ->orderBy('name', 'asc')
             ->get();
 
-        // 3. Ambil Siswa
         $students = Student::where('class_id', $classId)
             ->where('is_active', true)
             ->orderBy('name', 'asc')
@@ -41,24 +40,35 @@ class TeacherAssessmentController extends Controller
 
         foreach ($students as $student) {
             $form = $assessment->forms->where('student_id', $student->id)->first();
+            $speakingDetail = DB::table('speaking_test_results')
+                ->where('speaking_test_id', $speakingTest->id)
+                ->where('student_id', $student->id)
+                ->first();
+
             $student->form = $form; 
+            $student->speaking_detail = $speakingDetail; 
         }
 
-        // Kirim $speakingTest dan $teachers ke View
         return view('teacher.classes.assessment-marks', compact('class', 'assessment', 'students', 'speakingTest', 'teachers'));
     }
 
-    // Menyimpan Nilai & Info Assessment
     public function updateAssessmentMarks(Request $request, $classId, $assessmentId)
     {
-        // 1. Validasi Input (Termasuk Header Info)
+        $session = AssessmentSession::findOrFail($assessmentId);
+
+        // SECURITY CHECK: Guru tidak boleh edit jika status sudah submitted/final
+        if ($session->status !== 'draft') {
+            return redirect()->back()->with('error', 'Assessment has already been submitted. You cannot edit it anymore.');
+        }
+
         $request->validate([
             'written_date' => 'required|date',
             'speaking_date' => 'nullable|date',
             'interviewer_id' => 'nullable|exists:users,id',
             'topic' => 'nullable|string|max:200',
-
+            'action_type' => 'required|in:save,submit', // Validasi tombol aksi
             'marks' => 'array',
+            // ... validasi marks sama seperti sebelumnya ...
             'marks.*.vocabulary' => 'nullable|numeric|min:0|max:100',
             'marks.*.grammar'    => 'nullable|numeric|min:0|max:100',
             'marks.*.listening'  => 'nullable|numeric|min:0|max:100',
@@ -68,14 +78,18 @@ class TeacherAssessmentController extends Controller
             'marks.*.spelling'   => 'nullable|numeric|min:0|max:100',
         ]);
 
-        DB::transaction(function () use ($request, $assessmentId) {
-            // 2. Update Header Info (Assessment Session - Written Date)
-            $session = AssessmentSession::findOrFail($assessmentId);
-            $session->update([
-                'date' => $request->written_date
-            ]);
+        DB::transaction(function () use ($request, $session, $assessmentId) {
+            // 1. Update Tanggal & Status
+            $updateData = ['date' => $request->written_date];
+            
+            // Jika tombol SUBMIT ditekan, ubah status jadi 'submitted'
+            if ($request->action_type === 'submit') {
+                $updateData['status'] = 'submitted';
+            }
 
-            // 3. Update Header Info (Speaking Test)
+            $session->update($updateData);
+
+            // 2. Update Info Speaking
             SpeakingTest::updateOrCreate(
                 ['assessment_session_id' => $assessmentId],
                 [
@@ -85,43 +99,34 @@ class TeacherAssessmentController extends Controller
                 ]
             );
             
-            // Ambil ID speaking test yang baru saja diupdate/create
             $speakingTest = SpeakingTest::where('assessment_session_id', $assessmentId)->first();
 
-            // 4. Loop Simpan Nilai Siswa
+            // 3. Simpan Nilai
             if ($request->has('marks')) {
                 foreach ($request->marks as $studentId => $scores) {
+                    $sContent = $scores['speaking_content'] ?? null;
+                    $sPartic = $scores['speaking_participation'] ?? null;
                     
-                    // Hitung Total Speaking
-                    $sContent = $scores['speaking_content'] ?? 0;
-                    $sPartic = $scores['speaking_participation'] ?? 0;
-                    $totalSpeaking = ($scores['speaking_content'] !== null || $scores['speaking_participation'] !== null) 
-                        ? $sContent + $sPartic 
+                    $totalSpeaking = ($sContent !== null || $sPartic !== null) 
+                        ? ((int)$sContent + (int)$sPartic) 
                         : null;
 
-                    // Panggil Procedure (Atau pakai logic Eloquent seperti sebelumnya, disini saya pakai Eloquent agar aman)
-                    
-                    // A. Simpan Speaking Detail
                     DB::table('speaking_test_results')->updateOrInsert(
                         ['speaking_test_id' => $speakingTest->id, 'student_id' => $studentId],
                         [
-                            'content_score' => $scores['speaking_content'] ?? null,
-                            'participation_score' => $scores['speaking_participation'] ?? null,
+                            'content_score' => $sContent,
+                            'participation_score' => $sPartic,
                             'updated_at' => now()
                         ]
                     );
 
-                    // B. Simpan Form Utama
                     AssessmentForm::updateOrCreate(
-                        [
-                            'assessment_session_id' => $assessmentId,
-                            'student_id' => $studentId,
-                        ],
+                        ['assessment_session_id' => $assessmentId, 'student_id' => $studentId],
                         [
                             'vocabulary' => $scores['vocabulary'] ?? null,
                             'grammar'    => $scores['grammar'] ?? null,
                             'listening'  => $scores['listening'] ?? null,
-                            'speaking'   => $totalSpeaking, // Total Score
+                            'speaking'   => $totalSpeaking,
                             'reading'    => $scores['reading'] ?? null,
                             'spelling'   => $scores['spelling'] ?? null,
                         ]
@@ -130,11 +135,16 @@ class TeacherAssessmentController extends Controller
             }
         });
 
-        return redirect()->route('teacher.classes.detail', $classId)
-                         ->with('success', 'Assessment marks and details updated successfully!');
-    }
+        // Pesan Feedback Berbeda
+        $msg = ($request->action_type === 'submit') 
+            ? 'Assessment submitted successfully! Waiting for Admin review.' 
+            : 'Changes saved successfully.';
 
-    // Function storeAssessment tetap sama...
+        return redirect()->route('teacher.classes.assessment.detail', ['classId' => $classId, 'assessmentId' => $assessmentId])
+                         ->with('success', $msg);
+    }
+    
+    // ... storeAssessment tetap sama ...
     public function storeAssessment(Request $request, $classId)
     {
         $request->validate([
@@ -150,11 +160,10 @@ class TeacherAssessmentController extends Controller
             'date' => $request->date,
         ]);
         
-        // Create Speaking Test Placeholder agar tidak null saat dibuka
         SpeakingTest::create([
             'assessment_session_id' => $assessmentSession->id,
-            'date' => null, // Guru nanti isi sendiri
-            'interviewer_id' => Auth::id() // Default ke penginput
+            'date' => null, 
+            'interviewer_id' => Auth::id()
         ]);
 
         $typeLabel = ($request->type == 'mid') ? 'Mid Term Exam' : 'Final Exam';

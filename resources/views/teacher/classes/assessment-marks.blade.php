@@ -3,8 +3,8 @@
 
     {{-- SETUP ALPINE JS --}}
     <div class="py-6" x-data="{ 
-        isEditing: true,
-        assessmentType: '{{ $assessment->type ?? 'exam' }}' 
+        isEditing: {{ $errors->any() ? 'true' : 'false' }},
+        isDraft: {{ $assessment->status === 'draft' ? 'true' : 'false' }}
     }">
 
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -21,7 +21,7 @@
                     <li>
                         <div class="flex items-center">
                             <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                            <a href="{{ route('teacher.classes.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">My Classes</a>
+                            <a href="{{ route('teacher.classes.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Classes</a>
                         </div>
                     </li>
                     <li>
@@ -33,27 +33,111 @@
                     <li aria-current="page">
                         <div class="flex items-center">
                             <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                            <span class="ml-1 text-sm font-medium text-gray-900 md:ml-2 uppercase">Input Marks</span>
+                            <span class="ml-1 text-sm font-medium text-gray-900 md:ml-2 uppercase">Assessment</span>
                         </div>
                     </li>
                 </ol>
             </nav>
 
             {{-- 2. HEADER TITLE --}}
-            <div class="mb-8">
-                <h2 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                    Input Marks: {{ $assessment->type == 'mid' ? 'Mid Term' : 'Final Exam' }}
-                </h2>
-                <p class="text-gray-500 text-sm mt-1">Class: <span class="font-bold text-gray-800">{{ $class->name }}</span> | Status: <span class="uppercase font-bold text-purple-600">{{ $assessment->status }}</span></p>
+            <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                        Assessment: {{ $assessment->type == 'mid' ? 'Mid Term' : 'Final Exam' }}
+                    </h2>
+                    <p class="text-gray-500 text-sm mt-1">
+                        Class: <span class="font-bold text-gray-800">{{ $class->name }}</span> | 
+                        Status: 
+                        <span class="uppercase font-bold px-2 py-0.5 rounded text-[10px] tracking-wider
+                            {{ $assessment->status === 'draft' ? 'bg-yellow-100 text-yellow-700' : '' }}
+                            {{ $assessment->status === 'submitted' ? 'bg-blue-100 text-blue-700' : '' }}
+                            {{ $assessment->status === 'final' ? 'bg-purple-100 text-purple-700' : '' }}">
+                            {{ $assessment->status }}
+                        </span>
+                    </p>
+                </div>
+                
+                {{-- TOMBOL EDIT UTAMA (Hanya Muncul jika Draft dan tidak sedang edit) --}}
+                <div x-show="!isEditing && isDraft" x-transition>
+                    <button @click="isEditing = true" 
+                            class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition shadow-md flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        Edit Grades & Info
+                    </button>
+                </div>
             </div>
 
-            {{-- 3. MAIN FORM --}}
+            {{-- 3. FORM --}}
             <form id="marksForm" action="{{ route('teacher.classes.assessment.update', [$class->id, $assessment->id]) }}" method="POST">
                 @csrf
                 @method('PUT')
 
-                {{-- A. CONFIGURATION BOX (EDIT HEADER INFO) --}}
-                <div class="bg-white border border-gray-200 p-6 rounded-2xl mb-6 shadow-sm">
+                {{-- A. READ ONLY INFO --}}
+                <div x-show="!isEditing" class="space-y-4 mb-8" x-transition>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {{-- FORM TEACHER CARD --}}
+                        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 border-l-4 border-l-yellow-600">
+                            <div class="p-2.5 bg-yellow-50 text-yellow-600 rounded-xl">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h-4v-6h-2v6H7v-6H5v6H3m14 0h-4v-6h-2v6H7v-6H5v6H3M12 4a4 4 0 11-8 0 4 4 0 018 0zm4 0a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-bold text-gray-400 uppercase">Form Teacher</p>
+                                <p class="text-sm font-bold text-gray-800">{{ $class->formTeacher->name ?? '-' }}</p>
+                            </div>
+                        </div>
+
+                        {{-- Written Exam Info --}}
+                        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 border-l-4 border-l-blue-500">
+                            <div class="p-2.5 bg-blue-50/80 text-blue-700 rounded-xl">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-bold text-gray-400 uppercase">Written Exam Date</p>
+                                <p class="text-sm font-bold text-gray-800">
+                                    {{ $assessment->date ? \Carbon\Carbon::parse($assessment->date)->format('d F Y') : '-' }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                         {{-- Speaking Date --}}
+                        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 border-l-4 border-l-purple-500">
+                            <div class="p-2.5 bg-purple-50/80 text-purple-700 rounded-xl">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-bold text-gray-400 uppercase">Speaking Date</p>
+                                <p class="text-sm font-bold text-gray-800">
+                                    {{ optional($speakingTest)->date ? \Carbon\Carbon::parse($speakingTest->date)->format('d F Y') : '-' }}
+                                </p>
+                            </div>
+                        </div>
+                        {{-- Interviewer --}}
+                        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 border-l-4 border-l-green-600">
+                            <div class="p-2.5 bg-green-50/80 text-green-700 rounded-xl">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-bold text-gray-400 uppercase">Interviewer</p>
+                                <p class="text-sm font-bold text-gray-800">{{ $speakingTest->interviewer->name ?? '-' }}</p>
+                            </div>
+                        </div>
+                        {{-- Topic --}}
+                        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 border-l-4 border-l-orange-600">
+                            <div class="p-2.5 bg-orange-50/80 text-orange-700 rounded-xl">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-bold text-gray-400 uppercase">Speaking Topic</p>
+                                <p class="text-sm font-bold text-gray-800">{{ optional($speakingTest)->topic ?? '-' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- B. EDIT CONFIGURATION BOX (Hidden if not editing) --}}
+                <div x-show="isEditing" x-transition class="bg-white border border-gray-200 p-6 rounded-2xl mb-6 shadow-sm">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         {{-- Written Test --}}
                         <div class="space-y-4">
@@ -96,7 +180,7 @@
                     </div>
                 </div>
 
-                {{-- B. GRADES TABLE --}}
+                {{-- C. GRADES TABLE --}}
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse min-w-max">
@@ -126,8 +210,8 @@
                                         listening: '{{ $student->form->listening ?? '' }}',
                                         reading: '{{ $student->form->reading ?? '' }}',
                                         spelling: '{{ $student->form->spelling ?? '' }}',
-                                        s_content: '{{ $student->form->speaking_content ?? '' }}', // Ini nanti perlu disesuaikan jika controller sudah load detail speaking
-                                        s_partic: '{{ $student->form->speaking_participation ?? '' }}',
+                                        s_content: '{{ $student->speaking_detail->content_score ?? '' }}', 
+                                        s_partic: '{{ $student->speaking_detail->participation_score ?? '' }}',
                                         
                                         limit(val, max) {
                                             if (val === '') return ''; 
@@ -185,30 +269,38 @@
                                     
                                     {{-- INPUT FIELDS --}}
                                     <td class="px-3 py-3 text-center border-l">
-                                        <input x-model="vocab" @input="vocab = limit($el.value, 100); $el.value = vocab" type="number" min="0" max="100" name="marks[{{ $student->id }}][vocabulary]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1">
+                                        <span x-show="!isEditing" class="font-medium text-gray-700" x-text="vocab || '-'"></span>
+                                        <input x-show="isEditing" x-model="vocab" @input="vocab = limit($el.value, 100); $el.value = vocab" type="number" min="0" max="100" name="marks[{{ $student->id }}][vocabulary]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1">
                                     </td>
                                     <td class="px-3 py-3 text-center">
-                                        <input x-model="grammar" @input="grammar = limit($el.value, 100); $el.value = grammar" type="number" min="0" max="100" name="marks[{{ $student->id }}][grammar]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1">
+                                        <span x-show="!isEditing" class="font-medium text-gray-700" x-text="grammar || '-'"></span>
+                                        <input x-show="isEditing" x-model="grammar" @input="grammar = limit($el.value, 100); $el.value = grammar" type="number" min="0" max="100" name="marks[{{ $student->id }}][grammar]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1">
                                     </td>
                                     <td class="px-3 py-3 text-center">
-                                        <input x-model="listening" @input="listening = limit($el.value, 100); $el.value = listening" type="number" min="0" max="100" name="marks[{{ $student->id }}][listening]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1">
+                                        <span x-show="!isEditing" class="font-medium text-gray-700" x-text="listening || '-'"></span>
+                                        <input x-show="isEditing" x-model="listening" @input="listening = limit($el.value, 100); $el.value = listening" type="number" min="0" max="100" name="marks[{{ $student->id }}][listening]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1">
                                     </td>
                                     <td class="px-3 py-3 text-center bg-purple-50/50">
-                                        <input x-model="s_content" @input="s_content = limit($el.value, 50); $el.value = s_content" type="number" min="0" max="50" name="marks[{{ $student->id }}][speaking_content]" class="w-14 h-8 text-center border-purple-200 rounded-lg bg-white focus:ring-2 focus:ring-purple-500 text-xs p-1 font-medium text-purple-700">
+                                        <span x-show="!isEditing" class="font-bold text-purple-700" x-text="s_content || '-'"></span>
+                                        <input x-show="isEditing" x-model="s_content" @input="s_content = limit($el.value, 50); $el.value = s_content" type="number" min="0" max="50" name="marks[{{ $student->id }}][speaking_content]" class="w-14 h-8 text-center border-purple-200 rounded-lg bg-white focus:ring-2 focus:ring-purple-500 text-xs p-1 font-medium text-purple-700">
                                     </td>
                                     <td class="px-3 py-3 text-center bg-purple-50/50">
-                                        <input x-model="s_partic" @input="s_partic = limit($el.value, 50); $el.value = s_partic" type="number" min="0" max="50" name="marks[{{ $student->id }}][speaking_participation]" class="w-14 h-8 text-center border-purple-200 rounded-lg bg-white focus:ring-2 focus:ring-purple-500 text-xs p-1 font-medium text-purple-700">
+                                        <span x-show="!isEditing" class="font-bold text-purple-700" x-text="s_partic || '-'"></span>
+                                        <input x-show="isEditing" x-model="s_partic" @input="s_partic = limit($el.value, 50); $el.value = s_partic" type="number" min="0" max="50" name="marks[{{ $student->id }}][speaking_participation]" class="w-14 h-8 text-center border-purple-200 rounded-lg bg-white focus:ring-2 focus:ring-purple-500 text-xs p-1 font-medium text-purple-700">
                                     </td>
                                     <td class="px-4 py-3 text-center bg-purple-100/50 font-black text-purple-900 border-x">
                                         <span x-text="speakingTotal > 0 ? speakingTotal : '-'"></span>
                                         <input type="hidden" name="marks[{{ $student->id }}][speaking]" x-model="speakingTotal">
                                     </td>
                                     <td class="px-3 py-3 text-center border-l">
-                                        <input x-model="reading" @input="reading = limit($el.value, 100); $el.value = reading" type="number" min="0" max="100" name="marks[{{ $student->id }}][reading]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1">
+                                        <span x-show="!isEditing" class="font-medium text-gray-700" x-text="reading || '-'"></span>
+                                        <input x-show="isEditing" x-model="reading" @input="reading = limit($el.value, 100); $el.value = reading" type="number" min="0" max="100" name="marks[{{ $student->id }}][reading]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1">
                                     </td>
                                     <td class="px-3 py-3 text-center border-l">
-                                        <input x-model="spelling" @input="spelling = limit($el.value, 100); $el.value = spelling" type="number" min="0" max="100" name="marks[{{ $student->id }}][spelling]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1">
+                                        <span x-show="!isEditing" class="font-medium text-gray-700" x-text="spelling || '-'"></span>
+                                        <input x-show="isEditing" x-model="spelling" @input="spelling = limit($el.value, 100); $el.value = spelling" type="number" min="0" max="100" name="marks[{{ $student->id }}][spelling]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1">
                                     </td>
+                                    
                                     <td class="px-4 py-3 text-center bg-blue-50/30">
                                         <div class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white text-[11px] font-black shadow-md">
                                             <span x-text="average"></span>
@@ -235,20 +327,28 @@
                     </div>
                 </div>
 
-                {{-- 5. BOTTOM ACTIONS --}}
-                <div class="flex justify-end items-center mt-6 p-4 bg-white rounded-2xl shadow-sm border border-gray-200">
+                {{-- 5. BOTTOM ACTIONS (Hanya saat isEditing) --}}
+                <div x-show="isEditing" class="flex justify-end items-center mt-6 p-4 bg-white rounded-2xl shadow-sm border border-gray-200" x-transition>
                     <div class="flex items-center gap-3">
                         {{-- CANCEL BUTTON --}}
-                        <a href="{{ route('teacher.classes.detail', $class->id) }}"
+                        <a href="{{ route('teacher.classes.assessment.detail', ['classId' => $class->id, 'assessmentId' => $assessment->id]) }}"
                            class="px-4 py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-bold rounded-lg transition shadow-sm">
                             Cancel
                         </a>
 
-                        {{-- SAVE BUTTON --}}
-                        <button type="submit" 
-                                class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg transition shadow-md flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                            Save Changes
+                        {{-- SAVE DRAFT BUTTON --}}
+                        <button type="submit" name="action_type" value="save"
+                                class="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-bold rounded-lg transition shadow-sm flex items-center gap-2">
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                            Save Draft
+                        </button>
+
+                        {{-- SUBMIT BUTTON (Dengan SweetAlert) --}}
+                        <button type="submit" name="action_type" value="submit"
+                                onclick="confirmSubmit(event)"
+                                class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition shadow-md flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Submit to Admin
                         </button>
                     </div>
                 </div>
@@ -256,8 +356,47 @@
         </div>
     </div>
 
-    {{-- Script untuk Navigasi Enter Key --}}
+    {{-- SCRIPTS (SweetAlert & Logic) --}}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        // 1. CONFIRM SUBMIT FUNCTION
+        function confirmSubmit(e) {
+            e.preventDefault(); // Mencegah submit default
+            const form = e.target.form; // Ambil form
+
+            Swal.fire({
+                title: 'Submit Assessment?',
+                text: "Once submitted, you CANNOT edit grades anymore unless Admin reverts it.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#4f46e5', // Indigo-600
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: 'Yes, Submit!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Tampilkan loading state
+                    Swal.fire({
+                        title: 'Submitting...',
+                        allowOutsideClick: false,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            Swal.showLoading()
+                        }
+                    });
+
+                    // Pastikan action_type terkirim (karena button tidak disubmit secara native)
+                    let input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'action_type';
+                    input.value = 'submit';
+                    form.appendChild(input);
+
+                    form.submit();
+                }
+            });
+        }
+
+        // 2. NAVIGASI ENTER KEY (Pindah field saat Enter)
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('marksForm');
             if(form){
@@ -271,6 +410,47 @@
                             inputs[index + 1].select();
                         }
                     }
+                });
+            }
+
+            // 3. FLASH MESSAGES (Sukses / Error)
+            const successMessage = <?php echo json_encode(session('success')); ?>;
+            const errorMessage   = <?php echo json_encode(session('error')); ?>;
+            const validationErrors = <?php echo json_encode($errors->all()); ?>;
+
+            if (successMessage) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: successMessage,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }
+
+            if (validationErrors.length > 0) {
+                let errorListHtml = '<div class="text-left text-sm"><ul class="list-disc pl-5 text-red-600">';
+                validationErrors.slice(0, 3).forEach(error => {
+                    errorListHtml += `<li>${error}</li>`;
+                });
+                if (validationErrors.length > 3) {
+                    errorListHtml += `<li>... and ${validationErrors.length - 3} more errors.</li>`;
+                }
+                errorListHtml += '</ul></div>';
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Failed',
+                    html: errorListHtml,
+                    confirmButtonText: 'OK'
+                });
+            }
+
+            if (errorMessage) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: errorMessage,
                 });
             }
         });
