@@ -142,12 +142,25 @@
                 @endif
             </div>
 
-            {{-- Footer --}}
-            <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-end">
-                <button @click="showStudentStatsModal = false" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition">
+        {{-- Footer dengan Tombol Print & Close --}}
+            <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-end items-center gap-3">
+                
+                {{-- Tombol Print Report (Baru) --}}
+                <a href="" 
+                target="_blank"
+                class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition flex items-center gap-2 decoration-0">
+                    
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 00-2 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                    </svg>
+                    Print Report
+                </a>
+
+                {{-- Tombol Close Report (Lama) --}}
+                <button @click="showStudentStatsModal = false" 
+                        class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition">
                     Close Report
                 </button>
             </div>
-        </div>
-    </div>
+        </div> 
 </div>
