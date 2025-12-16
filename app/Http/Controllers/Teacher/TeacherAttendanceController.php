@@ -5,14 +5,13 @@ namespace App\Http\Controllers\Teacher;
 use App\Models\ClassModel;
 use App\Models\ClassSession;
 use Illuminate\Http\Request;
-use App\Models\AttendanceRecord;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 
 class TeacherAttendanceController extends Controller
 {
-    // Menyimpan sesi absensi baru (tombol "Create Session")
+    // Store Session (Eloquent cukup, karena simple insert header)
     public function storeSession(Request $request, $id)
     {
         $request->validate([
@@ -20,14 +19,13 @@ class TeacherAttendanceController extends Controller
             'topics' => 'required|string',
         ]);
 
-        // Cek Duplikasi: Apakah sudah ada sesi pada tanggal ini untuk kelas ini?
         $existingSession = ClassSession::where('class_id', $id)
                                         ->where('date', $request->date)
                                         ->first();
         
         if ($existingSession) {
             return redirect()->back()
-                ->with('error', 'Attendance session already exists for this date. Please edit the existing session.')
+                ->with('error', 'Attendance session already exists for this date.')
                 ->withInput();
         }
 
@@ -38,12 +36,11 @@ class TeacherAttendanceController extends Controller
             'teacher_id' => Auth::id(),
         ]);
 
-        // Redirect ke halaman input absen
         return redirect()->route('teacher.classes.session.detail', [$id, $session->id])
             ->with('success', 'New attendance session created!');
     }
 
-    // Menampilkan halaman input/detail absensi
+    // Session Detail (OPTIMIZED)
     public function sessionDetail($classId, $sessionId)
     {
         $class = ClassModel::findOrFail($classId);
@@ -51,28 +48,20 @@ class TeacherAttendanceController extends Controller
                                     ->where('id', $sessionId)
                                     ->firstOrFail();
 
-        // UPDATE: Mengurutkan berdasarkan student_number
-        $students = $class->students()
-                        ->where('is_active', 1)
-                        ->orderBy('student_number', 'asc') // <-- Perubahan disini (sebelumnya tidak ada sort)
-                        ->get();
-
-        $attendanceRecords = AttendanceRecord::where('class_session_id', $sessionId)
-                                            ->pluck('status', 'student_id')
-                                            ->toArray();
-
-        $students = $students->map(function ($student) use ($attendanceRecords) {
-            $student->current_status = $attendanceRecords[$student->id] ?? null;
-            if ($student->current_status == 'permission') {
-                $student->current_status = 'permitted';
-            }
-            return $student;
-        });
+        // [OPTIMISASI] Panggil Procedure
+        // Procedure ini sudah menggabungkan Students + Attendance Records
+        // dan sudah diurutkan berdasarkan student_number.
+        // Output sudah berupa object list dengan property 'current_status'.
+        $studentsRaw = DB::select('CALL p_GetSessionAttendanceList(?, ?)', [$classId, $sessionId]);
+        
+        // Ubah ke collection agar kompatibel dengan view (jika view butuh method collection)
+        // tapi array of objects raw pun sebenarnya bisa di-loop di blade.
+        $students = collect($studentsRaw);
 
         return view('teacher.classes.session-attandance', compact('class', 'session', 'students'));
     }
 
-    // Menyimpan/Update data absensi
+    // Update Session (OPTIMIZED)
     public function updateSession(Request $request, $classId, $sessionId)
     {
         $request->validate([
@@ -80,29 +69,26 @@ class TeacherAttendanceController extends Controller
             'attendance.*' => 'in:present,absent,late,permitted,sick',
         ]);
 
-        $session = ClassSession::where('class_id', $classId)
-                                    ->where('id', $sessionId)
-                                    ->firstOrFail();
+        // Pastikan sesi valid milik kelas ini
+        ClassSession::where('class_id', $classId)->where('id', $sessionId)->firstOrFail();
 
         DB::beginTransaction();
         try {
             foreach ($request->input('attendance') as $studentId => $status) {
+                // Normalisasi status untuk Database
                 $dbStatus = ($status === 'permitted') ? 'permission' : $status;
 
-                AttendanceRecord::updateOrCreate(
-                    [
-                        'class_session_id' => $sessionId,
-                        'student_id' => $studentId,
-                    ],
-                    [
-                        'status' => $dbStatus,
-                    ]
-                );
+                // [OPTIMISASI] Panggil Procedure Upsert
+                // Logika "Insert or Update" ditangani database
+                DB::statement('CALL p_UpsertAttendance(?, ?, ?)', [
+                    $sessionId,
+                    $studentId,
+                    $dbStatus
+                ]);
             }
 
             DB::commit();
 
-            // Redirect kembali ke halaman Detail Kelas
             return redirect()->route('teacher.classes.detail', $classId)
                             ->with('success', 'Attendance updated successfully.');
 
