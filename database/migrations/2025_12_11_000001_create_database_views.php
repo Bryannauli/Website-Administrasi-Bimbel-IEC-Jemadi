@@ -209,7 +209,6 @@ return new class extends Migration
             FROM class_sessions cs
             JOIN classes c ON cs.class_id = c.id
             JOIN users u ON cs.teacher_id = u.id
-            WHERE c.deleted_at IS NULL;
         ");
     }
 

@@ -1,14 +1,17 @@
 <x-app-layout>
     <x-slot name="header"></x-slot>
 
+    @php
+        // Normalisasi variabel agar kode lebih bersih
+        $isTrashed = isset($isTrashed) && $isTrashed;
+    @endphp
+
     {{-- WRAPPER UTAMA DENGAN ALPINE JS --}}
     <div class="py-6" x-data="{ 
         // 1. STATE MODAL
-        // Buka modal jika ada Error Validasi ATAU parameter action=edit di URL
-        showEditModal: {{ $errors->any() || request('action') == 'edit' ? 'true' : 'false' }},
+        showEditModal: {{ !$isTrashed && ($errors->any() || request('action') == 'edit') ? 'true' : 'false' }},
         
-        // 2. STATE FORM DATA (Pre-filled dengan data siswa saat ini)
-        // Kita isi langsung dari PHP ke JS agar modal partial bisa membacanya
+        // 2. STATE FORM DATA
         editForm: {
             student_number: '{{ $student->student_number }}',
             name: '{{ addslashes($student->name) }}',
@@ -19,37 +22,31 @@
             class_id: '{{ $student->class_id ?? '' }}'
         },
 
-        // 3. STATE FILTER & URL
-        // Default filter kategori mengikuti kelas siswa saat ini (jika ada)
-        editCategory: '{{ $student->classModel ? $student->classModel->category : 'all' }}',
-        
-        // URL Update & Delete (Statis karena ID siswa ini tetap)
-        updateUrl: '{{ route('admin.student.update', $student->id) }}',
+        // 3. URL ACTIONS (Tambahkan ini agar JS bisa memanggilnya)
         deleteUrl: '{{ route('admin.student.delete', $student->id) }}',
 
+        // 4. Helper Functions
         closeModal(modalVar) {
             if ({{ $errors->any() ? 'true' : 'false' }}) {
-                // Jika ada error, refresh halaman untuk membersihkan sesi error Laravel
-                // split('?')[0] digunakan untuk membersihkan parameter URL action=edit
                 window.location.href = window.location.href.split('?')[0]; 
             } else {
-                // Jika tidak ada error, tutup modal via Alpine JS
                 this[modalVar] = false;
             }
         },
-        
-        // 4. FUNCTION CONFIRM DELETE
+
+        // 5. FUNGSI DELETE (INI YANG SEBELUMNYA HILANG)
         confirmDelete() {
             Swal.fire({
                 title: 'Are you sure?',
-                text: 'This student will be moved to trash (Soft Delete). You can restore them later.',
+                text: 'This student will be moved to trash (Soft Delete).',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#EF4444',
+                confirmButtonColor: '#d33',
                 cancelButtonColor: '#6B7280',
-                confirmButtonText: 'Yes, Delete'
+                confirmButtonText: 'Yes, delete it!'
             }).then((result) => {
                 if (result.isConfirmed) {
+                    // Cari form berdasarkan ID dan submit
                     document.getElementById('delete-student-form').submit();
                 }
             });
@@ -57,18 +54,23 @@
     }">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-            {{-- BREADCRUMB (Smart Context) --}}
+            {{-- BREADCRUMB --}}
             <nav class="flex mb-5" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-3">
                     <li class="inline-flex items-center">
                         <a href="{{ route('dashboard') }}" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600">
-                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
                             Dashboard
                         </a>
                     </li>
 
-                    @if(request('ref') == 'class' && $student->classModel)
-                        {{-- Context: Dari Kelas --}}
+                    @if($isTrashed)
+                        <li>
+                            <div class="flex items-center">
+                                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                                <a href="{{ route('admin.trash.trash') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Trash Bin</a>
+                            </div>
+                        </li>
+                    @elseif(request('ref') == 'class' && $student->classModel)
                         <li>
                             <div class="flex items-center">
                                 <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
@@ -82,7 +84,6 @@
                             </div>
                         </li>
                     @else
-                        {{-- Context: Dari List Siswa --}}
                         <li>
                             <div class="flex items-center">
                                 <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
@@ -94,51 +95,78 @@
                     <li aria-current="page">
                         <div class="flex items-center">
                             <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                            <span class="ml-1 text-sm font-medium text-gray-900 md:ml-2 truncate max-w-[150px] md:max-w-xs" title="{{ $student->name }}">{{ $student->name }}</span>
+                            <span class="ml-1 text-sm font-medium text-gray-900 md:ml-2 truncate max-w-[150px] md:max-w-xs" title="{{ $student->name }}">
+                                {{ $student->name }} {{ $isTrashed ? '(Deleted)' : '' }}
+                            </span>
                         </div>
                     </li>
                 </ol>
             </nav>
 
-            {{-- HEADER TITLE & BUTTON --}}
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent inline-block">
-                    Student Profile
+            {{-- HEADER & ACTIONS --}}
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <h2 class="text-3xl font-bold bg-gradient-to-r {{ $isTrashed ? 'from-gray-500 to-gray-700' : 'from-blue-600 to-indigo-600' }} bg-clip-text text-transparent inline-block">
+                    {{ $isTrashed ? 'Deleted Student Profile' : 'Student Profile' }}
                 </h2>
                 
-                {{-- TRIGGER EDIT MODAL (Tombol tetap) --}}
-                <button @click="showEditModal = true" 
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                    Edit Student
-                </button>
+                @if($isTrashed)
+                    <form action="{{ route('admin.trash.restore', ['type' => 'student', 'id' => $student->id]) }}" method="POST">
+                        @csrf
+                        {{-- OPSI 2: Jika route Anda pakai PUT/PATCH, tambahkan @method('PUT') di sini --}}
+                        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            Restore Student
+                        </button>
+                    </form>
+                @else
+                    <button @click="showEditModal = true" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        Edit Student
+                    </button>
+                @endif
             </div>
 
-            {{-- 1. INFO SISWA (Card Biru) --}}
+            {{-- ALERT JIKA DELETED --}}
+            @if($isTrashed)
+                <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r shadow-sm">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-red-700">
+                                This student record was <strong>deleted</strong> on {{ $student->deleted_at->format('d M Y, H:i') }}. 
+                                <br>Statistics and history are preserved in Read-Only mode. Restore to edit.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            {{-- 1. INFO SISWA --}}
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8 relative overflow-hidden z-0">
                 <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -mr-8 -mt-8"></div>
                 <div class="flex flex-col md:flex-row items-center justify-between relative gap-6">
                     <div class="flex items-center gap-6">
                         <img src="https://ui-avatars.com/api/?name={{ urlencode($student->name) }}&background=2563EB&color=fff&size=128&bold=true"
-                            alt="{{ $student->name }}" class="w-20 h-20 md:w-24 md:h-24 rounded-full border-4 border-white shadow-md bg-white">
+                            alt="{{ $student->name }}" class="w-20 h-20 md:w-24 md:h-24 rounded-full border-4 border-white shadow-md bg-white {{ $isTrashed ? 'grayscale' : '' }}">
                         <div>
                             <h1 class="text-2xl font-bold text-gray-900">{{ $student->name }}</h1>
                             <p class="text-gray-500 font-medium">ID: {{ $student->student_number }}</p>
                             <div class="flex items-center gap-2 mt-2">
-                                @if($student->is_active)
+                                @if($isTrashed)
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">DELETED</span>
+                                @elseif($student->is_active)
                                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">Active</span>
                                 @else
                                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-500 border border-gray-200">Inactive</span>
                                 @endif
 
                                 @if($student->classModel)
-                                    <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider border border-blue-100">
-                                        {{ $student->classModel->name }}
-                                    </span>
+                                    <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider border border-blue-100">{{ $student->classModel->name }}</span>
                                 @else
-                                    <span class="px-3 py-1 bg-red-50 text-red-600 rounded-full text-xs font-bold uppercase border border-red-100">
-                                        No Class
-                                    </span>
+                                    <span class="px-3 py-1 bg-red-50 text-red-600 rounded-full text-xs font-bold uppercase border border-red-100">No Class</span>
                                 @endif
                             </div>
                         </div>
@@ -152,7 +180,6 @@
 
             {{-- 2. GRID INFO & STATS --}}
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                
                 {{-- Kiri: Biodata --}}
                 <div class="lg:col-span-1 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-fit">
                     <h3 class="text-lg font-bold text-gray-800 mb-6 border-b pb-2">Personal Info</h3>
@@ -170,8 +197,6 @@
                         <h3 class="text-lg font-bold text-gray-800">Attendance Overview</h3>
                         <div class="text-sm text-gray-500 bg-gray-50 px-3 py-1 rounded-lg">Total Sessions: <strong>{{ $totalDays }}</strong></div>
                     </div>
-                    
-                    {{-- Kotak Angka --}}
                     <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                         <div class="p-4 rounded-xl bg-blue-50 border border-blue-100 text-center"><p class="text-xs text-blue-600 font-bold uppercase mb-1">Present</p><p class="text-2xl font-bold text-blue-700">{{ $summary['present'] }}</p></div>
                         <div class="p-4 rounded-xl bg-yellow-50 border border-yellow-100 text-center"><p class="text-xs text-yellow-600 font-bold uppercase mb-1">Late</p><p class="text-2xl font-bold text-yellow-700">{{ $summary['late'] }}</p></div>
@@ -179,8 +204,6 @@
                         <div class="p-4 rounded-xl bg-purple-50 border border-purple-100 text-center"><p class="text-xs text-purple-600 font-bold uppercase mb-1">Sick</p><p class="text-2xl font-bold text-purple-700">{{ $summary['sick'] }}</p></div>
                         <div class="p-4 rounded-xl bg-red-50 border border-red-100 text-center"><p class="text-xs text-red-600 font-bold uppercase mb-1">Absent</p><p class="text-2xl font-bold text-red-700">{{ $summary['absent'] }}</p></div>
                     </div>
-
-                    {{-- Chart Pie --}}
                     <div class="flex-1 flex items-center justify-center py-4">
                         @php
                             $total = $totalDays > 0 ? $totalDays : 1;
@@ -213,13 +236,11 @@
 
             {{-- 3. TIMELINE ABSENSI --}}
             <div class="mb-10">
+                {{-- ... (Timeline Code Sama) ... --}}
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-bold text-gray-800">Attendance History</h3>
-                    {{-- FIX: Mengubah teks petunjuk scroll --}}
                     <span class="text-xs text-gray-400">&larr; Scroll for history &rarr;</span>
                 </div>
-                
-                {{-- Loop History dari Controller --}}
                 <div id="attendance-timeline" class="flex overflow-x-auto gap-4 pb-4 custom-scrollbar scroll-smooth" style="scrollbar-width: thin;">
                     @forelse ($attendance as $record)
                         @php
@@ -231,51 +252,53 @@
                                 'absent'     => ['bg' => 'bg-red-600', 'text' => 'text-white', 'border' => 'border-red-200'],
                                 default      => ['bg' => 'bg-gray-400', 'text' => 'text-white', 'border' => 'border-gray-200'],
                             };
-                            $textLabel = match($record->status) {
-                                'present' => 'text-blue-700', 'late' => 'text-yellow-700', 'permission' => 'text-emerald-700',
-                                'sick' => 'text-purple-700', 'absent' => 'text-red-700', default => 'text-gray-600'
-                            };
                         @endphp
                         <div class="min-w-[140px] bg-white border {{ $theme['border'] }} rounded-xl p-4 flex flex-col items-center justify-center shadow-sm hover:shadow-md transition-shadow flex-shrink-0">
-                            {{-- Tanggal dari View SQL (v_student_attendance) --}}
-                            <span class="text-xs text-gray-400 font-semibold uppercase mb-1">
-                                {{ \Carbon\Carbon::parse($record->session_date)->format('D, d M') }}
-                            </span>
-                            
-                            <span class="text-lg font-bold {{ $textLabel }} mb-2">{{ ucfirst($record->status) }}</span>
-                            
-                            <div class="w-8 h-8 rounded-full {{ $theme['bg'] }} flex items-center justify-center {{ $theme['text'] }}">
-                                @if($record->status == 'present') <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                @elseif($record->status == 'late') <span class="font-bold text-xs">L</span>
-                                @elseif($record->status == 'absent') <span class="font-bold text-xs">A</span>
-                                @elseif($record->status == 'permission') <span class="font-bold text-xs">P</span>
-                                @elseif($record->status == 'sick') <span class="font-bold text-xs">S</span>
-                                @else <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                @endif
-                            </div>
+                            <span class="text-xs text-gray-400 font-semibold uppercase mb-1">{{ \Carbon\Carbon::parse($record->session_date)->format('D, d M') }}</span>
+                            <span class="text-lg font-bold {{ str_replace('bg-', 'text-', str_replace('600', '700', $theme['bg'])) }} mb-2">{{ ucfirst($record->status) }}</span>
+                            <div class="w-8 h-8 rounded-full {{ $theme['bg'] }} flex items-center justify-center {{ $theme['text'] }}"><span class="font-bold text-xs">{{ substr(strtoupper($record->status), 0, 1) }}</span></div>
                         </div>
                     @empty
                         <div class="w-full text-center py-8 text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">No attendance history yet.</div>
                     @endforelse
                 </div>
             </div>
-
         </div>
 
         {{-- INCLUDE MODAL EDIT (Partial) --}}
-        {{-- Kita aktifkan fitur edit kelas di sini --}}
-        @include('admin.student.partials.edit-modal', ['showClassAssignment' => true])
+        @if(!$isTrashed)
+            @include('admin.student.partials.edit-modal', ['showClassAssignment' => true])
+
+            {{-- 5. HIDDEN FORM DELETE (INI YANG SEBELUMNYA HILANG) --}}
+            <form id="delete-student-form" action="{{ route('admin.student.delete', $student->id) }}" method="POST" style="display: none;">
+                @csrf 
+                @method('DELETE')
+            </form>
+        @endif
 
     </div>
     
-    {{-- Scripts --}}
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            // FIX: Auto scroll timeline ke paling kanan (terbaru)
             const container = document.getElementById('attendance-timeline');
             if(container) {
                 container.scrollLeft = container.scrollWidth; 
+            }
+        });
+    </script>
+    
+    {{-- SWEETALERT SCRIPTS --}}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const successMessage = "{{ session('success') }}";
+            const errorMessage = "{{ session('error') }}";
+
+            if (successMessage) {
+                Swal.fire({icon: 'success', title: 'Success!', text: successMessage, timer: 3000, showConfirmButton: false});
+            }
+            if (errorMessage) {
+                Swal.fire({icon: 'error', title: 'Error!', text: errorMessage});
             }
         });
     </script>

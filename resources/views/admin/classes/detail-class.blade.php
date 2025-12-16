@@ -1,17 +1,27 @@
 <x-app-layout>
     <x-slot name="header"></x-slot>
 
+    @php
+        // Cek apakah variabel isTrashed dikirim dari controller (artinya sedang melihat sampah)
+        $isTrashed = isset($isTrashed) && $isTrashed;
+    @endphp
+
     {{-- WRAPPER UTAMA DENGAN ALPINE JS --}}
     <div class="bg-[#EEF2FF] min-h-screen font-sans" x-data="{ 
         // 1. STATE MODAL
-        showEditModal: {{ $errors->any() || session('edit_failed') ? 'true' : 'false' }},
-        showAddStudentModal: {{ request('search_student') ? 'true' : 'false' }},
+        // Jika trashed, paksa semua modal edit/add jadi false
+        showEditModal: {{ !$isTrashed && ($errors->any() || session('edit_failed')) ? 'true' : 'false' }},
+        showAddStudentModal: {{ !$isTrashed && request('search_student') ? 'true' : 'false' }},
+        
+        // Modal History & Stats (READ ONLY) tetap boleh dibuka
         showHistoryModal: false,
         showStudentStatsModal: false,
+        
         showAssignTeacherModal: false,
         assignTeacherRole: '',
 
-        // 2. STATE FORM DATA
+        // 2. STATE FORM DATA (Hanya load jika TIDAK trashed untuk efisiensi)
+        @if(!$isTrashed)
         editForm: {
             name: '{{ addslashes($class->name) }}',
             category: '{{ $class->category }}',
@@ -35,9 +45,12 @@
             },
             status: '{{ $class->is_active ? 'active' : 'inactive' }}',
         },
+        @endif
 
-        // 3. URL & ID DEFINITION
+        // 3. URL & ID
         classId: '{{ $class->id }}', 
+        
+        // URL Action hanya relevan jika active (tapi didefinisikan agar tidak error JS)
         deleteUrl: '{{ route('admin.classes.delete', $class->id) }}',
         updateBaseUrl: '{{ route('admin.classes.update', ['id' => 'PLACEHOLDER']) }}'.replace('/PLACEHOLDER', ''),
         
@@ -48,20 +61,25 @@
         },
 
         closeModal(modalVar) {
-            if ({{ $errors->any() || session('edit_failed') ? 'true' : 'false' }}) {
-                window.location.href = window.location.href; 
+            if ({{ !$isTrashed && ($errors->any() || session('edit_failed')) ? 'true' : 'false' }}) {
+                window.location.href = window.location.href; // Refresh untuk clear error session
             } else {
                 this[modalVar] = false;
             }
         },
 
         openAssignTeacherModal(role) {
+            // Guard: Jangan buka modal jika trashed
+            if ({{ $isTrashed ? 'true' : 'false' }}) return;
+            
             this.assignTeacherRole = role;
             this.showAssignTeacherModal = true;
         },
         
-        // 4. FUNCTION CONFIRM DELETE CLASS
+        // 4. FUNCTION ACTIONS (SweetAlert)
+        // Kita definisikan fungsi kosong jika isTrashed agar tidak error saat dipanggil
         confirmDelete() {
+            @if(!$isTrashed)
             Swal.fire({
                 title: 'Delete Class?',
                 text: 'This class will be moved to trash (Soft Delete).',
@@ -75,10 +93,11 @@
                     window.location.href = this.deleteUrl;
                 }
             });
+            @endif
         },
         
-        // 5. FUNCTION CONFIRM REMOVE STUDENT (UNASSIGN)
         confirmRemove(studentName, formId) {
+            @if(!$isTrashed)
             Swal.fire({
                 title: 'Remove Student?',
                 text: `Remove ${studentName} from this class? They will become Unassigned (No Class).`,
@@ -92,10 +111,11 @@
                     document.getElementById(formId).submit();
                 }
             });
+            @endif
         },
 
-        // 6. FUNCTION CONFIRM TOGGLE STATUS
         confirmToggleStatus(studentId, isActive) {
+            @if(!$isTrashed)
             const action = isActive ? 'DEACTIVATE' : 'ACTIVATE';
             const statusText = isActive ? 'inactive' : 'active';
             const iconColor = isActive ? '#EF4444' : '#10B981';
@@ -111,14 +131,17 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     const form = document.getElementById('toggleStatusForm');
+                    // Ganti URL action secara dinamis
                     const url = '{{ route('admin.student.toggleStatus', ':id') }}'.replace(':id', studentId);
                     form.action = url;
                     form.submit();
                 }
             });
+            @endif
         },
 
         confirmUnassignTeacher(teacherName, type) {
+            @if(!$isTrashed)
             Swal.fire({
                 title: 'Unassign Teacher?',
                 text: `Are you sure you want to remove ${teacherName} as the ${type === 'form' ? 'Form' : 'Local'} Teacher?`,
@@ -133,6 +156,7 @@
                                 .replace(':classId', this.classId)
                                 .replace(':type', type);
                     
+                    // Buat form dinamis untuk submit DELETE/PATCH
                     const form = document.createElement('form');
                     form.method = 'POST';
                     form.action = url;
@@ -154,6 +178,7 @@
                     form.submit();
                 }
             });
+            @endif
         }
     }">
 
@@ -169,16 +194,31 @@
                             Dashboard
                         </a>
                     </li>
-                    <li>
-                        <div class="flex items-center">
-                            <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                            <a href="{{ route('admin.classes.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Classes</a>
-                        </div>
-                    </li>
+                    
+                    @if($isTrashed)
+                        {{-- Context: Trash Bin --}}
+                        <li>
+                            <div class="flex items-center">
+                                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                                <a href="{{ route('admin.trash.trash') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Trash Bin</a>
+                            </div>
+                        </li>
+                    @else
+                        {{-- Context: Classes List --}}
+                        <li>
+                            <div class="flex items-center">
+                                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                                <a href="{{ route('admin.classes.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Classes</a>
+                            </div>
+                        </li>
+                    @endif
+
                     <li aria-current="page">
                         <div class="flex items-center">
                             <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                            <span class="ml-1 text-sm font-medium text-gray-900 md:ml-2 truncate max-w-xs">{{ $class->name }}</span>
+                            <span class="ml-1 text-sm font-medium text-gray-900 md:ml-2 truncate max-w-xs">
+                                {{ $class->name }} {{ $isTrashed ? '(Deleted)' : '' }}
+                            </span>
                         </div>
                     </li>
                 </ol>
@@ -186,17 +226,47 @@
 
             {{-- HEADER TITLE & BUTTON --}}
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent inline-block">
-                    Class: {{ $class->name ?? 'Detail' }}
+                <h2 class="text-3xl font-bold bg-gradient-to-r {{ $isTrashed ? 'from-gray-500 to-gray-700' : 'from-blue-600 to-indigo-600' }} bg-clip-text text-transparent inline-block">
+                    {{ $isTrashed ? 'Deleted Class Profile' : 'Class: ' . $class->name }}
                 </h2>
                 
-                {{-- TRIGGER EDIT MODAL --}}
-                <button @click="showEditModal = true" 
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                    Edit Class
-                </button>
+                @if($isTrashed)
+                    {{-- TOMBOL RESTORE (Khusus Trash) --}}
+                    <form action="{{ route('admin.trash.restore', ['type' => 'class', 'id' => $class->id]) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            Restore Class
+                        </button>
+                    </form>
+                @else
+                    {{-- TOMBOL EDIT (Normal) --}}
+                    <button @click="showEditModal = true" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        Edit Class
+                    </button>
+                @endif
             </div>
+
+            {{-- ALERT WARNING JIKA DELETED --}}
+            @if($isTrashed)
+                <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r shadow-sm">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-red-700">
+                                This class was <strong>deleted</strong> on {{ $class->deleted_at->format('d M Y, H:i') }}. 
+                                <br>Attendance data and enrolled student history are preserved in Read-Only mode. Restore to modify.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            @endif
         
             <div class="space-y-8">
 
@@ -207,7 +277,7 @@
                         <div class="flex items-center gap-5">
                             <img src="https://ui-avatars.com/api/?name={{ urlencode($class->name) }}&background=2563EB&color=fff&size=128&bold=true&length=2"
                                 alt="{{ $class->name }}" 
-                                class="w-16 h-16 md:w-20 md:h-20 rounded-2xl shadow-md border-4 border-white bg-blue-600">
+                                class="w-16 h-16 md:w-20 md:h-20 rounded-2xl shadow-md border-4 border-white bg-blue-600 {{ $isTrashed ? 'grayscale' : '' }}">
                             <div>
                                 <h1 class="text-2xl font-bold text-gray-900">{{ $class->name }}</h1>
                                 <div class="flex flex-col gap-1 mt-1 mb-2">
@@ -234,9 +304,13 @@
                                     </div>
                                 </div>
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <span class="px-2.5 py-0.5 {{ $class->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600' }} rounded text-xs font-bold uppercase tracking-wider">
-                                        {{ $class->is_active ? 'Active' : 'Inactive' }}
-                                    </span>
+                                    @if($isTrashed)
+                                        <span class="px-2.5 py-0.5 bg-red-100 text-red-700 rounded text-xs font-bold uppercase tracking-wider border border-red-200">DELETED</span>
+                                    @else
+                                        <span class="px-2.5 py-0.5 {{ $class->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600' }} rounded text-xs font-bold uppercase tracking-wider">
+                                            {{ $class->is_active ? 'Active' : 'Inactive' }}
+                                        </span>
+                                    @endif
                                     <span class="px-2.5 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-bold uppercase tracking-wider border border-blue-100">
                                         {{ ucwords(str_replace('_', ' ', $class->category)) }}
                                     </span>
@@ -277,9 +351,10 @@
                                             <p class="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Form Teacher</p>
                                         </div>
                                     </div>
-                                    {{-- QUICK ACTIONS --}}
+                                    {{-- QUICK ACTIONS (Hide if Trashed) --}}
+                                    @if(!$isTrashed)
                                     <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <a href="{{ route('admin.teacher.detail', ['id' => $class->localTeacher->id, 'ref' => 'class', 'class_id' => $class->id]) }}" 
+                                        <a href="{{ route('admin.teacher.detail', ['id' => $class->formTeacher->id, 'ref' => 'class', 'class_id' => $class->id]) }}" 
                                         class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-white rounded shadow-sm" title="View Profile">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                         </a>
@@ -288,11 +363,19 @@
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                         </button>
                                     </div>
+                                    @endif
                                 </div>
                             @else
-                                <button @click="openAssignTeacherModal('form')" class="w-full p-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center gap-2 text-gray-400 hover:bg-gray-100 hover:border-gray-400 transition">
-                                    <span class="text-xs font-medium italic">+ Assign Form Teacher</span>
-                                </button>
+                                {{-- EMPTY STATE --}}
+                                @if(!$isTrashed)
+                                    <button @click="openAssignTeacherModal('form')" class="w-full p-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center gap-2 text-gray-400 hover:bg-gray-100 hover:border-gray-400 transition">
+                                        <span class="text-xs font-medium italic">+ Assign Form Teacher</span>
+                                    </button>
+                                @else
+                                    <div class="w-full p-3 rounded-xl border border-dashed border-gray-200 bg-gray-50 flex items-center justify-center text-gray-400">
+                                        <span class="text-xs font-medium italic">No Form Teacher</span>
+                                    </div>
+                                @endif
                             @endif
 
                             {{-- Local Teacher --}}
@@ -307,7 +390,8 @@
                                             <p class="text-[10px] text-purple-600 font-bold uppercase tracking-wider">Local Teacher</p>
                                         </div>
                                     </div>
-                                    {{-- QUICK ACTIONS --}}
+                                    {{-- QUICK ACTIONS (Hide if Trashed) --}}
+                                    @if(!$isTrashed)
                                     <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <a href="{{ route('admin.teacher.detail', $class->localTeacher->id) }}" 
                                         class="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-white rounded shadow-sm" title="View Profile">
@@ -318,16 +402,23 @@
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                         </button>
                                     </div>
+                                    @endif
                                 </div>
                             @else
-                                <button @click="openAssignTeacherModal('local')" class="w-full p-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center gap-2 text-gray-400 hover:bg-gray-100 hover:border-gray-400 transition">
-                                    <span class="text-xs font-medium italic">+ Assign Local Teacher</span>
-                                </button>
+                                @if(!$isTrashed)
+                                    <button @click="openAssignTeacherModal('local')" class="w-full p-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center gap-2 text-gray-400 hover:bg-gray-100 hover:border-gray-400 transition">
+                                        <span class="text-xs font-medium italic">+ Assign Local Teacher</span>
+                                    </button>
+                                @else
+                                    <div class="w-full p-3 rounded-xl border border-dashed border-gray-200 bg-gray-50 flex items-center justify-center text-gray-400">
+                                        <span class="text-xs font-medium italic">No Local Teacher</span>
+                                    </div>
+                                @endif
                             @endif
                         </div>
                     </div>
 
-                    {{-- B. TEACHER ATTENDANCE --}}
+                    {{-- B. TEACHER ATTENDANCE (Selalu Tampil) --}}
                     <div class="lg:col-span-1 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg shadow-blue-200 p-6 text-white flex flex-col justify-between relative overflow-hidden">
                         <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
                         <div>
@@ -363,7 +454,7 @@
                 {{-- 3. ROW 2: STUDENTS & STUDENT ATTENDANCE --}}
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     
-                    {{-- C. LIST STUDENTS TABLE (FIXED: Added max-height & scroll) --}}
+                    {{-- C. LIST STUDENTS TABLE --}}
                     <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col h-full">
                         <div class="flex justify-between items-center mb-5 shrink-0">
                             <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
@@ -373,10 +464,12 @@
                                 </span>
                             </h3>
                             
+                            @if(!$isTrashed)
                             <button @click="showAddStudentModal = true" class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-2 px-3 rounded-lg transition shadow-sm shadow-green-200">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                                 Add Student
                             </button>
+                            @endif
                         </div>
 
                         {{-- TABLE STUDENT --}}
@@ -388,7 +481,10 @@
                                         <th class="px-4 py-3 font-normal bg-gray-50">Student ID</th>
                                         <th class="px-4 py-3 font-normal bg-gray-50">Name</th>
                                         <th class="px-4 py-3 font-normal bg-gray-50">Status</th>
-                                        <th class="px-4 py-3 font-normal text-center w-28 bg-gray-50">Action</th>
+                                        {{-- Sembunyikan Action jika Trashed --}}
+                                        @if(!$isTrashed)
+                                            <th class="px-4 py-3 font-normal text-center w-28 bg-gray-50">Action</th>
+                                        @endif
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 text-sm text-gray-800 bg-white">
@@ -400,6 +496,9 @@
                                         
                                         <td class="px-4 py-3 font-medium transition-colors {{ $student->is_active ? 'text-gray-900 group-hover:text-blue-600' : 'text-red-800 line-through decoration-red-500' }}">
                                             {{ $student->name }}
+                                            @if($student->trashed())
+                                                <span class="text-[10px] text-red-500 font-bold ml-1">(DELETED)</span>
+                                            @endif
                                         </td>
                                         
                                         <td class="px-4 py-3">
@@ -410,6 +509,7 @@
                                             @endif
                                         </td>
 
+                                        @if(!$isTrashed)
                                         <td class="px-4 py-3 text-center">
                                             <div class="flex items-center justify-center gap-2">
                                                 
@@ -422,7 +522,6 @@
                                                     @click="confirmToggleStatus({{ $student->id }}, {{ $student->is_active ? 'true' : 'false' }})"
                                                     class="p-1.5 rounded transition-colors {{ $student->is_active ? 'text-gray-400 hover:text-red-600 hover:bg-red-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50' }}"
                                                     title="{{ $student->is_active ? 'Deactivate (Quit)' : 'Activate' }}">
-
                                                     @if($student->is_active)
                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
                                                     @else
@@ -439,10 +538,11 @@
                                                 </button>
                                             </div>
                                         </td>
+                                        @endif
                                     </tr>
                                     @empty
                                     <tr>
-                                        <td colspan="5" class="px-4 py-12 text-center text-gray-400 italic bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                                        <td colspan="{{ $isTrashed ? 4 : 5 }}" class="px-4 py-12 text-center text-gray-400 italic bg-gray-50 rounded-lg border border-dashed border-gray-200">
                                             No students enrolled in this class yet.
                                         </td>
                                     </tr>
@@ -452,7 +552,7 @@
                         </div>
                     </div>
 
-                    {{-- D. STUDENT ATTENDANCE (FIXED: Sticky footer button) --}}
+                    {{-- D. STUDENT ATTENDANCE (Widget) --}}
                     <div class="lg:col-span-1 bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col h-full">
                         <div class="flex justify-between items-start mb-4 shrink-0">
                             <div>
@@ -546,14 +646,20 @@
                             </div>
 
                             <div class="flex items-center gap-3">
-                                <a href="{{ route('admin.classes.assessment.detail', ['classId' => $class->id, 'type' => 'mid']) }}" 
-                                class="flex-1 inline-flex justify-center items-center px-4 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition shadow-blue-200 gap-2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                    {{ $midStatus == 'draft' ? 'Input Grades' : 'View Grades' }}
-                                </a>
+                                @if(!$isTrashed)
+                                    <a href="{{ route('admin.classes.assessment.detail', ['classId' => $class->id, 'type' => 'mid']) }}" 
+                                    class="flex-1 inline-flex justify-center items-center px-4 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition shadow-blue-200 gap-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                        {{ $midStatus == 'draft' ? 'Input Grades' : 'View Grades' }}
+                                    </a>
+                                @else
+                                    <button disabled class="flex-1 inline-flex justify-center items-center px-4 py-2.5 bg-gray-100 text-gray-400 text-sm font-bold rounded-lg cursor-not-allowed gap-2">
+                                        Restore to Access Grades
+                                    </button>
+                                @endif
                                 
                                 <button disabled class="p-2.5 text-gray-400 bg-gray-100 rounded-lg cursor-not-allowed" title="Print Report Card">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 00-2 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                                 </button>
                             </div>
                         </div>
@@ -584,11 +690,18 @@
                             </div>
 
                             <div class="flex items-center gap-3">
-                                <a href="{{ route('admin.classes.assessment.detail', ['classId' => $class->id, 'type' => 'final']) }}" 
-                                class="flex-1 inline-flex justify-center items-center px-4 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition shadow-indigo-200 gap-2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                    {{ $finalStatus == 'draft' ? 'Input Grades' : 'View Grades' }}
-                                </a>
+                                @if(!$isTrashed)
+                                    <a href="{{ route('admin.classes.assessment.detail', ['classId' => $class->id, 'type' => 'final']) }}" 
+                                    class="flex-1 inline-flex justify-center items-center px-4 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition shadow-indigo-200 gap-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                        {{ $finalStatus == 'draft' ? 'Input Grades' : 'View Grades' }}
+                                    </a>
+                                @else
+                                    <button disabled class="flex-1 inline-flex justify-center items-center px-4 py-2.5 bg-gray-100 text-gray-400 text-sm font-bold rounded-lg cursor-not-allowed gap-2">
+                                        Restore to Access Grades
+                                    </button>
+                                @endif
+
                                 <button disabled class="p-2.5 text-gray-400 bg-gray-100 rounded-lg cursor-not-allowed" title="Print Certificate">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                                 </button>
@@ -600,16 +713,21 @@
         </div> 
 
         {{-- INCLUDE MODALS (PARTIALS) --}}
-        @include('admin.classes.partials.assign-teacher-modal')
-        @include('admin.classes.partials.assign-student-modal', ['class' => $class, 'availableStudents' => $availableStudents])
+        {{-- Activity & Attendance selalu di-load (Safe View) --}}
         @include('admin.classes.partials.activity-history-modal', ['teachingLogs' => $teachingLogs])
         @include('admin.classes.partials.attendance-modal', ['studentStats' => $studentStats, 'teachingLogs' => $teachingLogs, 'attendanceMatrix' => $attendanceMatrix])
-        @include('admin.classes.partials.edit-class-modal', ['teachers' => $teachers, 'categories' => $categories, 'years' => $years])
+        
+        {{-- Action Modals hanya jika active --}}
+        @if(!$isTrashed)
+            @include('admin.classes.partials.assign-teacher-modal')
+            @include('admin.classes.partials.assign-student-modal', ['class' => $class, 'availableStudents' => $availableStudents])
+            @include('admin.classes.partials.edit-class-modal', ['teachers' => $teachers, 'categories' => $categories, 'years' => $years])
 
-        {{-- FORM HIDDEN UNTUK TOGGLE STATUS --}}
-        <form id="toggleStatusForm" method="POST" action="#" style="display: none;">
-            @csrf @method('PATCH')
-        </form>
+            {{-- FORM HIDDEN UNTUK TOGGLE STATUS --}}
+            <form id="toggleStatusForm" method="POST" action="#" style="display: none;">
+                @csrf @method('PATCH')
+            </form>
+        @endif
 
     </div>
 

@@ -113,12 +113,15 @@ Route::middleware(['auth', 'verified', 'admin'])
         Route::prefix('trash')->name('trash.')->group(function () {
             // Halaman Utama Trash
             Route::get('/', [AdminTrashController::class, 'index'])->name('trash');
+            Route::get('/student/{id}', [AdminTrashController::class, 'detailTrashedStudent'])->name('student.detail');
+            Route::get('/teacher/{id}', [AdminTrashController::class, 'detailTrashedTeacher'])->name('teacher.detail');
+            Route::get('/class/{id}', [AdminTrashController::class, 'detailTrashedClass'])->name('class.detail');
             
             // Restore: /admin/trash/{type}/{id}/restore
-            Route::put('/{type}/{id}/restore', [AdminTrashController::class, 'restore'])->name('restore');
+            Route::post('/{type}/{id}/restore', [AdminTrashController::class, 'restore'])->name('restore');
             
             // Force Delete: /admin/trash/{type}/{id}/force-delete
-            Route::delete('/{type}/{id}/force-delete', [AdminTrashController::class, 'forceDelete'])->name('forceDelete');
+            Route::delete('/force-delete/{type}/{id}', [AdminTrashController::class, 'forceDelete'])->name('force_delete');
         });
 
         /* ACTIVITY LOG */
