@@ -4,99 +4,134 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\User; // Untuk Teacher
+use Illuminate\Pagination\LengthAwarePaginator; // Wajib import untuk paginasi manual collection
+use App\Models\User;
 use App\Models\Student;
-use App\Models\ClassModel; // Ganti jika nama model kelas Anda berbeda (misalnya App\Models\Classes)
+use App\Models\ClassModel; // Pastikan nama model sesuai (ClassModel.php)
 
 class AdminTrashController extends Controller
 {
     /**
-     * Menampilkan halaman sampah terpadu (Student, Teacher, Class)
+     * Menampilkan semua data yang di-soft delete (Unified Trash)
      */
     public function index(Request $request)
     {
-        // 1. Mengambil data dari semua model yang di-soft deleted
-        // Ambil hanya kolom yang dibutuhkan dan tambahkan field 'type'
-        $trashedTeachers = User::where('is_teacher', true)
-                                ->onlyTrashed()
-                                ->get(['id', 'name', 'deleted_at'])
-                                ->map(fn ($item) => array_merge($item->toArray(), ['type' => 'teacher']));
-                                
-        $trashedStudents = Student::onlyTrashed()
-                                ->get(['id', 'name', 'deleted_at'])
-                                ->map(fn ($item) => array_merge($item->toArray(), ['type' => 'student']));
+        // 1. Ambil Data Teacher yang dihapus
+        $teachers = User::onlyTrashed()
+            ->where('is_teacher', true)
+            ->select('id', 'name', 'deleted_at')
+            ->get()
+            ->map(function ($item) {
+                $item->type = 'teacher'; // Inject label type
+                return $item;
+            });
 
-        $trashedClasses = ClassModel::onlyTrashed()
-                                ->get(['id', 'name', 'deleted_at'])
-                                ->map(fn ($item) => array_merge($item->toArray(), ['type' => 'class']));
+        // 2. Ambil Data Student yang dihapus
+        $students = Student::onlyTrashed()
+            ->select('id', 'name', 'deleted_at')
+            ->get()
+            ->map(function ($item) {
+                $item->type = 'student';
+                return $item;
+            });
 
-        // 2. Menggabungkan dan mengurutkan berdasarkan deleted_at
-        $allTrashed = collect()
-                      ->merge($trashedTeachers)
-                      ->merge($trashedStudents)
-                      ->merge($trashedClasses)
-                      ->sortByDesc('deleted_at');
+        // 3. Ambil Data Class yang dihapus
+        $classes = ClassModel::onlyTrashed()
+            ->select('id', 'name', 'deleted_at')
+            ->get()
+            ->map(function ($item) {
+                $item->type = 'class';
+                return $item;
+            });
 
-        $totalCount = $allTrashed->count();
+        // 4. Gabungkan (Merge) dan Sortir berdasarkan waktu dihapus (Terbaru di atas)
+        $mergedTrash = $teachers
+            ->merge($students)
+            ->merge($classes)
+            ->sortByDesc('deleted_at')
+            ->values(); // Reset keys agar urutan array bersih
+
+        // 5. Konfigurasi Paginasi Manual
+        $page = $request->get('page', 1); // Halaman saat ini
+        $perPage = 10; // Jumlah item per halaman
         
-        // 3. Paginasi Manual untuk koleksi gabungan
-        $perPage = 15;
-        $page = $request->get('page', 1);
-        $offset = ($page * $perPage) - $perPage;
-        
-        $paginatedItems = $allTrashed->slice($offset, $perPage)->all();
-        $logs = new \Illuminate\Pagination\LengthAwarePaginator($paginatedItems, $totalCount, $perPage, $page, [
-            'path' => $request->url(),
-            'query' => $request->query(),
-        ]);
-        
+        // Slice collection sesuai halaman
+        $currentPageItems = $mergedTrash->slice(($page - 1) * $perPage, $perPage)->all();
+
+        // Buat Object Paginator
+        $logs = new LengthAwarePaginator(
+            $currentPageItems,
+            $mergedTrash->count(),
+            $perPage,
+            $page,
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]
+        );
+
+        $totalCount = $mergedTrash->count();
+
         return view('admin.trash.trash', compact('logs', 'totalCount'));
     }
-    
-    // Helper function untuk mendapatkan Model Class berdasarkan type
+
+    /**
+     * Helper untuk mendapatkan Model Class berdasarkan string type
+     */
     private function getModelClass($type)
     {
         return match($type) {
             'teacher' => User::class,
             'student' => Student::class,
-            'class' => ClassModel::class, // Sesuaikan jika nama model Anda berbeda
-            default => null,
+            'class'   => ClassModel::class,
+            default   => null,
         };
     }
 
     /**
-     * Mengembalikan data dari trash (Restore)
+     * Restore Data
      */
-    public function restore(Request $request, $type, $id)
+    public function restore($type, $id)
     {
         $modelClass = $this->getModelClass($type);
-        if (!$modelClass) return back()->with('error', 'Invalid model type.');
 
-        $item = $modelClass::withTrashed()->findOrFail($id);
-        $item->restore();
+        if (!$modelClass) {
+            return back()->with('error', 'Invalid item type.');
+        }
 
-        return redirect()->route('admin.trash.trash')->with('success', ucfirst($type) . ' ' . $item->name . ' has been restored successfully.');
+        // Cari data di tong sampah
+        $item = $modelClass::onlyTrashed()->find($id);
+
+        if ($item) {
+            $item->restore(); // Kembalikan data
+            return redirect()->route('admin.trash.trash')
+                ->with('success', ucfirst($type) . " '{$item->name}' has been restored successfully.");
+        }
+
+        return back()->with('error', 'Data not found in trash.');
     }
 
     /**
-     * Menghapus permanen data dari trash (Force Delete)
+     * Force Delete (Hapus Permanen)
      */
-    public function forceDelete(Request $request, $type, $id)
+    public function forceDelete($type, $id)
     {
         $modelClass = $this->getModelClass($type);
-        if (!$modelClass) return back()->with('error', 'Invalid model type.');
 
-        $item = $modelClass::withTrashed()->findOrFail($id);
-        $itemName = $item->name;
-        
-        // Cek apakah item adalah teacher/user sebelum forceDelete
-        if ($type === 'teacher') {
-            // Jika guru memiliki relasi/data lain, pastikan relasi tersebut di-handle
-            // Misalnya: detach class sebelum delete
+        if (!$modelClass) {
+            return back()->with('error', 'Invalid item type.');
         }
-        
-        $item->forceDelete();
 
-        return redirect()->route('admin.trash.trash')->with('success', ucfirst($type) . ' ' . $itemName . ' has been permanently deleted.');
+        $item = $modelClass::onlyTrashed()->find($id);
+
+        if ($item) {
+            $name = $item->name;
+            $item->forceDelete(); // Hapus selamanya dari database
+
+            return redirect()->route('admin.trash.trash')
+                ->with('success', ucfirst($type) . " '{$name}' has been permanently deleted.");
+        }
+
+        return back()->with('error', 'Data not found in trash.');
     }
 }

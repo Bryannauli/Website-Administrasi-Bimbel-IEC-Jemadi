@@ -204,7 +204,7 @@
                     <div class="px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
                         <div>
                             <h3 class="text-sm font-bold text-red-800 uppercase tracking-wider">Danger Zone</h3>
-                            <p class="text-xs text-red-600 mt-1">Deleting this class will move it to trash (Soft Delete).</p>
+                            <p class="text-xs text-red-600 mt-1">Deleting this class will move it to trash.</p>
                         </div>
                         
                         <button type="button" @click="confirmDelete()" class="whitespace-nowrap px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg font-medium text-sm transition-all shadow-sm">
