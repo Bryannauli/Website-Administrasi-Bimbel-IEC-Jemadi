@@ -26,83 +26,55 @@
         </button>
     </div>
 
-    {{-- Spacer --}}
-    <div class="h-10 lg:h-20"></div> 
+    {{-- Logo / Judul --}}
+    <div class="flex items-center justify-center h-16 bg-white/50 border-b border-white/50 px-4">
+        <span class="text-xl font-extrabold text-blue-700 uppercase tracking-wider">
+            AIMS <span class="text-gray-800">IEC</span>
+        </span>
+    </div>
 
-    <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+    {{-- Navigasi Utama --}}
+    <nav class="flex-1 overflow-y-auto p-4 space-y-2">
 
-        {{-- 1. DASHBOARD --}}
-        <a href="{{ $isAdmin ? route('dashboard') : route('teacher.dashboard') }}"
+        {{-- ================================================= --}}
+        {{-- DASHBOARD (Semua Role)                            --}}
+        {{-- ================================================= --}}
+        <a href="{{ route('dashboard') }}"
            class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ease-in-out
-           {{ request()->routeIs('dashboard') || request()->routeIs('teacher.dashboard') ? $activeClasses : $inactiveClasses }}">
+           {{ request()->routeIs('dashboard') || request()->routeIs('admin.dashboard') || request()->routeIs('teacher.dashboard') ? $activeClasses : $inactiveClasses }}">
             
-            <svg class="mr-3 h-6 w-6 flex-shrink-0 
-                {{ request()->routeIs('dashboard') || request()->routeIs('teacher.dashboard') ? $activeClassesIcon : $inactiveClassesIcon }}" 
+            <svg class="mr-3 h-6 w-6 flex-shrink-0
+                {{ request()->routeIs('dashboard') || request()->routeIs('admin.dashboard') || request()->routeIs('teacher.dashboard') ? $activeClassesIcon : $inactiveClassesIcon }}"
                 xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6-4v-4a1 1 0 011-1h2a1 1 0 011 1v4" />
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
             Dashboard
         </a>
 
+
         {{-- ================================================= --}}
-        {{-- ADMIN ONLY MENUS                                  --}}
+        {{-- ADMIN ACCESS                                      --}}
         {{-- ================================================= --}}
         @if($isAdmin)
+            
+            <h3 class="mt-4 pt-2 text-xs font-semibold uppercase text-gray-500 tracking-wider border-t border-gray-200">Management</h3>
 
-            {{-- 2. ACADEMICS (DROPDOWN) --}}
-            {{-- Logika Active: Nyala jika buka Classes, Assessment, ATAU Daily Recap --}}
-            @php
-                $isAcademicsActive = request()->routeIs('admin.classes.*') || 
-                                     request()->routeIs('admin.assessment.*') || 
-                                     request()->routeIs('admin.classes.daily-recap');
-            @endphp
+            {{-- 1. CLASSES --}}
+            <a href="{{ route('admin.classes.index') }}"
+               class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ease-in-out
+               {{ request()->routeIs('admin.classes.*') ? $activeClasses : $inactiveClasses }}">
+                
+                <svg class="mr-3 h-6 w-6 flex-shrink-0
+                    {{ request()->routeIs('admin.classes.*') ? $activeClassesIcon : $inactiveClassesIcon }}"
+                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                Classes
+            </a>
 
-            <div x-data="{ open: {{ $isAcademicsActive ? 'true' : 'false' }} }">
-                <button @click="open = !open"
-                    class="group flex items-center justify-between w-full px-3 py-2 text-sm font-medium rounded-md !no-underline
-                   {{ $isAcademicsActive ? $activeClasses : $inactiveClasses }}">
-
-                    <span class="flex items-center">
-                        <svg class="mr-3 h-6 w-6 flex-shrink-0
-                           {{ $isAcademicsActive ? $activeClassesIcon : $inactiveClassesIcon }}"
-                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        Academics
-                    </span>
-
-                    <svg :class="{'rotate-180': open}"
-                        class="h-5 w-5 transition-transform transform duration-200" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd"
-                            d="M5.23 7.21a1 1 0 011.41 0L10 10.56l3.36-3.35a1 1 0 111.41 1.41l-4.06 4a1 1 0 01-1.41 0l-4.06-4a1 1 0 010-1.41z" />
-                    </svg>
-                </button>
-
-                <div x-show="open" x-transition class="mt-2 space-y-1">
-                    {{-- 2.a Daily Class Monitor (Pindah ke sini) --}}
-                    <a href="{{ route('admin.classes.daily-recap') }}"
-                        class="block px-4 py-2 ml-4 rounded-md text-sm font-medium transition-colors duration-150
-                        {{ request()->routeIs('admin.classes.daily-recap') ? $subActiveClasses : $subInactiveClasses }}">
-                        Daily Class Monitor
-                    </a>
-
-                    <a href="{{ route('admin.classes.index') }}"
-                        class="block px-4 py-2 ml-4 rounded-md text-sm font-medium transition-colors duration-150
-                      {{ request()->routeIs('admin.classes.index') ? $subActiveClasses : $subInactiveClasses }}">
-                        Classes Management
-                    </a>
-                    
-                    <a href="{{ route('admin.assessment.index') }}"
-                        class="block px-4 py-2 ml-4 rounded-md text-sm font-medium transition-colors duration-150
-                      {{ request()->routeIs('admin.assessment.index') ? $subActiveClasses : $subInactiveClasses }}">
-                        Assessments
-                    </a>
-                </div>
-            </div>
-
-            {{-- 3. STUDENTS (Single Link) --}}
+            {{-- 2. STUDENTS --}}
             <a href="{{ route('admin.student.index') }}"
                class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ease-in-out
                {{ request()->routeIs('admin.student.*') ? $activeClasses : $inactiveClasses }}">
@@ -111,28 +83,37 @@
                     {{ request()->routeIs('admin.student.*') ? $activeClassesIcon : $inactiveClassesIcon }}"
                     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20v-2a3 3 0 015.356-1.857M7 20h4m-4 0a1 1 0 01-1-1v-2.75a2 2 0 012-2h4a2 2 0 012 2v2.75a1 1 0 01-1 1H7zm11.5-9.409v2.218a3 3 0 010 6.182M10 16a2 2 0 100-4 2 2 0 000 4z" />
                 </svg>
                 Students
             </a>
 
-            {{-- 4. TEACHERS (Sekarang Single Link, bukan Dropdown) --}}
-            {{-- Logika Active: Nyala jika route teacher.* TAPI BUKAN daily-recap --}}
-            @php
-                $isTeachersActive = request()->routeIs('admin.teacher.*') && !request()->routeIs('admin.classes.daily-recap');
-            @endphp
-            
+            {{-- 3. TEACHERS --}}
             <a href="{{ route('admin.teacher.index') }}"
                class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ease-in-out
-               {{ $isTeachersActive ? $activeClasses : $inactiveClasses }}">
+               {{ request()->routeIs('admin.teacher.*') ? $activeClasses : $inactiveClasses }}">
                 
                 <svg class="mr-3 h-6 w-6 flex-shrink-0
-                    {{ $isTeachersActive ? $activeClassesIcon : $inactiveClassesIcon }}"
+                    {{ request()->routeIs('admin.teacher.*') ? $activeClassesIcon : $inactiveClassesIcon }}"
                     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
                 Teachers
+            </a>
+
+            {{-- 4. ACTIVITY LOG (NEW MENU) --}}
+            <a href="{{ route('admin.activity-log.index') }}"
+               class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ease-in-out
+               {{ request()->routeIs('admin.activity-log.*') ? $activeClasses : $inactiveClasses }}">
+                
+                <svg class="mr-3 h-6 w-6 flex-shrink-0
+                    {{ request()->routeIs('admin.activity-log.*') ? $activeClassesIcon : $inactiveClassesIcon }}"
+                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Activity Log
             </a>
 
         @endif {{-- End Admin Check --}}
@@ -151,11 +132,15 @@
                     {{ request()->routeIs('teacher.classes.*') ? $activeClassesIcon : $inactiveClassesIcon }}"
                     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        d="M8..." />
                 </svg>
-                Class Schedule
+                Classes
             </a>
-        @endif
+            
+            {{-- Tambahkan menu Teacher lainnya di sini --}}
+
+        @endif {{-- End Teacher Check --}}
 
     </nav>
+
 </div>

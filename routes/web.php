@@ -11,13 +11,15 @@ use App\Http\Controllers\Admin\AdminClassController;
 use App\Http\Controllers\Admin\AdminStudentController;
 use App\Http\Controllers\Admin\AdminTeacherController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminAssessmentController;
+use App\Http\Controllers\Admin\AdminLogController;
+
 
 // Teacher Controllers
 use App\Http\Controllers\Teacher\TeacherClassController;
 use App\Http\Controllers\Teacher\TeacherDashboardController;
 use App\Http\Controllers\Teacher\TeacherAssessmentController;
 use App\Http\Controllers\Teacher\TeacherAttendanceController;
-use App\Http\Controllers\Admin\AdminAssessmentController; // Controller Baru (Manage Grades per Class)
 
 
 /* ROOT DAN DASHBOARD */
@@ -243,6 +245,9 @@ Route::get('/test-assessment-print', function () {
             Route::put('/{teacher}/toggle-status', [AdminTeacherController::class, 'toggleStatus'])->name('toggle-status');
             Route::delete('/{id}', [AdminTeacherController::class, 'delete'])->name('delete');
         });
+
+        /* ACTIVITY LOG */
+        Route::resource('activity-log', AdminLogController::class)->only(['index', 'show']);
 
         /* =====================================================================
         | ASSESSMENT (Global Index/Recap)
