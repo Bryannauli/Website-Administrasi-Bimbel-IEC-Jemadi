@@ -113,6 +113,79 @@ Route::get('/cek-tampilan', function () {
     ]);
 });
 
+// rute untuk cek tampilan assessment
+Route::get('/test-assessment-print', function () {
+    
+    // 1. INFO KELAS (HEADER)
+    $headerInfo = (object) [
+        'month' => 'July - December ' . date('Y'),
+        'form_teacher' => 'Mr. Richard',
+        'other_teacher' => 'Mr. Jimmy',
+        'class_name' => 'STEP 3',
+        'class_time' => '7 - 9 pm',
+        'class_days' => 'Tuesday & Thursday'
+    ];
+
+    // 2. MATA PELAJARAN (DIGABUNG JADI 1)
+    // Urutan kolom sesuai logika: Vocab, Grammar, Reading, Spelling, Listening, Speaking
+    $subjects = ['Vocabulary', 'Grammar', 'Reading', 'Spelling', 'Listening', 'Speaking'];
+
+    // 3. DATA SISWA & NILAI
+    $studentNames = [
+        'Charlene Alycia Chen', 'Felix Horatio', 'Reagan Immanuel', 
+        'Xaviera Cleosa Shielder', 'Livia Melosa Shielder', 'Wira', 
+        'Jozio Notal Ezer'
+    ];
+
+    $students = collect([]);
+
+    foreach ($studentNames as $index => $name) {
+        $marks = [];
+        $totalAve = 0;
+
+        foreach ($subjects as $subj) {
+            // Generate nilai random
+            $mid = rand(70, 95);
+            $final = rand(70, 95);
+            $ave = round(($mid + $final) / 2);
+            
+            $marks[$subj] = (object) [
+                'mid' => $mid,
+                'final' => $final,
+                'ave' => $ave
+            ];
+            $totalAve += $ave;
+        }
+
+        // Hitung rata-rata total
+        $grandAve = round($totalAve / count($subjects));
+
+        $students->push((object)[
+            'no' => $index + 1,
+            'student_number' => '041' . rand(1000, 9999),
+            'name' => $name,
+            'marks' => $marks, // Array nilai per mapel
+            'total_ave' => $grandAve,
+            'rank' => 0, // Nanti dihitung
+            'at' => '',  // Attendance/Remarks
+        ]);
+    }
+
+    // Hitung Ranking Sederhana
+    $students = $students->sortByDesc('total_ave')->values();
+    foreach ($students as $idx => $s) {
+        $s->rank = $idx + 1;
+    }
+    // Balikkan ke urutan nama/no asli jika perlu, atau biarkan urut ranking
+    // $students = $students->sortBy('no'); 
+
+    return view('admin.classes.partials.assessment-report', [
+        'header' => $headerInfo,
+        'subjects' => $subjects,
+        'students' => $students
+    ]);
+});
+
         /* DASHBOARD */
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
         Route::get('/attendance-stats', [AdminDashboardController::class, 'getAttendanceStats']);
