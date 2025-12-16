@@ -86,7 +86,7 @@
                             };
                         @endphp
 
-                        <div class="group bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 border-l-[5px] {{ $borderClass }}">
+                      <div class="group bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 border-l-[5px] {{ $borderClass }}">
                             <div class="flex justify-between items-start mb-4">
                                 <div>
                                     <h4 class="text-lg font-bold text-gray-800 group-hover:text-gray-600 transition-colors">
@@ -98,14 +98,16 @@
                                 </div>
                                 <a href="{{ route('teacher.classes.detail', $class->id) }}" 
                                    class="w-9 h-9 flex items-center justify-center rounded-lg {{ $btnClass }} transition-colors">
-                                    <i class="fas fa-arrow-right text-sm"></i>
+                                    {{-- Arrow Icon SVG --}}
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                                 </a>
                             </div>
 
                             <div class="space-y-3 pt-2">
                                 <div class="flex items-center text-sm text-gray-600">
                                     <div class="w-8 flex justify-center mr-2">
-                                        <i class="far fa-clock {{ $iconColor }} text-lg"></i>
+                                        {{-- Clock Icon SVG --}}
+                                        <svg class="w-5 h-5 {{ $iconColor }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                     </div>
                                     <span class="font-medium bg-gray-50 px-2 py-0.5 rounded text-gray-700">
                                         {{ \Carbon\Carbon::parse($class->start_time)->format('H:i') }} - 
@@ -115,7 +117,8 @@
                                 
                                 <div class="flex items-center text-sm text-gray-600">
                                     <div class="w-8 flex justify-center mr-2">
-                                        <i class="fas fa-door-open {{ $iconColor }} text-lg"></i>
+                                        {{-- Door/Room Icon SVG --}}
+                                        <svg class="w-5 h-5 {{ $iconColor }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                                     </div>
                                     <span class="font-medium">{{ $class->classroom ?? 'Room A' }}</span>
                                 </div>
@@ -125,7 +128,8 @@
                     @empty
                         <div class="col-span-full bg-white rounded-2xl border border-dashed border-gray-300 p-12 text-center">
                             <div class="bg-gray-50 rounded-full h-20 w-20 flex items-center justify-center mx-auto mb-4">
-                                <i class="fas fa-mug-hot text-gray-400 text-3xl"></i>
+                                {{-- Coffee Icon SVG --}}
+                                <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                             </div>
                             <h3 class="text-lg font-bold text-gray-800">No Classes Today</h3>
                             <p class="text-gray-500 text-sm mt-2 max-w-sm mx-auto leading-relaxed">
