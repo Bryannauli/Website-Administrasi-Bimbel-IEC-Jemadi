@@ -9,16 +9,22 @@ use Illuminate\Database\Eloquent\Model;
 trait LogsActivity
 {
     /**
-     * Event Eloquent yang akan dipantau otomatis.
-     */
-    protected static $recordEvents = ['created', 'updated', 'deleted', 'restored', 'forceDeleted'];
-
-    /**
      * Boot trait saat model digunakan.
      */
     public static function bootLogsActivity()
     {
-        foreach (static::$recordEvents as $event) {
+        // 1. Event standar yang pasti ada
+        $events = ['created', 'updated', 'deleted'];
+
+        // 2. Cek apakah Model menggunakan SoftDeletes?
+        // Jika YA, baru kita tambahkan event restored & forceDeleted
+        if (in_array('Illuminate\Database\Eloquent\SoftDeletes', class_uses_recursive(static::class))) {
+            $events[] = 'restored';
+            $events[] = 'forceDeleted';
+        }
+
+        // 3. Daftarkan Event
+        foreach ($events as $event) {
             static::$event(function (Model $model) use ($event) {
                 $model->recordActivity($event);
             });
@@ -27,8 +33,9 @@ trait LogsActivity
 
     /**
      * Logika utama pencatatan aktivitas.
+     * (Sudah PUBLIC agar bisa dipanggil dari closure)
      */
-    protected function recordActivity($event)
+    public function recordActivity($event)
     {
         // 1. TENTUKAN NAMA EVENT YANG LEBIH SPESIFIK
         if ($event === 'deleted') {
@@ -49,12 +56,10 @@ trait LogsActivity
         if ($event === 'updated') {
             $changes = $this->getChanges();
             
-            // Hapus atribut terlarang dari daftar perubahan
             foreach ($hiddenAttributes as $attr) {
                 unset($changes[$attr]);
             }
 
-            // Jika setelah dibersihkan ternyata kosong (misal cuma update timestamps), batalkan log
             if (empty($changes)) return; 
 
             $properties = [
@@ -67,47 +72,42 @@ trait LogsActivity
             foreach ($hiddenAttributes as $attr) unset($attributes[$attr]); 
             $properties = ['attributes' => $attributes];
         } 
-        elseif (in_array($event, ['soft_deleted', 'force_deleted'])) {
+        elseif (in_array($event, ['soft_deleted', 'force_deleted', 'deleted'])) {
             $old = $this->toArray();
             foreach ($hiddenAttributes as $attr) unset($old[$attr]);
             
             $properties = [
                 'old' => $old,
-                // Tambahkan info kapan dihapus untuk soft delete
                 'attributes' => $event === 'soft_deleted' ? ['deleted_at' => now()] : null
             ];
         }
         elseif ($event === 'restored') {
             $properties = [
-                'old' => ['deleted_at' => $this->deleted_at], // Tanggal hapus lama
-                'attributes' => ['deleted_at' => null]        // Sekarang aktif lagi
+                'old' => ['deleted_at' => $this->deleted_at], 
+                'attributes' => ['deleted_at' => null]
             ];
         }
 
-        // 3. SIMPAN KE DATABASE (Tabel activity_logs)
-        ActivityLog::create([
-            // ACTOR: Siapa yang melakukan? (User yang login)
-            'actor_type'   => Auth::check() ? get_class(Auth::user()) : null,
-            'actor_id'     => Auth::id(),
-            
-            // SUBJECT: Apa yang diubah? (Model ini sendiri)
-            'subject_type' => get_class($this),
-            'subject_id'   => $this->id,
-            
-            // DETAIL
-            'event'        => $event,
-            'description'  => strtoupper(str_replace('_', ' ', $event)) . " " . class_basename($this),
-            'properties'   => $properties,
-            
-            // METADATA
-            'ip_address'   => request()->ip(),
-            'user_agent'   => request()->userAgent(),
-        ]);
+        // 3. SIMPAN LOG (Pakai try-catch biar aman saat seeding CLI)
+        try {
+            ActivityLog::create([
+                'actor_type'   => Auth::check() ? get_class(Auth::user()) : null,
+                'actor_id'     => Auth::id(), 
+                'subject_type' => get_class($this),
+                'subject_id'   => $this->id,
+                'event'        => $event,
+                'description'  => strtoupper(str_replace('_', ' ', $event)) . " " . class_basename($this),
+                'properties'   => $properties,
+                'ip_address'   => request()->ip(),
+                'user_agent'   => request()->userAgent(),
+            ]);
+        } catch (\Exception $e) {
+            // Silent fail saat seeding/console command jika terjadi error auth/request
+        }
     }
 
     /**
      * RELASI: Mengambil semua log aktivitas milik model ini.
-     * Contoh: $student->activities
      */
     public function activities()
     {

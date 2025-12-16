@@ -27,6 +27,7 @@ return new class extends Migration
             $table->text('comment')->nullable();
             
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::dropIfExists('teacher_attendance_records');
