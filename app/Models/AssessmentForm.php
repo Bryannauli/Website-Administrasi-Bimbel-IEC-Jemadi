@@ -5,10 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\LogsActivity;
 
 class AssessmentForm extends Model
 {
     use HasFactory, SoftDeletes;
+    use LogsActivity;
 
     protected $fillable = [
         'assessment_session_id',
@@ -86,10 +88,5 @@ class AssessmentForm extends Model
         }
 
         return (int) round(array_sum($validScores) / count($validScores));
-    }
-
-    public function logs()
-    {
-        return $this->hasMany(AssessmentFormLog::class);
     }
 }

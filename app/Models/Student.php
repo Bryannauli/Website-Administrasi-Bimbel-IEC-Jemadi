@@ -5,10 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\LogsActivity;
 
 class Student extends Model
 {
     use HasFactory, SoftDeletes;
+    use LogsActivity;
 
     protected $fillable = [
         'student_number',
@@ -36,10 +38,5 @@ class Student extends Model
     public function assessmentForms()
     {
         return $this->hasMany(AssessmentForm::class);
-    }
-
-    public function logs()
-    {
-        return $this->hasMany(StudentLog::class);
     }
 }

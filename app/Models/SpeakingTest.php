@@ -5,11 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\LogsActivity;
 
 class SpeakingTest extends Model
 {
     use HasFactory, SoftDeletes;
-
+    use LogsActivity;
+    
     protected $fillable = [
         'assessment_session_id',
         'date',
@@ -30,10 +32,5 @@ class SpeakingTest extends Model
     public function results()
     {
         return $this->hasMany(SpeakingTestResult::class, 'speaking_test_id');
-    }
-
-    public function logs()
-    {
-        return $this->hasMany(SpeakingTestLog::class);
     }
 }

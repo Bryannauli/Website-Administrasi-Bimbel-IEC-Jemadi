@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\LogsActivity;
 
 class ClassSession extends Model
 {
     use HasFactory;
+    use LogsActivity;
 
     protected $fillable = [
         'class_id',
@@ -29,10 +31,5 @@ class ClassSession extends Model
     public function teacher()
     {
         return $this->belongsTo(User::class)->where('is_teacher', true);
-    }
-
-    public function logs()
-    {
-        return $this->hasMany(ClassSessionLog::class);
     }
 }

@@ -5,10 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\LogsActivity;
 
 class AssessmentSession extends Model
 {
     use HasFactory, SoftDeletes;
+    use LogsActivity;
 
     protected $fillable = [
         'class_id',
@@ -27,11 +29,6 @@ class AssessmentSession extends Model
     public function forms()
     {
         return $this->hasMany(AssessmentForm::class);
-    }
-    
-    public function logs()
-    {
-        return $this->hasMany(AssessmentSessionLog::class);
     }
 
     /**

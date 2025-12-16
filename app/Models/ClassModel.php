@@ -5,10 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\LogsActivity;
 
 class ClassModel extends Model
 {
     use HasFactory, SoftDeletes;
+    use LogsActivity;
 
     protected $table = 'classes';
 
@@ -55,10 +57,5 @@ class ClassModel extends Model
     public function assessmentSessions()
     {
         return $this->hasMany(AssessmentSession::class, 'class_id');
-    }
-
-    public function logs()
-    {
-        return $this->hasMany(ClassLog::class, 'class_id');
     }
 }

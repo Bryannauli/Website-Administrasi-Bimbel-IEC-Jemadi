@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\LogsActivity;
 
 class AttendanceRecord extends Model
 {
     use HasFactory;
+    use LogsActivity;
 
     protected $fillable = [
         'class_session_id',
@@ -23,10 +25,5 @@ class AttendanceRecord extends Model
     public function student()
     {
         return $this->belongsTo(Student::class);
-    }
-
-    public function logs()
-    {
-        return $this->hasMany(AttendanceRecordLog::class);
     }
 }
