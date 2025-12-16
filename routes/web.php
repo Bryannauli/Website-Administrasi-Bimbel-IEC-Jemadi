@@ -13,7 +13,7 @@ use App\Http\Controllers\Admin\AdminTeacherController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminAssessmentController;
 use App\Http\Controllers\Admin\AdminLogController;
-
+use App\Http\Controllers\Admin\AdminTrashController;
 
 // Teacher Controllers
 use App\Http\Controllers\Teacher\TeacherClassController;
@@ -244,6 +244,16 @@ Route::get('/test-assessment-print', function () {
             Route::put('/{teacher}', [AdminTeacherController::class, 'update'])->name('update');
             Route::put('/{teacher}/toggle-status', [AdminTeacherController::class, 'toggleStatus'])->name('toggle-status');
             Route::delete('/{id}', [AdminTeacherController::class, 'delete'])->name('delete');
+        });
+
+        /* =====================================================================
+        | TRASH MANAGEMENT
+        ===================================================================== */
+        Route::prefix('trash')->name('trash.')->group(function () {
+            Route::get('/', [AdminTrashController::class, 'index'])->name('trash');
+            // Rute Restore dan Delete menggunakan parameter {type} (teacher/student/class)
+            Route::put('/{type}/{id}/restore', [AdminTrashController::class, 'restore'])->name('restore');
+            Route::delete('/{type}/{id}/force-delete', [AdminTrashController::class, 'forceDelete'])->name('forceDelete');
         });
 
         /* ACTIVITY LOG */
