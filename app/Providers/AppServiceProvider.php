@@ -40,14 +40,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        User::observe(UserObserver::class);
-        ClassModel::observe(ClassObserver::class);
-        Student::observe(StudentObserver::class);
-        AssessmentSession::observe(AssessmentSessionObserver::class);
-        AssessmentForm::observe(AssessmentFormObserver::class);
-        ClassSession::observe(ClassSessionObserver::class);
-        AttendanceRecord::observe(AttendanceRecordObserver::class);
-        SpeakingTest::observe(SpeakingTestObserver::class);
-        SpeakingTestResult::observe(SpeakingTestResultObserver::class);
+        // Semua Observer logging sudah digantikan oleh Trait LogsActivity
     }
 }
