@@ -1,3 +1,5 @@
+{{-- resources/views/teacher/classes/detail.blade.php --}}
+
 <x-app-layout>
     <x-slot name="header"></x-slot>
 
@@ -42,7 +44,7 @@
 
             <div class="space-y-6">
                 
-                {{-- 3. INFO KELAS (TOP CARD - MIRROR ADMIN) --}}
+                {{-- 3. INFO KELAS (TOP CARD) --}}
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden z-0">
                     <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -mr-8 -mt-8"></div>
                     <div class="flex flex-col md:flex-row items-center justify-between relative gap-6">
@@ -177,7 +179,7 @@
                                         Edit Today's Attendance
                                     </a>
                                 @else
-                                    {{-- JIKA BELUM ADA SESI HARI INI: Tombol Create (Buka Modal History yang langsung memicu form create) --}}
+                                    {{-- JIKA BELUM ADA SESI HARI INI: Tombol Create --}}
                                     <button @click="showHistoryModal = true; $nextTick(() => { document.getElementById('createSessionBtn').click(); })" 
                                         class="w-full py-3.5 bg-white text-blue-700 rounded-xl text-sm font-bold hover:bg-blue-50 transition shadow-lg shadow-blue-900/10 flex items-center justify-center gap-2 group-hover:scale-[1.02]">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -185,7 +187,7 @@
                                     </button>
                                 @endif
 
-                                {{-- Tombol View History (Selalu Ada) --}}
+                                {{-- Tombol View History --}}
                                 <button @click="showHistoryModal = true" 
                                     class="w-full py-2 bg-blue-800/80 text-blue-200 rounded-xl text-xs font-bold hover:bg-blue-800 transition">
                                     View Full History
@@ -196,7 +198,7 @@
                 </div>
 
                 {{-- ========================================================= --}}
-                {{-- ROW 2: STUDENTS (Left) & SIDEBAR WIDGETS (Right)          --}}
+                {{-- ROW 2: STUDENTS & SIDEBAR WIDGETS                         --}}
                 {{-- ========================================================= --}}
                 <div class="flex flex-col lg:grid lg:grid-cols-3 gap-6">
 
@@ -206,12 +208,13 @@
                         {{-- 1. ATTENDANCE WIDGET (REPORT STYLE) --}}
                         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full overflow-hidden">
                             @php
+                                // $allSessions masih Eloquent Collection (karena butuh 'records' relation untuk widget ini)
+                                // Sesuai controller yang direfactor
                                 $lastSessionStats = $allSessions->first(); 
                             @endphp
 
                             @if($lastSessionStats)
                                 @php
-                                    // Asumsi $lastSessionStats sudah memiliki relasi records yang dimuat
                                     $totalRec = $lastSessionStats->records->count();
                                     $presentRec = $lastSessionStats->records->whereIn('status', ['present', 'late'])->count();
                                     $perc = $totalRec > 0 ? round(($presentRec / $totalRec) * 100) : 0;
@@ -236,7 +239,6 @@
 
                                     {{-- List Absentees / Status --}}
                                     <div class="flex-1">
-                                        {{-- KONDISI 1: Belum ada data absensi sama sekali --}}
                                         @if($totalRec === 0)
                                             <div class="h-full flex flex-col items-center justify-center text-center py-8 bg-yellow-50 rounded-xl border border-dashed border-yellow-200 mt-2">
                                                 <div class="w-12 h-12 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mb-2 shadow-sm">
@@ -246,7 +248,6 @@
                                                 <p class="text-xs text-yellow-600 px-4">Please input attendance for this session.</p>
                                             </div>
 
-                                        {{-- KONDISI 2: Ada yang absen/sakit/izin --}}
                                         @elseif($absentees->count() > 0)
                                             <p class="text-xs font-bold text-red-500 mb-3 uppercase tracking-wide">Absentees List:</p>
                                             <ul class="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
@@ -270,7 +271,6 @@
                                                 @endforeach
                                             </ul>
 
-                                        {{-- KONDISI 3: Data ada DAN Tidak ada yang absen (Perfect) --}}
                                         @else
                                             <div class="h-full flex flex-col items-center justify-center text-center py-8 bg-green-50 rounded-xl border border-dashed border-green-200 mt-2">
                                                 <div class="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center mb-2 shadow-sm">
@@ -293,7 +293,7 @@
                                 </div>
 
                             @else
-                                {{-- Empty State (Belum ada sesi sama sekali) --}}
+                                {{-- Empty State --}}
                                 <div class="p-8 text-center flex flex-col items-center justify-center h-full">
                                     <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
                                         <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -311,43 +311,52 @@
                         <div class="flex justify-between items-center mb-5">
                             <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
                                 Enrolled Students
-                                {{-- Gunakan count() karena data diambil dengan get() --}}
+                                {{-- Gunakan count() dari collection $studentStats --}}
                                 <span class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-0.5 rounded-full ml-2">
-                                    {{ $students->count() }}
+                                    {{ $studentStats->count() }}
                                 </span>
                             </h3>
-                            
-                            {{-- FILTER ROWS DIHAPUS --}}
                         </div>
 
-                        {{-- WRAPPER TABEL SCROLLABLE --}}
-                        {{-- max-h-[500px] + overflow-y-auto agar bisa discroll vertikal --}}
+                        {{-- WRAPPER TABEL --}}
                         <div class="overflow-x-auto overflow-y-auto max-h-[500px] flex-1 custom-scrollbar border border-gray-50 rounded-lg">
                             <table class="w-full text-left border-collapse relative">
-                                {{-- THEAD STICKY --}}
                                 <thead class="bg-gray-50 text-gray-400 text-xs font-medium border-b border-gray-100 sticky top-0 z-10 shadow-sm">
                                     <tr>
                                         <th class="px-4 py-3 font-normal w-12 text-center bg-gray-50">No</th>
                                         <th class="px-4 py-3 font-normal bg-gray-50">Student ID</th>
                                         <th class="px-4 py-3 font-normal bg-gray-50">Student Name</th>
+                                        {{-- KOLOM BARU: Attendance --}}
+                                        <th class="px-4 py-3 font-normal text-center bg-gray-50">Attendance</th>
                                         <th class="px-4 py-3 font-normal text-center bg-gray-50">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 text-sm text-gray-800 bg-white">
-                                    @forelse($students as $index => $student)
-                                        {{-- 1. ROW BACKGROUND: Jika Inactive jadi merah muda --}}
+                                    {{-- UPDATE: Menggunakan $studentStats bukan $students --}}
+                                    @forelse($studentStats as $index => $student)
                                         <tr class="transition group {{ $student->is_active ? 'hover:bg-gray-50' : 'bg-red-50 hover:bg-red-100' }}">
                                             
-                                            {{-- NOMOR URUT --}}
+                                            {{-- NOMOR --}}
                                             <td class="px-4 py-3 text-center text-gray-400 text-xs">{{ $index + 1 }}</td>
                                             
-                                            {{-- ID NUMBER --}}
+                                            {{-- ID --}}
                                             <td class="px-4 py-3 font-mono text-xs text-gray-500">{{ $student->student_number }}</td>
 
-                                            {{-- NAMA SISWA (UPDATE DISINI) --}}
-                                            {{-- Jika active: Hitam biasa. Jika inactive: Merah tua + Coret merah --}}
+                                            {{-- NAME --}}
                                             <td class="px-4 py-3 font-medium transition-colors {{ $student->is_active ? 'text-gray-900' : 'text-red-800 line-through decoration-red-500' }}">
                                                 {{ $student->name }}
+                                            </td>
+
+                                            {{-- ATTENDANCE (%) --}}
+                                            <td class="px-4 py-3 text-center">
+                                                @if($student->is_active)
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold 
+                                                        {{ $student->percentage >= 80 ? 'bg-green-50 text-green-700' : ($student->percentage >= 50 ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-700') }}">
+                                                        {{ $student->percentage }}%
+                                                    </span>
+                                                @else
+                                                    <span class="text-xs text-gray-400">-</span>
+                                                @endif
                                             </td>
 
                                             {{-- STATUS --}}
@@ -361,7 +370,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="4" class="px-6 py-12 text-center text-gray-400 italic bg-gray-50">
+                                            <td colspan="5" class="px-6 py-12 text-center text-gray-400 italic bg-gray-50">
                                                 No students enrolled.
                                             </td>
                                         </tr>
@@ -369,8 +378,6 @@
                                 </tbody>
                             </table>
                         </div>
-                        
-                        {{-- PAGINATION LINKS DIHAPUS --}}
                     </div>
 
                 </div>
@@ -408,7 +415,6 @@
                                 </span>
                             </div>
 
-                            {{-- TOMBOL INPUT/VIEW GRADES (FULL WIDTH) --}}
                             <div>
                                 @if($midSession)
                                     <a href="{{ route('teacher.classes.assessment.detail', ['classId' => $class->id, 'assessmentId' => $midSession->id]) }}" 
@@ -449,7 +455,6 @@
                                 </span>
                             </div>
 
-                            {{-- TOMBOL INPUT/VIEW GRADES (FULL WIDTH) --}}
                             <div>
                                 @if($finalSession)
                                     <a href="{{ route('teacher.classes.assessment.detail', ['classId' => $class->id, 'assessmentId' => $finalSession->id]) }}" 
@@ -469,7 +474,10 @@
         </div>
 
         {{-- INCLUDE PARTIALS --}}
+        {{-- Pass classSessions (yang sekarang dari View) ke partial --}}
         @include('teacher.classes.partials.activity-history-modal', ['classSessions' => $classSessions, 'class' => $class, 'sessionToday' => $sessionToday ?? null])
+        
+        {{-- Pass studentStats & attendanceMatrix ke partial Modal Matrix --}}
         @include('teacher.classes.partials.attendance-modal', ['allSessions' => $allSessions, 'studentStats' => $studentStats, 'attendanceMatrix' => $attendanceMatrix])
 
     </div>

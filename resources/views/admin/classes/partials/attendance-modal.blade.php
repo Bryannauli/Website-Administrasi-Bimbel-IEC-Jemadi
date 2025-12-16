@@ -91,17 +91,30 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100 text-sm">
                         @foreach($studentStats as $stat)
-                            <tr class="hover:bg-gray-50 transition">
-                                {{-- Nama Siswa (Sticky Kiri) --}}
-                                <td class="px-4 py-3 bg-white sticky left-0 z-10 border-r border-gray-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] group-hover:bg-gray-50">
+                            {{-- LOGIC 1: Background Baris (TR) --}}
+                            <tr class="transition group {{ $stat->is_active ? 'hover:bg-gray-50' : 'bg-red-50 hover:bg-red-100' }}">
+                                
+                                {{-- LOGIC 2: Background Sticky Column (TD) --}}
+                                {{-- Perhatikan class bg-white diganti logic --}}
+                                <td class="px-4 py-3 sticky left-0 z-10 border-r border-gray-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] 
+                                    {{ $stat->is_active ? 'bg-white group-hover:bg-gray-50' : 'bg-red-50 group-hover:bg-red-100' }}">
+                                    
+                                    {{-- Nama & Nomor Siswa --}}
                                     <div class="truncate w-40 {{ $stat->is_active ? 'text-gray-900 font-medium' : 'text-red-800 line-through decoration-red-400' }}" title="{{ $stat->name }}">
                                         {{ $stat->name }}
+                                        
+                                        {{-- Opsional: Label Quit --}}
+                                        @if(!$stat->is_active)
+                                            <span class="ml-1 text-[9px] text-red-600 bg-white border border-red-200 px-1 rounded">QUIT</span>
+                                        @endif
                                     </div>
-                                    <div class="text-[10px] text-gray-400 font-mono">{{ $stat->student_number }}</div>
+                                    <div class="text-[10px] font-mono {{ $stat->is_active ? 'text-gray-400' : 'text-red-400' }}">
+                                        {{ $stat->student_number }}
+                                    </div>
                                 </td>
 
                                 {{-- Rate % --}}
-                                <td class="px-2 py-3 text-center border-r border-gray-100 bg-gray-50/30">
+                                <td class="px-2 py-3 text-center border-r border-gray-100 {{ $stat->is_active ? 'bg-gray-50/30' : 'bg-red-50/30' }}">
                                     <span class="text-xs font-bold {{ $stat->percentage >= 80 ? 'text-green-600' : ($stat->percentage >= 50 ? 'text-yellow-600' : 'text-red-600') }}">
                                         {{ $stat->percentage }}%
                                     </span>
@@ -110,13 +123,11 @@
                                 {{-- Loop Status Per Tanggal --}}
                                 @foreach($teachingLogs as $session)
                                     @php
-                                        // Menggunakan session_id dari view DB
                                         $status = $attendanceMatrix[$stat->student_id][$session->session_id] ?? '-';
                                         
+                                        // (Bagian Logic Icon tetap sama seperti sebelumnya)
                                         $cellContent = match($status) {
-                                            'present' => '<span class="inline-flex w-6 h-6 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm" title="Present">
-                                                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                                                        </span>',
+                                            'present' => '<span class="inline-flex w-6 h-6 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm" title="Present"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></span>',
                                             'late' => '<span class="inline-flex w-6 h-6 items-center justify-center rounded-full bg-yellow-500 text-white font-bold text-[10px] shadow-sm" title="Late">L</span>',
                                             'sick' => '<span class="inline-flex w-6 h-6 items-center justify-center rounded-full bg-purple-600 text-white font-bold text-[10px] shadow-sm" title="Sick">S</span>',
                                             'permission' => '<span class="inline-flex w-6 h-6 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-[10px] shadow-sm" title="Permission">P</span>',

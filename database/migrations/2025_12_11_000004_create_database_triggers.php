@@ -76,7 +76,6 @@ return new class extends Migration
                     FROM class_sessions 
                     WHERE class_id = NEW.class_id 
                         AND date = NEW.date
-                        AND deleted_at IS NULL
                 ) THEN
                     SIGNAL SQLSTATE '45000'
                     SET MESSAGE_TEXT = 'Database Error: A session for this class already exists on this date.';
@@ -99,7 +98,6 @@ return new class extends Migration
                         WHERE class_id = NEW.class_id 
                             AND date = NEW.date
                             AND id != NEW.id -- Kecuali diri sendiri
-                            AND deleted_at IS NULL
                     ) THEN
                         SIGNAL SQLSTATE '45000'
                         SET MESSAGE_TEXT = 'Database Error: Cannot move session. Another session already exists on the target date.';

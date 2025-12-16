@@ -27,7 +27,7 @@
                     </p>
                 </div>
                 
-                {{-- Tombol X di Pojok Kanan Atas (Selalu Menutup Modal) --}}
+                {{-- Tombol X --}}
                 <button @click="showHistoryModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
@@ -35,12 +35,12 @@
             
             <div class="max-h-[70vh] overflow-y-auto custom-scrollbar bg-gray-50 p-6">
                 
-                {{-- 1. TOMBOL "CREATE NEW" (Hanya muncul jika TIDAK sedang membuat DAN sesi hari ini BELUM ada) --}}
+                {{-- 1. TOMBOL "CREATE NEW" --}}
                 <template x-if="!sessionTodayExists">
                     <button @click="isCreating = true" 
                         x-show="!isCreating"
                         x-transition
-                        id="createSessionBtn" {{-- ID ini dipanggil dari detail.blade.php --}}
+                        id="createSessionBtn" 
                         class="w-full py-3 mb-6 bg-white border-2 border-dashed border-blue-300 rounded-xl text-blue-600 font-bold hover:bg-blue-50 hover:border-blue-400 transition-all flex items-center justify-center gap-2 group shadow-sm">
                         <span class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -53,15 +53,12 @@
                 <template x-if="sessionTodayExists && !isCreating">
                     <div class="w-full py-4 mb-6 bg-yellow-50 rounded-xl border border-yellow-200 text-yellow-700 font-medium text-sm text-center shadow-sm">
                         Session for today already exists. <br>
-                        
-                        {{-- PERBAIKAN: Menggunakan placeholder SESID_PLACEHOLDER --}}
                         <a :href="`{{ route('teacher.classes.session.detail', ['classId' => $class->id, 'sessionId' => 'SESID_PLACEHOLDER']) }}`.replace('SESID_PLACEHOLDER', sessionTodayId)"
                            class="text-yellow-800 font-bold hover:underline mt-1 inline-block">
                            Go to Edit Session
                         </a>
                     </div>
                 </template>
-
 
                 {{-- 2. FORM CREATE SESSION (INLINE) --}}
                 <div x-show="isCreating" x-transition class="bg-white p-5 rounded-xl border border-blue-200 shadow-sm relative overflow-hidden">
@@ -74,7 +71,6 @@
                                 {{-- Date Input --}}
                                 <div>
                                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Session Date</label>
-                                    {{-- Pastikan input date hanya bisa diisi hari ini (agar tidak duplikat) --}}
                                     <input type="date" name="date" 
                                            class="w-full rounded-lg border-gray-300 text-gray-700 text-sm focus:ring-blue-500 focus:border-blue-500 shadow-sm" 
                                            value="{{ date('Y-m-d') }}" max="{{ date('Y-m-d') }}" required>
@@ -98,13 +94,10 @@
 
                                 {{-- ACTION BUTTONS --}}
                                 <div class="flex gap-3 pt-2">
-                                    {{-- Tombol Cancel --}}
                                     <button type="button" @click="isCreating = false" 
                                             class="flex-1 py-2.5 bg-white border border-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-50 transition-colors text-sm">
                                         Cancel
                                     </button>
-
-                                    {{-- Tombol Submit --}}
                                     <button type="submit" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md transition-colors text-sm flex justify-center items-center gap-2">
                                         Start Session
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
@@ -127,16 +120,15 @@
                         <div class="space-y-4">
                             @foreach($classSessions as $session)
                                 @php
-                                    $records = $session->records ?? collect([]);
-                                    $totalRec = $records->count();
-                                    $presentRec = $records->whereIn('status', ['present', 'late'])->count();
-                                    $perc = $totalRec > 0 ? round(($presentRec / $totalRec) * 100) : 0;
+                                    // [PERBAIKAN] Menggunakan data langsung dari VIEW, bukan looping Eloquent lagi
+                                    $perc = $session->attendance_percentage ?? 0;
                                     
                                     $percColor = $perc >= 80 ? 'bg-green-100 text-green-800' : 
                                                 ($perc >= 50 ? 'bg-yellow-100 text-yellow-800' : 
                                                 'bg-red-100 text-red-800');
                                                 
-                                    $teacherName = $session->teacher->name ?? 'Unknown';
+                                    // [PERBAIKAN] Mengambil kolom teacher_name dari View
+                                    $teacherName = $session->teacher_name ?? 'Unknown';
                                 @endphp
 
                                 <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
@@ -149,6 +141,7 @@
                                             <div>
                                                 <h4 class="font-bold text-gray-800 text-sm flex items-center gap-2">
                                                     {{ $teacherName }}
+                                                    {{-- [PERBAIKAN] Cek teacher_id dari View --}}
                                                     @if($session->teacher_id == auth()->id())
                                                         <span class="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded border border-gray-200 font-normal">You</span>
                                                     @endif
@@ -168,7 +161,8 @@
                                             "{{ $session->comment ?? 'No topic recorded.' }}"
                                         </p>
                                         <div class="mt-2 text-right">
-                                            <a href="{{ route('teacher.classes.session.detail', ['classId' => $class->id, 'sessionId' => $session->id]) }}" 
+                                            {{-- [PERBAIKAN KRITIS] Menggunakan session_id (dari view) bukan id --}}
+                                            <a href="{{ route('teacher.classes.session.detail', ['classId' => $class->id, 'sessionId' => $session->session_id]) }}" 
                                                 class="inline-flex items-center text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline transition-colors gap-1">
                                                 Manage Attendance
                                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
@@ -177,13 +171,17 @@
                                     </div> 
                                 </div>
                             @endforeach
+                            
+                            {{-- PAGINATION LINKS --}}
+                            <div class="pt-2">
+                                {{ $classSessions->links() }}
+                            </div>
                         </div>
                     @endif
                 </div>
             </div>
             
-            {{-- FOOTER MODAL (Tombol Close) --}}
-            {{-- HANYA MUNCUL JIKA TIDAK SEDANG MEMBUAT SESI --}}
+            {{-- FOOTER MODAL --}}
             <div x-show="!isCreating" class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-100">
                 <button @click="showHistoryModal = false" class="w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm transition-colors">
                     Close

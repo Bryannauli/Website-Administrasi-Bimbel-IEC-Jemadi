@@ -6,10 +6,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth; 
 use App\Models\ClassModel;
-use App\Models\Student;
 use App\Models\ClassSession;
 use App\Models\AssessmentSession;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class TeacherClassController extends Controller
 {
@@ -89,99 +89,63 @@ class TeacherClassController extends Controller
     public function detail(Request $request, $id)
     {
         // 1. Load Data Kelas Utama
-        $class = ClassModel::with(['schedules', 'formTeacher', 'localTeacher'])->findOrFail($id);
+        $class = ClassModel::with(['formTeacher', 'localTeacher'])->findOrFail($id);
         
-        // 2. Query Siswa (Tanpa Pagination, Urut Student Number)
-        $students = Student::where('class_id', $id)
-            ->where('is_active', true)
-            ->orderBy('student_number', 'asc') // <--- URUTKAN BERDASARKAN ID
-            ->get();
+        // 2. [UPDATE] Ambil Stats Siswa dari Stored Procedure (Sama seperti Admin)
+        // Procedure ini sudah mengembalikan: id, name, student_number, total_sessions, total_present, percentage
+        $studentStatsRaw = DB::select('CALL p_get_class_attendance_stats(?)', [$id]);
+        
+        // Ubah array of objects menjadi Collection agar mudah diolah di Blade (optional, tapi disarankan)
+        $studentStats = collect($studentStatsRaw);
 
-        // 3. Ambil Sesi Hari Ini (PENTING untuk tombol Create/Edit)
+        // 3. [UPDATE] Ambil History Sesi dari View (Sama seperti Admin)
+        // View ini sudah menghitung 'present_count' dan 'attendance_percentage' per sesi
+        $classSessions = DB::table('v_class_activity_logs')
+            ->where('class_id', $id)
+            ->orderBy('date', 'desc')
+            ->paginate(5, ['*'], 'session_page'); // Gunakan pagination agar halaman tidak berat
+
+        // 4. Sesi Hari Ini (Untuk tombol Quick Action)
         $sessionToday = ClassSession::where('class_id', $id)
                                     ->where('date', Carbon::today()->format('Y-m-d'))
                                     ->first();
 
-        // 4. Pagination Sesi & Assessment (Untuk Widget Sidebar/Card)
-        $classSessions = ClassSession::where('class_id', $id)
-            ->with('teacher') 
-            ->orderBy('date', 'desc')
-            ->get();
-
+        // 5. Assessment Pagination
         $assessments = AssessmentSession::where('class_id', $id)
             ->orderBy('date', 'desc')
             ->paginate(5, ['*'], 'assessment_page');
 
         // ====================================================
-        // 5. DATA UNTUK MODAL MATRIX & STATS (FULL REPORT)
+        // 6. DATA UNTUK MODAL MATRIX (VISUAL ONLY)
         // ====================================================
+        // Kita tetap butuh raw data untuk membuat kotak-kotak (Matrix), 
+        // tapi kita TIDAK lagi menghitung persentase di sini.
         
-        // A. Ambil SEMUA sesi (Tanpa pagination) untuk kolom Matrix
         $allSessions = ClassSession::where('class_id', $id)
-                        ->with(['records', 'teacher'])
-                        ->orderBy('date', 'desc')
-                        ->get();
-
-        // B. Ambil SEMUA siswa aktif untuk baris Matrix (Konsisten dengan tabel utama)
-        $allStudents = Student::where('class_id', $id)
-                        ->where('is_active', true)
-                        ->orderBy('student_number', 'asc') 
+                        ->with(['records:id,class_session_id,student_id,status', 'teacher'])
+                        ->orderBy('date', 'desc') // Sesuai request: Newest first untuk list, tapi view modal mungkin butuh sort by date asc
                         ->get();
 
         $attendanceMatrix = [];
-        $studentStats = [];
-
-        // C. Inisialisasi Struktur Stats
-        foreach($allStudents as $student) {
-            $studentStats[$student->id] = [
-                'student_id' => $student->id,
-                'name' => $student->name,
-                'student_number' => $student->student_number,
-                'is_active' => $student->is_active,
-                'total' => 0,   // Total pertemuan
-                'present' => 0, // Hadir/Late
-                'percentage' => 0
-            ];
-        }
-
-        // D. Loop Sesi & Record untuk Mengisi Matrix & Menghitung Stats
+        
+        // Build Matrix: [student_id][session_id] = status
         foreach ($allSessions as $session) {
             foreach ($session->records as $record) {
-                // 1. Isi Matrix: [student_id][session_id] = status
                 $attendanceMatrix[$record->student_id][$session->id] = $record->status;
-
-                // 2. Hitung Stats (Hanya jika siswa masih terdaftar di array stats)
-                if (isset($studentStats[$record->student_id])) {
-                    $studentStats[$record->student_id]['total']++;
-                    
-                    // Asumsi: 'present' dan 'late' dihitung sebagai kehadiran
-                    if (in_array($record->status, ['present', 'late'])) {
-                        $studentStats[$record->student_id]['present']++;
-                    }
-                }
             }
         }
 
-        // E. Hitung Persentase Final
-        foreach ($studentStats as &$stat) {
-            $stat['percentage'] = $stat['total'] > 0 
-                ? round(($stat['present'] / $stat['total']) * 100) 
-                : 0;
-        }
-        
-        // F. Ubah array Stats ke Collection Object
-        $studentStats = collect($studentStats)->map(fn($item) => (object) $item);
+        // Untuk keperluan Modal Matrix yang menampilkan nama siswa, kita bisa reuse $studentStats
+        // Karena $studentStats dari procedure sudah memuat semua siswa di kelas tersebut.
 
         return view('teacher.classes.detail', compact(
             'class', 
-            'students', 
-            'classSessions', 
+            'classSessions', // Sekarang isinya dari View v_class_activity_logs
             'assessments',
-            // Data Tambahan untuk Modal:
+            'sessionToday',
             'allSessions',
             'attendanceMatrix',
-            'studentStats',
-            'sessionToday' // <--- KIRIM DATA SESI HARI INI
+            'studentStats'   // Sekarang isinya dari Procedure p_get_class_attendance_stats
         ));
     }
 }
