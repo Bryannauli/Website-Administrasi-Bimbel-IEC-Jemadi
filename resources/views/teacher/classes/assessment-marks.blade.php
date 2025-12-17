@@ -14,7 +14,7 @@
                 <ol class="inline-flex items-center space-x-1 md:space-x-3">
                     <li class="inline-flex items-center">
                         <a href="{{ route('teacher.dashboard') }}" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors">
-                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 001 1v2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
                             Dashboard
                         </a>
                     </li>
@@ -208,9 +208,10 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100 text-sm text-gray-700 bg-white">
-                                @foreach($studentData as $index => $student)
-                                <tr class="transition-colors group
-                                    {{-- Styling Row Berdasarkan Status --}}
+                                {{-- PERBAIKAN: Gunakan $studentData bukan $students --}}
+                                @forelse($studentData as $index => $student)
+                                <tr class="hover:bg-gray-50 transition-colors group
+                                    {{-- Styling untuk Deleted/Quit --}}
                                     @if($student['deleted_at']) bg-gray-100 text-gray-500
                                     @elseif(!$student['is_active']) bg-red-50 text-red-800
                                     @else hover:bg-gray-50
@@ -275,9 +276,7 @@
                                     }"
                                 >
                                     <td class="px-6 py-4 text-center text-gray-500 font-medium">{{ $index + 1 }}</td>
-                                    
-                                    {{-- Student Number --}}
-                                    <td class="px-4 py-4 font-mono text-xs opacity-70">{{ $student['student_number'] ?? '-' }}</td>
+                                    <td class="px-4 py-4 font-mono text-xs text-gray-500">{{ $student['student_number'] ?? '-' }}</td>
                                     
                                     {{-- Student Name & Badges --}}
                                     <td class="px-6 py-4">
@@ -304,15 +303,15 @@
                                     {{-- INPUT FIELDS --}}
                                     <td class="px-3 py-3 text-center border-l">
                                         <span x-show="!isEditing" class="font-medium opacity-80" x-text="vocab || '-'"></span>
-                                        <input x-show="isEditing" x-model="vocab" @input="vocab = limit($el.value, 100); $el.value = vocab" type="number" min="0" max="100" name="marks[{{ $student['id'] }}][vocabulary]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 shadow-sm">
+                                        <input x-show="isEditing" x-model="vocab" @input="vocab = limit($el.value, 100); $el.value = vocab" type="number" min="0" max="100" name="marks[{{ $student['id'] }}][vocabulary]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 shadow-sm">
                                     </td>
                                     <td class="px-3 py-3 text-center">
                                         <span x-show="!isEditing" class="font-medium opacity-80" x-text="grammar || '-'"></span>
-                                        <input x-show="isEditing" x-model="grammar" @input="grammar = limit($el.value, 100); $el.value = grammar" type="number" min="0" max="100" name="marks[{{ $student['id'] }}][grammar]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 shadow-sm">
+                                        <input x-show="isEditing" x-model="grammar" @input="grammar = limit($el.value, 100); $el.value = grammar" type="number" min="0" max="100" name="marks[{{ $student['id'] }}][grammar]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 shadow-sm">
                                     </td>
                                     <td class="px-3 py-3 text-center">
                                         <span x-show="!isEditing" class="font-medium opacity-80" x-text="listening || '-'"></span>
-                                        <input x-show="isEditing" x-model="listening" @input="listening = limit($el.value, 100); $el.value = listening" type="number" min="0" max="100" name="marks[{{ $student['id'] }}][listening]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 shadow-sm">
+                                        <input x-show="isEditing" x-model="listening" @input="listening = limit($el.value, 100); $el.value = listening" type="number" min="0" max="100" name="marks[{{ $student['id'] }}][listening]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 shadow-sm">
                                     </td>
                                     <td class="px-3 py-3 text-center bg-purple-50/30">
                                         <span x-show="!isEditing" class="font-bold text-purple-700" x-text="s_content || '-'"></span>
@@ -324,11 +323,11 @@
                                     </td>
                                     <td class="px-4 py-3 text-center bg-purple-100/50 font-black text-purple-900 border-x">
                                         <span x-text="speakingTotal > 0 ? speakingTotal : '-'"></span>
-                                        {{-- Hidden input untuk speaking total jika diperlukan logic lain, tapi biasanya tidak disubmit --}}
+                                        <input type="hidden" name="marks[{{ $student['id'] }}][speaking]" x-model="speakingTotal">
                                     </td>
                                     <td class="px-3 py-3 text-center border-l">
                                         <span x-show="!isEditing" class="font-medium opacity-80" x-text="reading || '-'"></span>
-                                        <input x-show="isEditing" x-model="reading" @input="reading = limit($el.value, 100); $el.value = reading" type="number" min="0" max="100" name="marks[{{ $student['id'] }}][reading]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 shadow-sm">
+                                        <input x-show="isEditing" x-model="reading" @input="reading = limit($el.value, 100); $el.value = reading" type="number" min="0" max="100" name="marks[{{ $student['id'] }}][reading]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 shadow-sm">
                                     </td>
                                     <td class="px-3 py-3 text-center border-l">
                                         <span x-show="!isEditing" class="font-medium opacity-80" x-text="spelling || '-'"></span>
@@ -351,7 +350,7 @@
                                             <div class="bg-gray-50 rounded-full p-4 mb-3 border border-gray-100">
                                                 <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                                             </div>
-                                            <p class="text-base font-medium text-gray-600">No active students found in this class.</p>
+                                            <p class="text-base font-medium text-gray-600">No students found in this class.</p>
                                         </div>
                                     </td>
                                 </tr>
