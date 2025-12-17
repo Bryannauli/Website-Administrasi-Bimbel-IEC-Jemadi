@@ -130,23 +130,7 @@ Route::middleware(['auth', 'verified', 'admin'])
             Route::get('/', [AdminAssessmentController::class, 'index'])->name('index');
         });
         
-        // --- ROUTE TES TAMPILAN (HAPUS JIKA SUDAH TIDAK PERLU) ---
-        Route::get('/cek-tampilan', function () {    
-            $class = (object) ['name' => 'STEP 4 - ENGLISH CONVERSATION', 'term' => 'JUL - DEC ' . date('Y'), 'times' => '17:00 - 18:30', 'days' => 'Mon & Wed'];
-            $teacherName = 'Mr. Richard'; $localTeacher = 'Ms. Sarah';
-            $teachingLogs = collect([]); 
-            $startDate = Carbon::create(2025, 7, 1);
-            for ($i = 0; $i < 16; $i++) $teachingLogs->push((object)['session_id' => $i + 1, 'date' => $startDate->copy()->addDays($i * 3)->format('Y-m-d')]);
-            $studentNames = ['Ferdinand', 'Evelyn', 'Dally Sta', 'Erlina', 'Joceline', 'Bryan', 'Michael'];
-            $studentStats = collect([]); $attendanceMatrix = []; 
-            foreach ($studentNames as $index => $name) {
-                $studentId = $index + 1;
-                $studentStats->push((object)['student_id' => $studentId, 'name' => $name, 'student_number' => 'ST-' . (202500 + $studentId), 'percentage' => rand(70, 100)]);
-                foreach ($teachingLogs as $log) { $rand = rand(1, 10); $attendanceMatrix[$studentId][$log->session_id] = ($rand <= 7) ? 'present' : (($rand == 8) ? 'late' : (($rand == 9) ? 'absent' : 'permission')); }
-            }
-            return view('admin.classes.partials.attendance-report', ['class' => $class, 'teacherName' => $teacherName, 'localTeacher' => $localTeacher, 'teachingLogs' => $teachingLogs, 'studentStats' => $studentStats, 'attendanceMatrix' => $attendanceMatrix]);
-        });
-        
+        // --- ROUTE TES TAMPILAN (HAPUS JIKA SUDAH TIDAK PERLU) ---  
         Route::get('/test-assessment-print', function () {
             $headerInfo = (object) ['month' => 'July - December ' . date('Y'), 'form_teacher' => 'Mr. Richard', 'other_teacher' => 'Mr. Jimmy', 'class_name' => 'STEP 3', 'class_time' => '7 - 9 pm', 'class_days' => 'Tuesday & Thursday'];
             $subjects = ['Vocabulary', 'Grammar', 'Reading', 'Spelling', 'Listening', 'Speaking'];
