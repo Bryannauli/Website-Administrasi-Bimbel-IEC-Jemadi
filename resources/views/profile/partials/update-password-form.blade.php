@@ -1,3 +1,5 @@
+<!-- update-password-form -->
+
 <section>
     <header>
         <h2 class="text-lg font-medium text-gray-900">

@@ -58,9 +58,6 @@ Route::middleware(['auth', 'verified', 'admin'])
         Route::get('/weekly-absence', [AdminDashboardController::class, 'getWeeklyAbsenceReport']);
         Route::get('/today-schedule', [AdminDashboardController::class, 'getTodaySchedule']);
 
-        /* ADMIN PROFILE */
-        Route::get('/profile', [ProfileController::class, 'editAdmin'])->name('profile');
-
         /* STUDENT */
         Route::prefix('student')->name('student.')->group(function () {
             Route::get('/', [AdminStudentController::class, 'index'])->name('index');

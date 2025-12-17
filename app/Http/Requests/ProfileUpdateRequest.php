@@ -26,6 +26,7 @@ class ProfileUpdateRequest extends FormRequest
                 'is_teacher' => ['nullable', 'boolean'],
                 Rule::unique(User::class)->ignore($this->user()->id),
             ],
+            'phone' => ['nullable', 'string', 'max:20'],
         ];
     }
 }

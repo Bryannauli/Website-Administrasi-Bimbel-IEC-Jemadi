@@ -11,21 +11,30 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
-    // Display the admin user's profile form.
-    public function editAdmin(Request $request): View
-    {
-        return view('admin.profile', [
-            'user' => $request->user(),
-        ]);
-    }
-
     /**
      * Display the user's profile form.
      */
     public function edit(Request $request): View
     {
+        $user = $request->user();
+
+        // 1. JIKA ADMIN -> Gunakan view khusus Admin (yang sudah ada)
+        if ($user->role === 'admin') {
+            return view('admin.profile', [
+                'user' => $user,
+            ]);
+        }
+
+        // 2. JIKA TEACHER -> Gunakan view khusus Teacher (yang baru dibuat)
+        if ($user->is_teacher) {
+            return view('teacher.profile', [
+                'user' => $user,
+            ]);
+        }
+
+        // 3. DEFAULT -> View standar Breeze
         return view('profile.edit', [
-            'user' => $request->user(),
+            'user' => $user,
         ]);
     }
 
@@ -36,30 +45,22 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
-        // 1. Update Data Standar (Name, Email)
         $user->fill($request->validated());
 
-        // 2. Reset Verifikasi Email jika berubah
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
         }
 
-        // 3. UPDATE STATUS GURU (LOGIKA DIPERBAIKI)
-        // Hanya update 'is_teacher' jika user yang login adalah ADMIN.
-        // Guru biasa tidak boleh mengubah status ini sendiri, 
-        // dan form guru tidak punya input ini (menghindari set to false otomatis).
-        if ($user->role === 'admin') {
+        // UPDATE ROLE LOGIC (HANYA JIKA ADMIN YANG REQUEST)
+        // Ini memastikan guru tidak bisa mengubah 'is_teacher' mereka sendiri 
+        // meskipun mereka memanipulasi HTML form.
+        if ($user->role === 'admin' && $request->has('is_teacher')) {
             $user->is_teacher = $request->boolean('is_teacher');
         }
 
-        // 4. Simpan
         $user->save();
 
-        // 5. Redirect sesuai Role
-        if ($user->role === 'admin') {
-            return Redirect::route('admin.profile')->with('status', 'profile-updated');
-        }
-
+        // Redirect selalu ke 'profile.edit', controller edit() akan mengurus view-nya.
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 

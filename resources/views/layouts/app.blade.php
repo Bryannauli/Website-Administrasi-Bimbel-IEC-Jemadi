@@ -90,14 +90,12 @@
                                     <div class="px-4 py-2 border-b">
                                         <div class="font-semibold text-gray-800">{{ Auth::user()->name }}</div>
                                         <div class="text-xs text-gray-500">
-                                            {{-- Menampilkan Role secara dinamis (Huruf pertama kapital) --}}
                                             {{ ucfirst(Auth::user()->role) }}
                                         </div>
                                     </div>
 
-                                    {{-- BAGIAN INI YANG DIUBAH MENJADI DINAMIS --}}
-                                    <x-dropdown-link
-                                        :href="Auth::user()->role === 'admin' ? route('admin.profile') : route('profile.edit')"
+                                    {{-- [UPDATED] HANYA PAKAI SATU ROUTE --}}
+                                    <x-dropdown-link :href="route('profile.edit')"
                                         class="bg-white text-gray-800 hover:!bg-blue-50 hover:text-blue-600 dark:bg-white dark:text-gray-800 dark:hover:bg-blue-50 dark:hover:text-blue-600">
                                         {{ __('Profile') }}
                                     </x-dropdown-link>
@@ -105,7 +103,8 @@
                                     <form method="POST" action="{{ route('logout') }}">
                                         @csrf
                                         <x-dropdown-link :href="route('logout')"
-                                            onclick="event.preventDefault(); this.closest('form').submit();" class="bg-white text-gray-800 hover:!bg-blue-50 hover:text-blue-600 dark:bg-white dark:text-gray-800 dark:hover:bg-blue-50 dark:hover:text-blue-600">
+                                            onclick="event.preventDefault(); this.closest('form').submit();" 
+                                            class="bg-white text-gray-800 hover:!bg-blue-50 hover:text-blue-600 dark:bg-white dark:text-gray-800 dark:hover:bg-blue-50 dark:hover:text-blue-600">
                                             {{ __('Log Out') }}
                                         </x-dropdown-link>
                                     </form>
