@@ -187,7 +187,7 @@
             <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-end items-center gap-3">
                 
                 {{-- Tombol Print Report (Baru) --}}
-                <a href="" 
+                <a href="{{route('admin.classes.attendanceReport', $class->id)}}" 
                 target="_blank"
                 class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition flex items-center gap-2 decoration-0">
                     

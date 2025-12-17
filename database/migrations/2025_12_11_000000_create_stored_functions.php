@@ -111,6 +111,109 @@ return new class extends Migration
                 END IF;
             END
         ');
+
+        // ==========================================
+        // 3. FUNCTION: Get Total Sessions (Pengganti Procedure)
+        // ==========================================
+        DB::unprepared("
+            DROP FUNCTION IF EXISTS f_get_total_sessions;
+            DROP PROCEDURE IF EXISTS p_get_total_sessions; -- Hapus procedure lama jika ada
+            
+            CREATE FUNCTION f_get_total_sessions(p_class_id INT) 
+            RETURNS INT
+            READS SQL DATA
+            BEGIN
+                DECLARE v_total INT DEFAULT 0;
+                
+                SELECT COUNT(*) INTO v_total 
+                FROM class_sessions 
+                WHERE class_id = p_class_id 
+                  AND deleted_at IS NULL;
+                  
+                RETURN v_total;
+            END
+        ");
+
+        // ==========================================
+        // 4. FUNCTION: Get Student Total Present (Pengganti Procedure)
+        // ==========================================
+        DB::unprepared("
+            DROP FUNCTION IF EXISTS f_get_student_attendance_total;
+            DROP PROCEDURE IF EXISTS p_get_student_attendance_total; -- Hapus procedure lama jika ada
+
+            CREATE FUNCTION f_get_student_attendance_total(p_class_id INT, p_student_id INT) 
+            RETURNS INT
+            READS SQL DATA
+            BEGIN
+                DECLARE v_total_present INT DEFAULT 0;
+                
+                SELECT COUNT(ar.id) INTO v_total_present
+                FROM attendance_records ar
+                INNER JOIN class_sessions cs ON ar.class_session_id = cs.id
+                WHERE ar.student_id = p_student_id
+                  AND cs.class_id = p_class_id
+                  AND ar.status = 'present'
+                  AND cs.deleted_at IS NULL;
+                  
+                RETURN v_total_present;
+            END
+        ");
+        
+        // ==========================================
+        // 5. FUNCTION: Get Attendance Percentage (UPDATED)
+        // Karena kita sudah punya 2 fungsi di atas, fungsi persen jadi lebih simpel & bersih
+        // ==========================================
+        DB::unprepared("
+            DROP FUNCTION IF EXISTS f_get_attendance_percentage;
+            CREATE FUNCTION f_get_attendance_percentage(p_class_id INT, p_student_id INT) 
+            RETURNS INT
+            READS SQL DATA
+            BEGIN
+                DECLARE v_total_sessions INT;
+                DECLARE v_total_present INT;
+                
+                -- Panggil fungsi yang baru saja kita buat
+                SET v_total_sessions = f_get_total_sessions(p_class_id);
+                SET v_total_present = f_get_student_attendance_total(p_class_id, p_student_id);
+                
+                IF v_total_sessions = 0 THEN
+                    RETURN 0;
+                END IF;
+
+                RETURN ROUND((v_total_present / v_total_sessions) * 100);
+            END
+        ");
+
+        // ==========================================
+        // 6. FUNCTION: Get Attendance Symbol (Untuk Report View)
+        // Menerjemahkan status (present, sick, dll) menjadi simbol (/, S, P, dll)
+        // ==========================================
+        DB::unprepared("
+            DROP FUNCTION IF EXISTS f_get_attendance_symbol;
+            CREATE FUNCTION f_get_attendance_symbol(p_session_id INT, p_student_id INT) 
+            RETURNS VARCHAR(5)
+            READS SQL DATA
+            BEGIN
+                DECLARE v_status VARCHAR(20);
+                
+                -- 1. Ambil status dari tabel attendance_records
+                SELECT status INTO v_status
+                FROM attendance_records
+                WHERE class_session_id = p_session_id 
+                  AND student_id = p_student_id
+                LIMIT 1;
+                
+                -- 2. Kembalikan simbol sesuai mapping
+                RETURN CASE 
+                    WHEN v_status = 'present' THEN '/'
+                    WHEN v_status = 'absent' THEN 'O'
+                    WHEN v_status = 'late' THEN 'L'      -- Saya pakai 'L' kapital agar terlihat jelas seperti di screenshot
+                    WHEN v_status = 'permission' THEN 'P'
+                    WHEN v_status = 'sick' THEN 'S'
+                    ELSE '' -- Return string kosong jika belum ada data absen
+                END;
+            END
+        ");
     }
 
     /**
@@ -120,5 +223,9 @@ return new class extends Migration
     {
         DB::unprepared('DROP FUNCTION IF EXISTS f_GetGrade');
         DB::unprepared('DROP FUNCTION IF EXISTS f_CalcAssessmentAvg');
+        DB::unprepared('DROP FUNCTION IF EXISTS f_get_total_sessions');
+        DB::unprepared('DROP FUNCTION IF EXISTS f_get_student_attendance_total');
+        DB::unprepared('DROP FUNCTION IF EXISTS f_get_attendance_percentage');
+        DB::unprepared('DROP FUNCTION IF EXISTS f_get_attendance_symbol');
     }
 };

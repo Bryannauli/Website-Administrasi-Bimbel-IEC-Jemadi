@@ -326,4 +326,52 @@ class AdminClassController extends Controller
 
         return view('admin.classes.daily-recap', compact('records', 'date'));
     }
+
+    public function showReport($classId)
+    {
+        // 1. Ambil Data Kelas (Header Laporan)
+        $class = ClassModel::findOrFail($classId); // Sesuaikan nama model
+
+        // 2. Ambil Daftar Tanggal Sesi (Untuk Header Tabel 1-16)
+        // Ini menggantikan kolom statis session_1 s/d session_16
+        $teachingLogs = DB::table('class_sessions')
+            ->where('class_id', $classId)
+            ->whereNull('deleted_at')
+            ->orderBy('date', 'ASC')
+            ->select('id as session_id', 'date')
+            ->get();
+
+        // 3. Ambil Data Siswa & Statistik (Dari View Baru)
+        // Ini mengisi kolom Nama, Total Pres, dan %
+        $studentStats = DB::table('v_class_attendance_summary')
+            ->where('class_id', $classId)
+            ->get();
+
+        // 4. Ambil Data Matrix Kehadiran (Untuk isi tengah tabel)
+        // Kita ambil mentahnya saja, biarkan blade yang ubah jadi simbol
+        $rawAttendance = DB::table('attendance_records as ar')
+            ->join('class_sessions as cs', 'ar.class_session_id', '=', 'cs.id')
+            ->where('cs.class_id', $classId)
+            ->select('ar.student_id', 'ar.class_session_id', 'ar.status')
+            ->get();
+
+        // Format ulang array agar mudah dipanggil di Blade: $matrix[student_id][session_id] = 'status'
+        $attendanceMatrix = [];
+        foreach ($rawAttendance as $record) {
+            $attendanceMatrix[$record->student_id][$record->class_session_id] = $record->status;
+        }
+
+        // Nama Guru (Untuk Header)
+        $teacherName = $class->formTeacher->name ?? '-'; // Asumsi ada relasi
+        $localTeacher = $class->localTeacher->name ?? '-';
+
+        return view('admin.classes.partials.attendance-report', compact(
+            'class', 
+            'teachingLogs', 
+            'studentStats', 
+            'attendanceMatrix',
+            'teacherName',
+            'localTeacher'
+        ));
+    }
 }

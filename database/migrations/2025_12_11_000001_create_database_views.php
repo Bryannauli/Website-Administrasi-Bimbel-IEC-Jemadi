@@ -247,6 +247,29 @@ return new class extends Migration
             FROM classes 
             WHERE deleted_at IS NOT NULL
         ");
+
+        // ==========================================
+        // 10. View: v_attendance_report
+        // ==========================================
+        DB::unprepared("
+            DROP VIEW IF EXISTS v_attendance_report; -- Hapus view yang lama/salah konsep
+            DROP VIEW IF EXISTS v_class_attendance_summary;
+
+            CREATE VIEW v_class_attendance_summary AS
+            SELECT 
+                s.id AS student_id,
+                s.class_id,
+                s.student_number,
+                s.name AS student_name,
+                
+                -- Panggil Function Hitung-hitungan Anda disini
+                f_get_student_attendance_total(s.class_id, s.id) AS total_present,
+                f_get_attendance_percentage(s.class_id, s.id) AS attendance_percentage
+
+            FROM students s
+            WHERE s.deleted_at IS NULL AND s.is_active = 1
+            ORDER BY s.student_number ASC;
+        ");
     }
 
     /**

@@ -77,6 +77,7 @@ Route::middleware(['auth', 'verified', 'admin'])
             Route::patch('/{id}/toggle-status', [AdminClassController::class, 'toggleStatus'])->name('toggleStatus');
             Route::delete('/{id}', [AdminClassController::class, 'delete'])->name('delete');
             Route::get('/detail/{id}', [AdminClassController::class, 'detailClass'])->name('detailclass');
+            Route::get('/{id}/attendance-report', [AdminClassController::class, 'showReport'])->name('attendanceReport');
             
             // Teacher Assignment
             Route::patch('/classes/{id}/assign-teacher', [AdminClassController::class, 'assignTeacher'])->name('assignTeacher');

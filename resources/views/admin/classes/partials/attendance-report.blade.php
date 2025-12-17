@@ -88,7 +88,9 @@
                     <div class="flex flex-col gap-1">
                         <div class="flex items-end">
                             <span class="w-24 font-bold shrink-0">TERM A/B:</span>
-                            <span class="border-b border-black border-dotted flex-1 truncate">{{ $class->term ?? date('Y') }}</span>
+                            <span class="border-b border-black border-dotted flex-1 truncate">
+                              {{ strtoupper($class->start_month) }} - {{ strtoupper($class->end_month) }} {{ $class->academic_year }}
+                            </span>         
                         </div>
                         <div class="flex items-end">
                             <span class="w-24 font-bold shrink-0">CLASS:</span>
@@ -96,7 +98,9 @@
                         </div>
                         <div class="flex items-end">
                             <span class="w-24 font-bold shrink-0">CLASS TIMES:</span>
-                            <span class="border-b border-black border-dotted flex-1 truncate">{{ $class->times ?? '-' }}</span>
+                            <span class="border-b border-black border-dotted flex-1 truncate">
+                               {{ \Carbon\Carbon::parse($class->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($class->end_time)->format('H:i') }}                            
+                            </span>
                         </div>
                     </div>
 
@@ -150,7 +154,7 @@
                         <td class="text-center bg-gray-50 font-bold">{{ $index + 1 }}</td>
                         <td class="text-center font-mono text-[10px]">{{ $stat->student_number }}</td>
                         <td class="uppercase font-semibold text-[10px] truncate max-w-[150px]">
-                            {{ $stat->name }}
+                            {{ $stat->student_name }}
                         </td>
                         @foreach($teachingLogs as $session)
                             @php
@@ -168,18 +172,13 @@
                                 {{ $symbol }}
                             </td>
                         @endforeach
-                        @php
-                            $presentCount = 0;
-                            foreach($teachingLogs as $s) {
-                                $st = $attendanceMatrix[$stat->student_id][$s->session_id] ?? '-';
-                                if($st == 'present' || $st == 'late') $presentCount++;
-                            }
-                        @endphp
-                        <td class="text-center bg-gray-50">{{ $presentCount }}</td>
-                        <td class="text-center font-bold text-[10px]">
-                            {{ round($stat->percentage) }}%
-                        </td>
-                    </tr>
+
+                    {{-- KOLOM TOTAL & PERSEN (Langsung ambil dari View SQL, tidak perlu hitung ulang di PHP) --}}
+                    <td class="text-center bg-gray-50">{{ $stat->total_present }}</td>
+                    <td class="text-center font-bold text-[10px]">
+                        {{ $stat->attendance_percentage }}%
+                    </td>
+                </tr>
                 @endforeach
                 
                 {{-- Baris Kosong Pelengkap --}}
