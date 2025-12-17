@@ -11,18 +11,37 @@
         /* CSS KHUSUS PRINT */
         @media print {
             @page {
-                size: A4 landscape; /* Sesuai orientasi gambar yang lebar */
-                margin: 5mm;
+                size: A4 landscape;
+                margin: 0; /* Nol-kan margin kertas browser */
             }
             body {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
                 background-color: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             .no-print {
                 display: none !important;
             }
-            /* Pastikan border hitam pekat */
+            
+            /* Sembunyikan header/footer default browser (URL, Tanggal, Title) */
+            header, footer, aside, nav, form {
+                display: none !important;
+            }
+
+            /* Reset container agar pas layar */
+            .print-container {
+                width: 100% !important;
+                max-width: 100% !important;
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 10mm !important; /* Kita atur margin kertas manual di sini (1cm) */
+                min-height: auto !important; /* Jangan paksa tinggi */
+                border: none !important;
+            }
+
+            /* Pastikan border tabel hitam pekat */
             table, th, td, .border-black {
                 border-color: #000 !important;
             }
@@ -158,17 +177,6 @@
                     </td>
                 </tr>
                 @endforeach
-
-                {{-- 2. Looping Baris Kosong (Opsional) --}}
-                {{-- Agar tabel tetap terlihat penuh sampai bawah kertas misal siswa cuma sedikit --}}
-                @for ($i = 0; $i < (20 - count($students)); $i++)
-                <tr class="h-8">
-                    <td class="text-center font-bold bg-gray-50">&nbsp;</td>
-                    <td></td><td></td>
-                    <td></td><td></td><td></td><td></td><td></td><td></td>
-                    <td class="bg-gray-50"></td>
-                </tr>
-                @endfor
             </tbody>
         </table>
         

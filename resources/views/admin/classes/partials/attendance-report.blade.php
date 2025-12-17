@@ -12,19 +12,39 @@
         /* CSS KHUSUS PRINT */
         @media print {
             @page {
-                size: landscape;
-                margin: 5mm;
+                size: landscape; /* Orientasi Landscape */
+                margin: 0; /* Nol-kan margin kertas browser */
             }
             body {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
-                background-color: white;
+                background-color: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             .no-print {
                 display: none !important;
             }
+            
+            /* Sembunyikan header/footer default browser */
+            header, footer, aside, nav {
+                display: none !important;
+            }
+
+            /* Container Reset agar pas 1 halaman */
+            .print-container {
+                width: 100% !important;
+                max-width: 100% !important;
+                box-shadow: none !important;
+                margin: 0 !important;
+                /* Margin kertas kita atur lewat padding di sini (misal 10mm) */
+                padding: 10mm !important; 
+                min-height: auto !important;
+                border: none !important;
+            }
+
             /* Paksa border hitam pekat saat print */
-            table, th, td {
+            table, th, td, .border-black {
                 border-color: #000 !important; 
             }
         }
@@ -49,6 +69,10 @@
             padding: 5px;
             font-size: 11px;
             font-family: 'Arial', sans-serif;
+        }
+        
+        .writing-vertical-lr {
+            writing-mode: vertical-lr;
         }
     </style>
 </head>
@@ -137,12 +161,16 @@
                 </tr>
                 <tr class="bg-gray-50">
                     @foreach($teachingLogs as $index => $session)
-                        <th class="w-8 text-center bg-white align-bottom pb-1 relative group h-24 whitespace-nowrap">
-                            <div class="absolute top-1 left-0 right-0 text-[9px] font-bold bg-gray-100 border-b border-gray-300">
-                                {{ $index + 1 }}
-                            </div>
-                            <div class="writing-vertical-lr transform rotate-180 h-16 w-full flex items-center justify-center text-[10px]">
-                                {{ \Carbon\Carbon::parse($session->date)->format('d/m') }}
+                        <th class="w-10 text-center bg-white p-1 h-auto align-middle">
+                            <div class="flex flex-col items-center justify-center gap-1">
+                                {{-- Nomor Pertemuan --}}
+                                <div class="text-[9px] font-bold bg-gray-100 border border-gray-300 w-full rounded-sm">
+                                    {{ $index + 1 }}
+                                </div>
+                                {{-- Tanggal (Horizontal) --}}
+                                <div class="text-[10px] font-semibold leading-tight">
+                                    {{ \Carbon\Carbon::parse($session->date)->format('d/m') }}
+                                </div>
                             </div>
                         </th>
                     @endforeach
@@ -180,18 +208,6 @@
                     </td>
                 </tr>
                 @endforeach
-                
-                {{-- Baris Kosong Pelengkap --}}
-                @for($i = 0; $i < (20 - count($studentStats)); $i++)
-                    <tr>
-                        <td class="text-center">&nbsp;</td>
-                        <td></td>
-                        <td></td>
-                        @foreach($teachingLogs as $session) <td></td> @endforeach
-                        <td></td>
-                        <td></td>
-                    </tr>
-                @endfor
             </tbody>
         </table>
         
