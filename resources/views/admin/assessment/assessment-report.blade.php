@@ -121,7 +121,9 @@
                     <th rowspan="2" class="w-10">No.</th>
                     <th rowspan="2" class="w-32">Student No.</th>
                     <th rowspan="2" class="w-64">Name</th>
-                    <th colspan="7" class="h-8 uppercase tracking-wider border-b-2 border-black">FINAL</th>
+                    <th colspan="7" class="h-8 uppercase tracking-wider border-b-2 border-black">
+                        {{ strtoupper($headerData->assessment_type ?? 'ASSESSMENT') }}                    
+                    </th>
                 </tr>
                 {{-- Baris Header 2 (Sub-kolom FINAL) --}}
                 <tr class="bg-gray-100 text-center font-semibold text-[11px] font-sans">

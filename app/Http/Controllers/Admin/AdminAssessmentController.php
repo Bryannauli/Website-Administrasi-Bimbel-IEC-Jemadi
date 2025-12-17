@@ -241,7 +241,8 @@ class AdminAssessmentController extends Controller
                 'c.start_time', 'c.end_time',
                 'c.start_month', 'c.end_month', 'c.academic_year', // Untuk Month/Term
                 'ft.name as form_teacher',
-                'lt.name as other_teacher'
+                'lt.name as other_teacher',
+                'asess.type as assessment_type'
             )
             ->first();
 
