@@ -91,50 +91,67 @@
             </div>
 
             {{-- 2. INFORMASI KELAS --}}
-            <div class="flex flex-row mb-2 gap-2">
+            <div class="flex flex-row mb-2 gap-2 items-stretch">
                 
-                {{-- KIRI: Marking Guide --}}
+                {{-- KIRI: Marking Guide (Standard 10px) --}}
                 <div class="info-box w-1/4">
-                    <div class="font-bold underline mb-1">Marking Guide:</div>
-                    <div class="flex flex-col gap-0.5 text-[9px]">
-                        <div><strong>/</strong> : Present</div>
-                        <div><strong>O</strong> : Absent</div>
-                        <div><strong>L</strong> : Late</div>
-                        <div><strong>P</strong> : Permit</div>
-                        <div><strong>S</strong> : Sick</div>
+                    <div class="font-bold underline mb-1 text-[10px] leading-tight">Marking Guide:</div>
+                    <div class="flex flex-col gap-1 text-[10px]">
+                        <div class="leading-tight"><strong>/</strong> : Present</div>
+                        <div class="leading-tight"><strong>O</strong> : Absent</div>
+                        <div class="leading-tight"><strong>L</strong> : Late</div>
+                        <div class="leading-tight"><strong>P</strong> : Permit</div>
+                        <div class="leading-tight"><strong>S</strong> : Sick</div>
                     </div>
                 </div>
 
-                {{-- KANAN: Class Details --}}
+                {{-- KANAN: Class Details (Standard 10px) --}}
                 <div class="info-box w-3/4">
-                    <div class="flex flex-col gap-1 h-full justify-center">
-                        <div class="flex items-end">
-                            <span class="w-28 font-bold text-[9px] shrink-0">TERM A/B:</span> 
-                            <span class="border-b border-black border-dotted flex-1 text-[10px] uppercase">
+                    {{-- Menggunakan gap-1 dan text-10px agar identik dengan kotak kiri --}}
+                    <div class="flex flex-col gap-1 text-[10px]">
+                        {{-- Baris 1: TERM --}}
+                        <div class="flex items-end leading-tight">
+                            <span class="w-28 font-bold shrink-0">TERM A/B:</span> 
+                            <span class="border-b border-black border-dotted flex-1 uppercase">
                                 {{ strtoupper($class->start_month) }} - {{ strtoupper($class->end_month) }} {{ $class->academic_year }}
                             </span>
                         </div>
-                        <div class="flex items-end">
-                            <span class="w-28 font-bold text-[9px] shrink-0">CLASS:</span> 
-                            <span class="border-b border-black border-dotted flex-1 text-[10px] uppercase">
+                        {{-- Baris 2: CLASS --}}
+                        <div class="flex items-end leading-tight">
+                            <span class="w-28 font-bold shrink-0">CLASS:</span> 
+                            <span class="border-b border-black border-dotted flex-1 uppercase">
                                 {{ $class->name }}
                             </span>
                         </div>
-                        <div class="flex items-end">
-                            <span class="w-28 font-bold text-[9px] shrink-0">CLASS TIMES:</span> 
-                            <span class="border-b border-black border-dotted flex-1 text-[10px]">
+                        {{-- Baris 3: CLASS TIMES --}}
+                        <div class="flex items-end leading-tight">
+                            <span class="w-28 font-bold shrink-0">CLASS TIMES:</span> 
+                            <span class="border-b border-black border-dotted flex-1">
                                 {{ \Carbon\Carbon::parse($class->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($class->end_time)->format('g:i A') }}
                             </span>
                         </div>
-                        <div class="flex items-end">
-                            <span class="w-28 font-bold text-[9px] shrink-0">FORM TEACHER:</span> 
-                            <span class="border-b border-black border-dotted flex-1 text-[10px]">
+                        
+                        {{-- Baris 4: CLASS DAYS (Title Case) --}}
+                        <div class="flex items-end leading-tight">
+                            <span class="w-28 font-bold shrink-0">CLASS DAYS:</span> 
+                            <span class="border-b border-black border-dotted flex-1">
+                                {{-- ucwords(strtolower(...)) memastikan Title Case jika input DB tidak rapi --}}
+                                {{ ucwords(strtolower($class->schedules->pluck('day_of_week')->implode(' & '))) ?: '-' }}
+                            </span>
+                        </div>
+
+                        {{-- Baris 5: FORM TEACHER --}}
+                        <div class="flex items-end leading-tight">
+                            <span class="w-28 font-bold shrink-0">FORM TEACHER:</span> 
+                            <span class="border-b border-black border-dotted flex-1">
                                 {{ ucwords(strtolower($teacherName)) }}
                             </span>
                         </div>
-                        <div class="flex items-end">
-                            <span class="w-28 font-bold text-[9px] shrink-0">LOCAL TEACHER:</span> 
-                            <span class="border-b border-black border-dotted flex-1 text-[10px]">
+                        
+                        {{-- Baris 6: LOCAL TEACHER --}}
+                        <div class="flex items-end leading-tight">
+                            <span class="w-28 font-bold shrink-0">LOCAL TEACHER:</span> 
+                            <span class="border-b border-black border-dotted flex-1">
                                 {{ ucwords(strtolower($localTeacher)) }}
                             </span>
                         </div>
@@ -187,23 +204,30 @@
                 <tbody>
                     @foreach($studentStats as $idx => $stat)
                         @php
-                            $isInactive = (isset($stat->deleted_at) && $stat->deleted_at) || (isset($stat->is_active) && !$stat->is_active);
-                            $rowClass = $isInactive ? 'text-red-600 bg-red-50' : '';
+                            // LOGIKA: Status bermasalah hanya jika Inactive secara global atau dihapus
+                            // Siswa yang pindah kelas (Naik Kelas) tapi masih Active akan tampil normal
+                            $isDeleted = !empty($stat->deleted_at);
+                            $isInactive = ($stat->is_active == 0);
+                            $hasStatusIssue = $isDeleted || $isInactive;
+
+                            $rowClass = $hasStatusIssue ? 'text-red-600 bg-red-50' : '';
+                            $nameStyle = $hasStatusIssue ? 'text-red-600 line-through decoration-red-400' : 'font-semibold';
                         @endphp
                         <tr class="{{ $rowClass }}">
                             <td class="text-center font-bold">{{ $idx + 1 }}</td>
                             <td class="text-center font-mono text-[9px]">{{ $stat->student_number }}</td>
                             
-                            {{-- KOLOM NAMA dengan Badge DEL / OUT --}}
-                            <td class="truncate px-1 text-[10px] font-semibold">
+                            {{-- KOLOM NAMA --}}
+                            <td class="truncate px-1 text-[10px] {{ $nameStyle }}">
                                 {{ ucwords(strtolower($stat->student_name)) }}
-                                @if($isInactive) 
-                                    <span class="text-[8px] border border-red-500 rounded px-1 ml-1 font-bold">
-                                        {{ $stat->deleted_at ? 'DEL' : 'OUT' }}
+                                @if($hasStatusIssue) 
+                                    <span class="text-[8px] border border-red-500 rounded px-1 ml-1 font-bold inline-block align-middle" style="text-decoration: none !important;">
+                                        {{ $isDeleted ? 'DEL' : 'OUT' }}
                                     </span> 
                                 @endif
                             </td>
 
+                            {{-- Kolom Kehadiran Per Sesi --}}
                             @foreach($chunkedSessions as $session)
                                 @php
                                     $status = $attendanceMatrix[$stat->student_id][$session->session_id] ?? '-';

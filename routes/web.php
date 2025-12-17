@@ -92,7 +92,9 @@ Route::middleware(['auth', 'verified', 'admin'])
             Route::post('/{classId}/assessment/{type}/save', [AdminAssessmentController::class, 'storeOrUpdateGrades'])->name('assessment.storeOrUpdateGrades');
             Route::get('/daily-recap', [AdminClassController::class, 'dailyRecap'])->name('daily-recap');
             Route::get('/{classId}/assessment-session/{sessionId}/print', [AdminAssessmentController::class, 'printAssessmentForm'])
-            ->name('assessment.print');        
+            ->name('assessment.print');
+            Route::get('/{classId}/assessment-mix/print', [AdminAssessmentController::class, 'printMixReport'])
+                ->name('assessment.printMix');
         });
 
         /* TEACHER LIST */

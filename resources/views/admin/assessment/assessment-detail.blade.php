@@ -1,22 +1,25 @@
 <x-app-layout>
     <x-slot name="header"></x-slot>
 
-    {{-- [FIX VSCODE ERROR] Definisikan URL di sini agar onclick tidak error parsing --}}
     @php
+        // Definisi URL untuk Print Single dan Print Mix
         $printUrl = route('admin.classes.assessment.print', ['classId' => $class->id, 'sessionId' => $session->id]);
+        $mixPrintUrl = route('admin.classes.assessment.printMix', ['classId' => $class->id]);
     @endphp
 
     {{-- SETUP ALPINE JS --}}
     <div class="py-6" x-data="{ 
         isEditing: {{ (request('mode') == 'edit' || $errors->any()) ? 'true' : 'false' }},
-        assessmentType: '{{ $type }}' 
+        assessmentType: '{{ $type }}',
+        showPrintModal: false
     }">
 
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
-            {{-- 1. BREADCRUMB --}}
+            {{-- 1. BREADCRUMB (FIXED: Selalu via Class Detail) --}}
             <nav class="flex mb-5" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                    {{-- Dashboard --}}
                     <li class="inline-flex items-center">
                         <a href="{{ route('admin.dashboard') }}" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors">
                             <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
@@ -24,28 +27,25 @@
                         </a>
                     </li>
                     
-                    @if(request('from') == 'assessment')
-                        <li>
-                            <div class="flex items-center">
-                                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                                <a href="{{ route('admin.assessment.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Assessment Recap</a>
-                            </div>
-                        </li>
-                    @else
-                        <li>
-                            <div class="flex items-center">
-                                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                                <a href="{{ route('admin.classes.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Classes</a>
-                            </div>
-                        </li>
-                        <li>
-                            <div class="flex items-center">
-                                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                                <a href="{{ route('admin.classes.detailclass', $class->id) }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2 truncate max-w-[100px] sm:max-w-xs">{{ $class->name }}</a>
-                            </div>
-                        </li>
-                    @endif
+                    {{-- Classes Index --}}
+                    <li>
+                        <div class="flex items-center">
+                            <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                            <a href="{{ route('admin.classes.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Classes</a>
+                        </div>
+                    </li>
 
+                    {{-- Class Detail (Nama Kelas) --}}
+                    <li>
+                        <div class="flex items-center">
+                            <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                            <a href="{{ route('admin.classes.detailclass', $class->id) }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2 truncate max-w-[100px] sm:max-w-xs">
+                                {{ $class->name }}
+                            </a>
+                        </div>
+                    </li>
+
+                    {{-- Current Page (Assessment) --}}
                     <li aria-current="page">
                         <div class="flex items-center">
                             <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
@@ -55,7 +55,7 @@
                 </ol>
             </nav>
 
-            {{-- 2. HEADER TITLE & STATUS BADGES --}}
+            {{-- 2. HEADER TITLE & ACTIONS --}}
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                 <div>
                     <h2 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
@@ -75,15 +75,16 @@
                     </div>
                 </div>
                 
+                {{-- Form Hidden untuk Quick Actions (Approve / Revert) --}}
                 <form id="quickStatusForm" method="POST" action="{{ route('admin.classes.assessment.storeOrUpdateGrades', ['classId' => $class->id, 'type' => $type]) }}" style="display: none;">
                     @csrf
                     <input type="hidden" name="action_type" value=""> 
                 </form>
 
-                {{-- READ MODE ACTIONS --}}
+                {{-- Action Buttons (Tampil saat Mode Baca/View) --}}
                 <div x-show="!isEditing" class="flex flex-wrap items-center gap-2" x-transition>
                     
-                    {{-- 1. TOMBOL EDIT: Selalu muncul, warna pucat jika bukan 'submitted' --}}
+                    {{-- Edit Button --}}
                     <button type="button" 
                             onclick="handleEdit('{{ $session->status }}')"
                             class="px-6 py-2.5 font-bold rounded-lg transition shadow-md flex items-center gap-2
@@ -92,7 +93,7 @@
                         Review & Edit
                     </button>
 
-                    {{-- 2. TOMBOL APPROVE: Hanya muncul jika submitted --}}
+                    {{-- Approve Button (Jika Submitted) --}}
                     @if($session->status === 'submitted')
                         <button type="submit" form="quickStatusForm" name="action_type" value="finalize_quick" onclick="return confirmFinalize(document.getElementById('quickStatusForm'))"
                                 class="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold rounded-lg transition shadow-md flex items-center gap-2">
@@ -101,9 +102,9 @@
                         </button>
                     @endif
                     
-                    {{-- 3. TOMBOL PRINT: [FIXED] Menggunakan variabel $printUrl --}}
+                    {{-- Print Button (Memicu Modal) --}}
                     <button type="button" 
-                            onclick="handlePrint('{{ $session->status }}', '{{ $printUrl }}')"
+                            @click="'{{ $session->status }}' === 'final' ? showPrintModal = true : handlePrint('{{ $session->status }}', '{{ $printUrl }}')"
                             class="px-4 py-2.5 font-bold rounded-lg transition shadow-sm border flex items-center gap-2 text-sm
                             {{ $session->status === 'final' ? 'bg-purple-600 text-white hover:bg-purple-700 border-transparent' : 'bg-gray-100 text-gray-400 border-gray-300' }}">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,7 +113,7 @@
                         Print
                     </button>
 
-                    {{-- 4. TOMBOL REVERT --}}
+                    {{-- Revert Button (Jika sudah final/submitted) --}}
                     @if($session->status === 'submitted' || $session->status === 'final')
                         <button type="submit" form="quickStatusForm" name="action_type" value="draft_quick" onclick="return confirmRevert(document.getElementById('quickStatusForm'))"
                                 class="px-4 py-2.5 bg-red-100 text-red-600 hover:bg-red-200 border border-red-200 text-sm font-bold rounded-lg transition flex items-center gap-2">
@@ -123,11 +124,11 @@
                 </div>
             </div>
 
-            {{-- 3. MAIN FORM INPUT NILAI --}}
+            {{-- 3. FORM UTAMA (Tabel Input Nilai) --}}
             <form id="assessmentForm" method="POST" action="{{ route('admin.classes.assessment.storeOrUpdateGrades', ['classId' => $class->id, 'type' => $type]) }}">
                 @csrf
                 
-                {{-- A. CONFIGURATION BOX --}}
+                {{-- A. CONFIGURATION BOX (Edit Mode) --}}
                 <div x-show="isEditing" x-transition class="bg-white border border-gray-200 p-6 rounded-2xl mb-6 shadow-sm">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div class="space-y-4">
@@ -171,7 +172,7 @@
                     </div>
                 </div>
 
-                {{-- B. READ-ONLY SUMMARY --}}
+                {{-- B. READ-ONLY SUMMARY (View Mode) --}}
                 <div x-show="!isEditing" class="space-y-4 mb-8" x-transition>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 border-l-4 border-l-yellow-600">
@@ -219,7 +220,7 @@
                         </div>
                         <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 border-l-4 border-l-orange-700">
                             <div class="p-2.5 bg-orange-50/80 text-orange-700 rounded-xl">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 00-2-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             </div>
                             <div>
                                 <p class="text-[10px] font-bold text-gray-400 uppercase">Speaking Topic</p>
@@ -229,7 +230,7 @@
                     </div>
                 </div>
 
-                {{-- 4. GRADES TABLE --}}
+                {{-- C. GRADES TABLE (Input & Perhitungan Nilai) --}}
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse min-w-max">
@@ -331,14 +332,20 @@
                                         </div>
                                     </td>
                                     
+                                    {{-- Kolom Input Nilai --}}
                                     <td class="px-3 py-3 text-center border-l"><span x-show="!isEditing" class="font-medium opacity-80" x-text="vocab || '-'"></span><input x-show="isEditing" x-model="vocab" @input="vocab = limit($el.value, 100); $el.value = vocab" type="number" min="0" max="100" name="grades[{{ $student['id'] }}][vocabulary]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 shadow-sm"></td>
                                     <td class="px-3 py-3 text-center"><span x-show="!isEditing" class="font-medium opacity-80" x-text="grammar || '-'"></span><input x-show="isEditing" x-model="grammar" @input="grammar = limit($el.value, 100); $el.value = grammar" type="number" min="0" max="100" name="grades[{{ $student['id'] }}][grammar]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 shadow-sm"></td>
                                     <td class="px-3 py-3 text-center"><span x-show="!isEditing" class="font-medium opacity-80" x-text="listening || '-'"></span><input x-show="isEditing" x-model="listening" @input="listening = limit($el.value, 100); $el.value = listening" type="number" min="0" max="100" name="grades[{{ $student['id'] }}][listening]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 shadow-sm"></td>
+                                    
+                                    {{-- Speaking Component --}}
                                     <td class="px-3 py-3 text-center bg-purple-50/30"><span x-show="!isEditing" class="font-bold text-purple-700" x-text="s_content || '-'"></span><input x-show="isEditing" x-model="s_content" @input="s_content = limit($el.value, 50); $el.value = s_content" type="number" min="0" max="50" name="grades[{{ $student['id'] }}][speaking_content]" class="w-14 h-8 text-center border-purple-200 rounded-lg bg-white focus:ring-2 focus:ring-purple-500 text-xs p-1 shadow-sm"></td>
                                     <td class="px-3 py-3 text-center bg-purple-50/30"><span x-show="!isEditing" class="font-bold text-purple-700" x-text="s_partic || '-'"></span><input x-show="isEditing" x-model="s_partic" @input="s_partic = limit($el.value, 50); $el.value = s_partic" type="number" min="0" max="50" name="grades[{{ $student['id'] }}][speaking_participation]" class="w-14 h-8 text-center border-purple-200 rounded-lg bg-white focus:ring-2 focus:ring-purple-500 text-xs p-1 shadow-sm"></td>
                                     <td class="px-4 py-3 text-center bg-purple-100/50 font-black text-purple-900 border-x"><span x-text="speakingTotal > 0 ? speakingTotal : '-'"></span></td>
+                                    
                                     <td class="px-3 py-3 text-center border-l"><span x-show="!isEditing" class="font-medium opacity-80" x-text="reading || '-'"></span><input x-show="isEditing" x-model="reading" @input="reading = limit($el.value, 100); $el.value = reading" type="number" min="0" max="100" name="grades[{{ $student['id'] }}][reading]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 shadow-sm"></td>
                                     <td class="px-3 py-3 text-center border-l"><span x-show="!isEditing" class="font-medium opacity-80" x-text="spelling || '-'"></span><input x-show="isEditing" x-model="spelling" @input="spelling = limit($el.value, 100); $el.value = spelling" type="number" min="0" max="100" name="grades[{{ $student['id'] }}][spelling]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 shadow-sm"></td>
+                                    
+                                    {{-- Hasil Perhitungan JS --}}
                                     <td class="px-4 py-3 text-center bg-blue-50/30"><div class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white text-[11px] font-black shadow-md"><span x-text="average"></span></div></td>
                                     <td class="px-4 py-3 text-center bg-gray-50/30 font-bold text-[10px] uppercase tracking-wide"><span class="px-2 py-1 rounded-md border transition-all duration-300" :class="predicateColor" x-text="predicate"></span></td>
                                 </tr>
@@ -348,11 +355,12 @@
                     </div>
                 </div>
 
-                {{-- 5. BOTTOM ACTIONS --}}
+                {{-- D. BOTTOM ACTIONS (Hanya muncul saat Edit Mode) --}}
                 <div x-show="isEditing" x-transition class="flex justify-between items-center mt-6 p-4 bg-white rounded-2xl shadow-sm border border-gray-200">
-                    {{-- TOMBOL PRINT (Edit Mode) - [FIXED] Pake Variable --}}
+                    
+                    {{-- Tombol Print (Sama logicnya: trigger modal) --}}
                     <button type="button" 
-                            onclick="handlePrint('{{ $session->status }}', '{{ $printUrl }}')"
+                            @click="'{{ $session->status }}' === 'final' ? showPrintModal = true : handlePrint('{{ $session->status }}', '{{ $printUrl }}')"
                             class="px-4 py-2.5 font-bold rounded-lg transition shadow-sm border flex items-center gap-2
                             {{ $session->status === 'final' ? 'bg-purple-600 text-white hover:bg-purple-700 border-transparent' : 'bg-gray-100 text-gray-400 border-gray-300' }}">
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -382,6 +390,84 @@
                 </div>
             </form>
         </div>
+
+        {{-- 4. PRINT SELECTION MODAL (POPUP) --}}
+        <div x-show="showPrintModal" 
+             style="display: none;"
+             class="fixed inset-0 z-[60] overflow-y-auto" 
+             aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                
+                {{-- Overlay --}}
+                <div x-show="showPrintModal" 
+                     x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                     x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                     class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showPrintModal = false"></div>
+
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen"></span>&#8203;
+
+                {{-- Modal Panel --}}
+                <div x-show="showPrintModal"
+                     x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                     x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                     class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+                    
+                    <div class="bg-white px-6 pt-6 pb-4">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="p-2 bg-purple-100 text-purple-600 rounded-lg">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 00-2 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-900">Select Print Type</h3>
+                        </div>
+                        <p class="text-sm text-gray-500 mb-6 leading-relaxed">Choose the document format you want to generate for this class session.</p>
+                        
+                        <div class="space-y-3">
+                            {{-- OPSI 1: Laporan Per Sesi (Selalu Aktif jika Status = Final) --}}
+                            <a href="{{ $printUrl }}" target="_blank" @click="showPrintModal = false"
+                               class="flex items-center p-4 border-2 border-gray-100 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all group">
+                                <div class="p-3 bg-blue-100 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-bold text-gray-900">Current Assessment ({{ ucfirst($type) }})</p>
+                                    <p class="text-xs text-gray-500">Prints only this session scores (A4 Landscape).</p>
+                                </div>
+                            </a>
+
+                            {{-- OPSI 2: Mix Report (Dikunci jika sesi 'sebelah' belum Final) --}}
+                            @if($isBothFinal)
+                                <a href="{{ $mixPrintUrl }}" target="_blank" @click="showPrintModal = false"
+                                   class="flex items-center p-4 border-2 border-gray-100 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all group">
+                                    <div class="p-3 bg-purple-100 text-purple-600 rounded-lg group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm font-bold text-gray-900">Assessment Summary (Mix Report)</p>
+                                        <p class="text-xs text-gray-500">Comprehensive Mid & Final report card.</p>
+                                    </div>
+                                </a>
+                            @else
+                                <div class="flex items-center p-4 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50 opacity-60 cursor-not-allowed">
+                                    <div class="p-3 bg-gray-200 text-gray-400 rounded-lg">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm font-bold text-gray-400">Assessment Summary (Mix Report)</p>
+                                        <p class="text-[10px] text-red-500 font-bold uppercase tracking-wide mt-0.5">
+                                            Locked: Both Mid & Final must be FINAL
+                                        </p>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-6 py-4 flex justify-end">
+                        <button type="button" @click="showPrintModal = false" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 transition">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     {{-- SCRIPTS --}}
@@ -389,19 +475,9 @@
     <script>
         function handleEdit(status) {
             if (status === 'draft') {
-                Swal.fire({
-                    icon: 'info',
-                    title: 'Teacher is Working',
-                    text: 'This assessment is still in DRAFT mode. Please wait for the teacher to submit before you review.',
-                    confirmButtonColor: '#3B82F6'
-                });
+                Swal.fire({ icon: 'info', title: 'Teacher is Working', text: 'This assessment is still in DRAFT mode. Please wait for the teacher to submit before you review.', confirmButtonColor: '#3B82F6' });
             } else if (status === 'final') {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Already Finalized',
-                    text: 'This assessment is already FINAL. You can only view the report cards.',
-                    confirmButtonColor: '#8B5CF6'
-                });
+                Swal.fire({ icon: 'success', title: 'Already Finalized', text: 'This assessment is already FINAL. You can only view the report cards.', confirmButtonColor: '#8B5CF6' });
             } else {
                 document.querySelector('[x-data]').__x.$data.isEditing = true;
             }
@@ -409,40 +485,14 @@
 
         function handlePrint(status, printUrl) {
             if (status !== 'final') {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Print Locked',
-                    text: 'Report cards can only be printed after the assessment status is set to FINAL. Please finalize this session first.',
-                    confirmButtonColor: '#F59E0B',
-                });
+                Swal.fire({ icon: 'warning', title: 'Print Locked', text: 'Report cards can only be printed after the assessment status is set to FINAL.', confirmButtonColor: '#F59E0B' });
             } else {
-                Swal.fire({
-                    icon: 'question',
-                    title: 'Generate PDF?',
-                    text: 'System will prepare report cards for all students in this session.',
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, Generate',
-                    confirmButtonColor: '#9333EA',
-                    cancelButtonColor: '#6B7280'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        // [FIXED] Menggunakan URL dari parameter yang sudah dikirim dari Blade
-                        window.open(printUrl, '_blank');
-                    }
-                });
+                // Untuk status Final, logika print dipindah ke Modal Alpine di HTML
             }
         }
 
         function confirmFinalize(formElement) {
-            Swal.fire({
-                title: 'Approve & Finalize?',
-                text: "Confirming this will lock the grades and set the status to FINAL.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#9333ea',
-                cancelButtonColor: '#6B7280',
-                confirmButtonText: 'Yes, Finalize!'
-            }).then((result) => {
+            Swal.fire({ title: 'Approve & Finalize?', text: "Confirming this will lock the grades and set the status to FINAL.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#9333ea', cancelButtonColor: '#6B7280', confirmButtonText: 'Yes, Finalize!' }).then((result) => {
                 if (result.isConfirmed) {
                     Swal.fire({title: 'Processing...', allowOutsideClick: false, showConfirmButton: false, didOpen: () => { Swal.showLoading() }});
                     const actionValue = formElement.id === 'quickStatusForm' ? 'finalize_quick' : 'finalize';
@@ -456,15 +506,7 @@
         }
 
         function confirmRevert(formElement) {
-            Swal.fire({
-                title: 'Revert to Draft?',
-                text: "This will set the status back to DRAFT. The teacher will be able to edit grades.",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#dc2626',
-                cancelButtonColor: '#6B7280',
-                confirmButtonText: 'Yes, Revert'
-            }).then((result) => {
+            Swal.fire({ title: 'Revert to Draft?', text: "This will set the status back to DRAFT. The teacher will be able to edit grades.", icon: 'question', showCancelButton: true, confirmButtonColor: '#dc2626', cancelButtonColor: '#6B7280', confirmButtonText: 'Yes, Revert' }).then((result) => {
                 if (result.isConfirmed) {
                     Swal.fire({title: 'Processing...', allowOutsideClick: false, showConfirmButton: false, didOpen: () => { Swal.showLoading() }});
                     const actionValue = formElement.id === 'quickStatusForm' ? 'draft_quick' : 'draft';

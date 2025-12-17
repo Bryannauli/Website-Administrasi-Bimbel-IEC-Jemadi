@@ -329,11 +329,9 @@ class AdminClassController extends Controller
 
     public function showReport($classId)
     {
-        // 1. Ambil Data Kelas (Header Laporan)
-        $class = ClassModel::findOrFail($classId); // Sesuaikan nama model
+        $class = ClassModel::findOrFail($classId);
 
-        // 2. Ambil Daftar Tanggal Sesi (Untuk Header Tabel 1-16)
-        // Ini menggantikan kolom statis session_1 s/d session_16
+        // 1. Ambil Tanggal Sesi
         $teachingLogs = DB::table('class_sessions')
             ->where('class_id', $classId)
             ->whereNull('deleted_at')
@@ -341,37 +339,45 @@ class AdminClassController extends Controller
             ->select('id as session_id', 'date')
             ->get();
 
-        // 3. Ambil Data Siswa & Statistik (Dari View Baru)
-        // Ini mengisi kolom Nama, Total Pres, dan %
-        $studentStats = DB::table('v_class_attendance_summary')
-            ->where('class_id', $classId)
+        // 2. Ambil Statistik Siswa (Siswa saat ini ATAU siswa yang punya history di kelas ini)
+        // Kita memanggil fungsi SQL secara manual agar statistik dihitung KHUSUS untuk class_id ini
+        $studentStats = DB::table('students as s')
+            ->leftJoin('attendance_records as ar', 's.id', '=', 'ar.student_id')
+            ->leftJoin('class_sessions as cs', 'ar.class_session_id', '=', 'cs.id')
+            ->where(function($q) use ($classId) {
+                $q->where('s.class_id', $classId) // Siswa yang sekarang di kelas ini
+                ->orWhere('cs.class_id', $classId); // Siswa yang dulu pernah absen di kelas ini
+            })
+            ->select(
+                's.id as student_id',
+                's.name as student_name',
+                's.student_number',
+                's.is_active',
+                's.deleted_at',
+                DB::raw("f_get_student_attendance_total($classId, s.id) as total_present"),
+                DB::raw("f_get_attendance_percentage($classId, s.id) as attendance_percentage")
+            )
+            ->distinct()
+            ->orderBy('s.student_number', 'ASC')
             ->get();
 
-        // 4. Ambil Data Matrix Kehadiran (Untuk isi tengah tabel)
-        // Kita ambil mentahnya saja, biarkan blade yang ubah jadi simbol
+        // 3. Ambil Matrix Kehadiran
         $rawAttendance = DB::table('attendance_records as ar')
             ->join('class_sessions as cs', 'ar.class_session_id', '=', 'cs.id')
             ->where('cs.class_id', $classId)
             ->select('ar.student_id', 'ar.class_session_id', 'ar.status')
             ->get();
 
-        // Format ulang array agar mudah dipanggil di Blade: $matrix[student_id][session_id] = 'status'
         $attendanceMatrix = [];
         foreach ($rawAttendance as $record) {
             $attendanceMatrix[$record->student_id][$record->class_session_id] = $record->status;
         }
 
-        // Nama Guru (Untuk Header)
-        $teacherName = $class->formTeacher->name ?? '-'; // Asumsi ada relasi
+        $teacherName = $class->formTeacher->name ?? '-';
         $localTeacher = $class->localTeacher->name ?? '-';
 
         return view('admin.classes.partials.attendance-report', compact(
-            'class', 
-            'teachingLogs', 
-            'studentStats', 
-            'attendanceMatrix',
-            'teacherName',
-            'localTeacher'
+            'class', 'teachingLogs', 'studentStats', 'attendanceMatrix', 'teacherName', 'localTeacher'
         ));
     }
 }

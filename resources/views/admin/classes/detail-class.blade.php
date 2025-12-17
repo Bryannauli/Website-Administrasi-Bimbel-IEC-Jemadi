@@ -171,14 +171,14 @@
                     @if($isTrashed)
                         <li>
                             <div class="flex items-center">
-                                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 011.414-1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
                                 <a href="{{ route('admin.trash.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Trash Bin</a>
                             </div>
                         </li>
                     @else
                         <li>
                             <div class="flex items-center">
-                                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 011.414-1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
                                 <a href="{{ route('admin.classes.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Classes</a>
                             </div>
                         </li>
@@ -186,7 +186,7 @@
 
                     <li aria-current="page">
                         <div class="flex items-center">
-                            <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                            <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010-1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
                             <span class="ml-1 text-sm font-medium text-gray-900 md:ml-2 truncate max-w-xs">
                                 {{ $class->name }} {{ $isTrashed ? '(Deleted)' : '' }}
                             </span>
@@ -203,7 +203,6 @@
                 
                 @if($isTrashed)
                     <div class="flex items-center gap-3">
-                        {{-- RESTORE BUTTON --}}
                         <form action="{{ route('admin.trash.restore', ['type' => 'class', 'id' => $class->id]) }}" method="POST" onsubmit="return confirmAction(event, 'restore')">
                             @csrf
                             <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
@@ -212,7 +211,6 @@
                             </button>
                         </form>
 
-                        {{-- FORCE DELETE BUTTON --}}
                         <form action="{{ route('admin.trash.force_delete', ['type' => 'class', 'id' => $class->id]) }}" method="POST" onsubmit="return confirmAction(event, 'delete')">
                             @csrf
                             @method('DELETE')
@@ -223,7 +221,6 @@
                         </form>
                     </div>
                 @else
-                    {{-- [UPDATED] TOMBOL EDIT CLASS SAJA (Delete ada di Modal) --}}
                     <button @click="showEditModal = true" 
                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
@@ -312,8 +309,6 @@
 
                 {{-- 2. ROW 1: TEACHER & TEACHER ATTENDANCE --}}
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    
-                    {{-- A. LIST TEACHER --}}
                     <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
@@ -322,7 +317,6 @@
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {{-- Form Teacher --}}
                             @if($class->formTeacher)
                                 <div class="p-3 rounded-xl border border-blue-100 bg-blue-50/20 flex items-center justify-between group">
                                     <div class="flex items-center gap-3">
@@ -334,7 +328,6 @@
                                             <p class="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Form Teacher</p>
                                         </div>
                                     </div>
-                                    {{-- QUICK ACTIONS (Hide if Trashed) --}}
                                     @if(!$isTrashed)
                                     <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <a href="{{ route('admin.teacher.detail', ['id' => $class->formTeacher->id, 'ref' => 'class', 'class_id' => $class->id]) }}" 
@@ -349,7 +342,6 @@
                                     @endif
                                 </div>
                             @else
-                                {{-- EMPTY STATE --}}
                                 @if(!$isTrashed)
                                     <button @click="openAssignTeacherModal('form')" class="w-full p-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center gap-2 text-gray-400 hover:bg-gray-100 hover:border-gray-400 transition">
                                         <span class="text-xs font-medium italic">+ Assign Form Teacher</span>
@@ -361,7 +353,6 @@
                                 @endif
                             @endif
 
-                            {{-- Local Teacher --}}
                             @if($class->localTeacher)
                                 <div class="p-3 rounded-xl border border-purple-100 bg-purple-50/20 flex items-center justify-between group">
                                     <div class="flex items-center gap-3">
@@ -373,7 +364,6 @@
                                             <p class="text-[10px] text-purple-600 font-bold uppercase tracking-wider">Local Teacher</p>
                                         </div>
                                     </div>
-                                    {{-- QUICK ACTIONS (Hide if Trashed) --}}
                                     @if(!$isTrashed)
                                     <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <a href="{{ route('admin.teacher.detail', $class->localTeacher->id) }}" 
@@ -401,7 +391,6 @@
                         </div>
                     </div>
 
-                    {{-- B. TEACHER ATTENDANCE (Selalu Tampil) --}}
                     <div class="lg:col-span-1 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg shadow-blue-200 p-6 text-white flex flex-col justify-between relative overflow-hidden">
                         <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
                         <div>
@@ -436,8 +425,6 @@
 
                 {{-- 3. ROW 2: STUDENTS & STUDENT ATTENDANCE --}}
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    
-                    {{-- C. LIST STUDENTS TABLE --}}
                     <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col h-full">
                         <div class="flex justify-between items-center mb-5 shrink-0">
                             <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
@@ -455,7 +442,6 @@
                             @endif
                         </div>
 
-                        {{-- TABLE STUDENT --}}
                         <div class="overflow-x-auto overflow-y-auto max-h-[500px] flex-1 custom-scrollbar border border-gray-50 rounded-lg">
                             <table class="w-full text-left border-collapse relative">
                                 <thead class="bg-gray-50 text-gray-400 text-xs font-medium border-b border-gray-100 sticky top-0 z-10 shadow-sm">
@@ -463,7 +449,6 @@
                                         <th class="px-4 py-3 font-normal w-12 bg-gray-50">No</th>
                                         <th class="px-4 py-3 font-normal bg-gray-50">Student ID</th>
                                         <th class="px-4 py-3 font-normal bg-gray-50">Name</th>
-                                        {{-- HEADER BARU --}}
                                         <th class="px-4 py-3 font-normal bg-gray-50 text-center">Attendance</th>
                                         <th class="px-4 py-3 font-normal bg-gray-50 text-center">Status</th>
                                         @if(!$isTrashed)
@@ -473,16 +458,12 @@
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 text-sm text-gray-800 bg-white">
                                     @forelse($class->students ?? [] as $index => $student)
-                                    
-                                    {{-- LOGIC LOOKUP PERSENTASE --}}
                                     @php
-                                        // Cari data statistik siswa ini dari array $studentStats (dari Controller)
                                         $stat = collect($studentStats)->firstWhere('student_id', $student->id);
                                         $percentage = $stat ? $stat->percentage : 0;
                                     @endphp
 
                                     <tr class="transition group {{ $student->is_active ? 'hover:bg-gray-50' : 'bg-red-50 hover:bg-red-100' }}">
-                                        
                                         <td class="px-4 py-3 text-gray-400 text-xs">{{ $index + 1 }}</td>
                                         <td class="px-4 py-3 font-mono text-xs text-gray-500">{{ $student->student_number }}</td>
                                         
@@ -493,7 +474,6 @@
                                             @endif
                                         </td>
 
-                                        {{-- KOLOM BARU: ATTENDANCE --}}
                                         <td class="px-4 py-3 text-center">
                                             @if($student->is_active)
                                                 <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold 
@@ -516,7 +496,6 @@
                                         @if(!$isTrashed)
                                         <td class="px-4 py-3 text-center">
                                             <div class="flex items-center justify-center gap-2">
-                                                
                                                 <a href="{{ route('admin.student.detail', ['id' => $student->id, 'ref' => 'class', 'class_id' => $class->id]) }}" 
                                                 class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="View Profile">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
@@ -556,17 +535,13 @@
                         </div>
                     </div>
 
-                    {{-- D. STUDENT ATTENDANCE (Widget) --}}
                     <div class="lg:col-span-1 bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col h-full">
                         <div class="flex justify-between items-start mb-4 shrink-0">
                             <div>
                                 <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Attendance</h4>
                                 <h3 class="text-xl font-bold text-gray-800">Last Session</h3>
-                                
                                 @if($lastSession)
-                                    <p class="text-xs text-gray-400 mt-0.5">
-                                        {{ \Carbon\Carbon::parse($lastSession->date)->format('d M Y') }}
-                                    </p>
+                                    <p class="text-xs text-gray-400 mt-0.5">{{ \Carbon\Carbon::parse($lastSession->date)->format('d M Y') }}</p>
                                 @else
                                     <p class="text-xs text-gray-400 mt-0.5">-</p>
                                 @endif
@@ -585,7 +560,6 @@
                             @endif
                         </div>
 
-                        {{-- Bagian Tengah (List Absentees) --}}
                         <div class="flex-1 overflow-y-auto custom-scrollbar pr-1 mb-4 min-h-[150px]">
                             @if($lastSession && $lastSession->records->count() > 0)
                                 @php $absentees = $lastSession->records->whereIn('status', ['absent', 'sick', 'permission']); @endphp
@@ -607,7 +581,6 @@
                             @endif
                         </div>
 
-                        {{-- Bagian Bawah (Tombol) - Sticky Footer --}}
                         <div class="mt-auto pt-4 border-t border-gray-50">
                             <button @click="showStudentStatsModal = true" class="w-full py-2.5 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 transition shadow-sm shadow-green-200 flex items-center justify-center gap-2">
                                 View Full Report <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
@@ -623,12 +596,10 @@
                     </h3>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        
                         {{-- MID TERM CARD --}}
                         @php
                             $midSession = $class->assessmentSessions->where('type', 'mid')->first();
                             $midStatus = $midSession->status ?? 'draft'; 
-                            
                             $midColor = match($midStatus) {
                                 'submitted' => 'bg-blue-100 text-blue-700 border-blue-200',
                                 'final'     => 'bg-purple-100 text-purple-700 border-purple-200',
@@ -636,12 +607,11 @@
                             };
                         @endphp
                         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden group hover:border-blue-300 hover:shadow-md transition-all">
-                            
                             <div class="flex justify-between items-start mb-4">
                                 <div>
                                     <h4 class="text-lg font-bold text-gray-800">Mid Term</h4>
                                     <p class="text-xs text-gray-400 mt-1">
-                                        {{ $midSession && $midSession->written_date ? \Carbon\Carbon::parse($midSession->date)->format('d M Y') : 'Date not set' }}
+                                        {{ $midSession && $midSession->written_date ? \Carbon\Carbon::parse($midSession->written_date)->format('d M Y') : 'Date not set' }}
                                     </p>
                                 </div>
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border {{ $midColor }}">
@@ -649,22 +619,19 @@
                                 </span>
                             </div>
 
-                            <div class="flex items-center gap-3">
+                            {{-- [UPDATED] FULL WIDTH BUTTON --}}
+                            <div class="flex items-center">
                                 @if(!$isTrashed)
                                     <a href="{{ route('admin.classes.assessment.detail', ['classId' => $class->id, 'type' => 'mid']) }}" 
-                                    class="flex-1 inline-flex justify-center items-center px-4 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition shadow-blue-200 gap-2">
+                                    class="w-full inline-flex justify-center items-center px-4 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition shadow-blue-200 gap-2">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                         {{ $midStatus == 'draft' ? 'Input Grades' : 'View Grades' }}
                                     </a>
                                 @else
-                                    <button disabled class="flex-1 inline-flex justify-center items-center px-4 py-2.5 bg-gray-100 text-gray-400 text-sm font-bold rounded-lg cursor-not-allowed gap-2">
+                                    <button disabled class="w-full inline-flex justify-center items-center px-4 py-2.5 bg-gray-100 text-gray-400 text-sm font-bold rounded-lg cursor-not-allowed gap-2">
                                         Restore to Access Grades
                                     </button>
                                 @endif
-                                
-                                <button disabled class="p-2.5 text-gray-400 bg-gray-100 rounded-lg cursor-not-allowed" title="Print Report Card">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 00-2 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                                </button>
                             </div>
                         </div>
 
@@ -672,7 +639,6 @@
                         @php
                             $finalSession = $class->assessmentSessions->where('type', 'final')->first();
                             $finalStatus = $finalSession->status ?? 'draft'; 
-
                             $finalColor = match($finalStatus) {
                                 'submitted' => 'bg-indigo-100 text-indigo-700 border-indigo-200',
                                 'final'     => 'bg-purple-100 text-purple-700 border-purple-200',
@@ -680,12 +646,11 @@
                             };
                         @endphp
                         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden group hover:border-indigo-300 hover:shadow-md transition-all">
-                            
                             <div class="flex justify-between items-start mb-4">
                                 <div>
                                     <h4 class="text-lg font-bold text-gray-800">Final Term</h4>
                                     <p class="text-xs text-gray-400 mt-1">
-                                        {{ $finalSession && $finalSession->written_date ? \Carbon\Carbon::parse($finalSession->date)->format('d M Y') : 'Date not set' }}
+                                        {{ $finalSession && $finalSession->written_date ? \Carbon\Carbon::parse($finalSession->written_date)->format('d M Y') : 'Date not set' }}
                                     </p>
                                 </div>
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border {{ $finalColor }}">
@@ -693,22 +658,19 @@
                                 </span>
                             </div>
 
-                            <div class="flex items-center gap-3">
+                            {{-- [UPDATED] FULL WIDTH BUTTON --}}
+                            <div class="flex items-center">
                                 @if(!$isTrashed)
                                     <a href="{{ route('admin.classes.assessment.detail', ['classId' => $class->id, 'type' => 'final']) }}" 
-                                    class="flex-1 inline-flex justify-center items-center px-4 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition shadow-indigo-200 gap-2">
+                                    class="w-full inline-flex justify-center items-center px-4 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition shadow-indigo-200 gap-2">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                         {{ $finalStatus == 'draft' ? 'Input Grades' : 'View Grades' }}
                                     </a>
                                 @else
-                                    <button disabled class="flex-1 inline-flex justify-center items-center px-4 py-2.5 bg-gray-100 text-gray-400 text-sm font-bold rounded-lg cursor-not-allowed gap-2">
+                                    <button disabled class="w-full inline-flex justify-center items-center px-4 py-2.5 bg-gray-100 text-gray-400 text-sm font-bold rounded-lg cursor-not-allowed gap-2">
                                         Restore to Access Grades
                                     </button>
                                 @endif
-
-                                <button disabled class="p-2.5 text-gray-400 bg-gray-100 rounded-lg cursor-not-allowed" title="Print Certificate">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -717,50 +679,42 @@
         </div> 
 
         {{-- INCLUDE MODALS (PARTIALS) --}}
-        {{-- Activity & Attendance selalu di-load (Safe View) --}}
         @include('admin.classes.partials.activity-history-modal', ['teachingLogs' => $teachingLogs])
         @include('admin.classes.partials.attendance-modal', ['studentStats' => $studentStats, 'teachingLogs' => $teachingLogs, 'attendanceMatrix' => $attendanceMatrix])
         
-        {{-- Action Modals hanya jika active --}}
         @if(!$isTrashed)
             @include('admin.classes.partials.assign-teacher-modal')
             @include('admin.classes.partials.assign-student-modal', ['class' => $class, 'availableStudents' => $availableStudents])
             @include('admin.classes.partials.edit-class-modal', ['teachers' => $teachers, 'categories' => $categories, 'years' => $years])
 
-            {{-- FORM HIDDEN UNTUK TOGGLE STATUS --}}
             <form id="toggleStatusForm" method="POST" action="#" style="display: none;">
                 @csrf @method('PATCH')
             </form>
 
-            {{-- [ADDED] FORM HIDDEN UNTUK DELETE CLASS (Soft Delete) --}}
             <form id="delete-class-form" action="{{ route('admin.classes.delete', $class->id) }}" method="POST" style="display: none;">
                 @csrf @method('DELETE')
             </form>
         @endif
-
     </div>
 
-    {{-- SWEETALERT --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        // Fungsi Konfirmasi untuk Restore & Force Delete
         function confirmAction(e, type) {
             e.preventDefault();
             const form = e.target;
-            
             const config = type === 'restore' 
                 ? {
                     title: 'Restore Class?',
                     text: "This class will be moved back to the active list.",
                     icon: 'question',
-                    confirmButtonColor: '#10B981', // Green
+                    confirmButtonColor: '#10B981',
                     confirmButtonText: 'Yes, Restore!'
                   }
                 : {
                     title: 'Delete Permanently?',
                     text: "WARNING: This action cannot be undone. All data related to this class will be lost forever.",
                     icon: 'warning',
-                    confirmButtonColor: '#EF4444', // Red
+                    confirmButtonColor: '#EF4444',
                     confirmButtonText: 'Yes, Delete Permanently!'
                   };
 
@@ -783,23 +737,11 @@
         document.addEventListener('DOMContentLoaded', function() {
             const successMessage = <?php echo json_encode(session('success')); ?>;
             const errorMessage = <?php echo json_encode(session('error')); ?>;
-
             if (successMessage) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success!',
-                    text: successMessage,
-                    timer: 3000,
-                    showConfirmButton: false
-                });
+                Swal.fire({ icon: 'success', title: 'Success!', text: successMessage, timer: 3000, showConfirmButton: false });
             }
-
             if (errorMessage) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error!',
-                    text: errorMessage,
-                });
+                Swal.fire({ icon: 'error', title: 'Error!', text: errorMessage });
             }
         });
     </script>
