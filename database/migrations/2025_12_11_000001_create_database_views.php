@@ -249,10 +249,9 @@ return new class extends Migration
         ");
 
         // ==========================================
-        // 10. View: v_attendance_report
+        // 10. View: v_class_attendance_summary
         // ==========================================
         DB::unprepared("
-            DROP VIEW IF EXISTS v_attendance_report; -- Hapus view yang lama/salah konsep
             DROP VIEW IF EXISTS v_class_attendance_summary;
 
             CREATE VIEW v_class_attendance_summary AS
