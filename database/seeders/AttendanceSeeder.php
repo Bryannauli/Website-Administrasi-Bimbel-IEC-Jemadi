@@ -16,8 +16,8 @@ class AttendanceSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Tentukan Rentang Waktu (1 Bulan ke belakang s/d Hari Ini)
-        $startDate = Carbon::now()->subMonth();
+        // 1. Tentukan Rentang Waktu (2 Bulan ke belakang s/d Hari Ini)
+        $startDate = Carbon::now()->subMonth(2);
         $endDate   = Carbon::now(); 
 
         // 2. Ambil Kelas Aktif beserta jadwal dan siswa aktif

@@ -1,6 +1,11 @@
 <x-app-layout>
     <x-slot name="header"></x-slot>
 
+    {{-- [FIX VSCODE ERROR] Definisikan URL di sini agar onclick tidak error parsing --}}
+    @php
+        $printUrl = route('admin.classes.assessment.print', ['classId' => $class->id, 'sessionId' => $session->id]);
+    @endphp
+
     {{-- SETUP ALPINE JS --}}
     <div class="py-6" x-data="{ 
         isEditing: {{ (request('mode') == 'edit' || $errors->any()) ? 'true' : 'false' }},
@@ -78,7 +83,7 @@
                 {{-- READ MODE ACTIONS --}}
                 <div x-show="!isEditing" class="flex flex-wrap items-center gap-2" x-transition>
                     
-                    {{-- EDIT BUTTON (Tetap Muncul) --}}
+                    {{-- 1. TOMBOL EDIT: Selalu muncul, warna pucat jika bukan 'submitted' --}}
                     <button type="button" 
                             onclick="handleEdit('{{ $session->status }}')"
                             class="px-6 py-2.5 font-bold rounded-lg transition shadow-md flex items-center gap-2
@@ -87,43 +92,29 @@
                         Review & Edit
                     </button>
 
+                    {{-- 2. TOMBOL APPROVE: Hanya muncul jika submitted --}}
                     @if($session->status === 'submitted')
-                        <button type="submit"
-                                form="quickStatusForm"
-                                name="action_type" 
-                                value="finalize_quick"
-                                onclick="return confirmFinalize(document.getElementById('quickStatusForm'))"
+                        <button type="submit" form="quickStatusForm" name="action_type" value="finalize_quick" onclick="return confirmFinalize(document.getElementById('quickStatusForm'))"
                                 class="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold rounded-lg transition shadow-md flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             Approve & Finalize
                         </button>
                     @endif
                     
-                    {{-- CASE 3: FINAL --}}
-                    @if($session->status === 'final')
-                        <span class="px-5 py-2.5 bg-purple-100 text-purple-700 text-sm font-bold rounded-lg border border-purple-200 shadow-sm flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            Finalized (Locked)
-                        </span>
+                    {{-- 3. TOMBOL PRINT: [FIXED] Menggunakan variabel $printUrl --}}
+                    <button type="button" 
+                            onclick="handlePrint('{{ $session->status }}', '{{ $printUrl }}')"
+                            class="px-4 py-2.5 font-bold rounded-lg transition shadow-sm border flex items-center gap-2 text-sm
+                            {{ $session->status === 'final' ? 'bg-purple-600 text-white hover:bg-purple-700 border-transparent' : 'bg-gray-100 text-gray-400 border-gray-300' }}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 00-2 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                        Print
+                    </button>
 
-                        <a href="{{ route('admin.classes.assessment.print', ['classId' => $class->id, 'sessionId' => $session->id]) }}" 
-                        target="_blank"
-                        class="px-4 py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300 font-bold rounded-lg transition shadow-sm flex items-center gap-2 text-sm">
-                            
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                            </svg>
-                            Print
-                        </a>
-                    @endif
-
+                    {{-- 4. TOMBOL REVERT --}}
                     @if($session->status === 'submitted' || $session->status === 'final')
-                        <button type="submit" 
-                                form="quickStatusForm"
-                                name="action_type" 
-                                value="draft_quick"
-                                title="Send back to teacher (Revert to Draft)"
-                                onclick="return confirmRevert(document.getElementById('quickStatusForm'))"
+                        <button type="submit" form="quickStatusForm" name="action_type" value="draft_quick" onclick="return confirmRevert(document.getElementById('quickStatusForm'))"
                                 class="px-4 py-2.5 bg-red-100 text-red-600 hover:bg-red-200 border border-red-200 text-sm font-bold rounded-lg transition flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
                             Revert to Draft
@@ -359,9 +350,9 @@
 
                 {{-- 5. BOTTOM ACTIONS --}}
                 <div x-show="isEditing" x-transition class="flex justify-between items-center mt-6 p-4 bg-white rounded-2xl shadow-sm border border-gray-200">
-                    {{-- TOMBOL PRINT (Tetap Muncul) --}}
+                    {{-- TOMBOL PRINT (Edit Mode) - [FIXED] Pake Variable --}}
                     <button type="button" 
-                            onclick="handlePrint('{{ $session->status }}', '{{ $class->id }}', '{{ $type }}')"
+                            onclick="handlePrint('{{ $session->status }}', '{{ $printUrl }}')"
                             class="px-4 py-2.5 font-bold rounded-lg transition shadow-sm border flex items-center gap-2
                             {{ $session->status === 'final' ? 'bg-purple-600 text-white hover:bg-purple-700 border-transparent' : 'bg-gray-100 text-gray-400 border-gray-300' }}">
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -416,12 +407,12 @@
             }
         }
 
-        function handlePrint(status, classId, type) {
+        function handlePrint(status, printUrl) {
             if (status !== 'final') {
                 Swal.fire({
                     icon: 'warning',
-                    title: 'Not Finalized Yet',
-                    text: 'You can only print report cards once the status is set to FINAL.',
+                    title: 'Print Locked',
+                    text: 'Report cards can only be printed after the assessment status is set to FINAL. Please finalize this session first.',
                     confirmButtonColor: '#F59E0B',
                 });
             } else {
@@ -435,7 +426,8 @@
                     cancelButtonColor: '#6B7280'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        Swal.fire({title: 'Processing...', timer: 2000, showConfirmButton: false, didOpen: () => { Swal.showLoading() }});
+                        // [FIXED] Menggunakan URL dari parameter yang sudah dikirim dari Blade
+                        window.open(printUrl, '_blank');
                     }
                 });
             }

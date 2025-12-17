@@ -260,13 +260,15 @@ return new class extends Migration
                 s.class_id,
                 s.student_number,
                 s.name AS student_name,
+                s.is_active,
+                s.deleted_at,
                 
-                -- Panggil Function Hitung-hitungan Anda disini
                 f_get_student_attendance_total(s.class_id, s.id) AS total_present,
                 f_get_attendance_percentage(s.class_id, s.id) AS attendance_percentage
 
             FROM students s
-            WHERE s.deleted_at IS NULL AND s.is_active = 1
+            -- HAPUS WHERE CLAUSE YANG LAMA (deleted_at IS NULL AND s.is_active = 1)
+            -- Kita ingin semua history siswa tampil, filter kelas dilakukan di Controller nanti
             ORDER BY s.student_number ASC;
         ");
     }
