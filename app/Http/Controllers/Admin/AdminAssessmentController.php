@@ -226,4 +226,44 @@ class AdminAssessmentController extends Controller
             return back()->with('error', 'Error: ' . $e->getMessage())->withInput();
         }
     }
+
+    public function printAssessmentForm($classId, $sessionId)
+    {
+        // 1. Ambil Header Informasi Kelas
+        // Kita perlu data kelas dan detail sesinya (term, guru, dll)
+        $headerData = DB::table('assessment_sessions as asess')
+            ->join('classes as c', 'asess.class_id', '=', 'c.id')
+            ->leftJoin('users as ft', 'c.form_teacher_id', '=', 'ft.id') // Form Teacher
+            ->leftJoin('users as lt', 'c.local_teacher_id', '=', 'lt.id') // Other/Local Teacher
+            ->where('asess.id', $sessionId)
+            ->select(
+                'c.name as class_name',
+                'c.start_time', 'c.end_time',
+                'c.start_month', 'c.end_month', 'c.academic_year', // Untuk Month/Term
+                'ft.name as form_teacher',
+                'lt.name as other_teacher'
+            )
+            ->first();
+
+        // --- TAMBAHAN BARU: AMBIL HARI ---
+        // Mengambil daftar hari dari tabel schedules dan digabung dengan simbol "&"
+        $days = DB::table('schedules')
+            ->where('class_id', $classId)
+            ->pluck('day_of_week') // Pastikan nama kolom di DB Anda 'day_of_week' atau 'day'
+            ->toArray();
+        
+        // Hasil: "Monday & Thursday"
+        $headerData->class_days = !empty($days) ? implode(' & ', $days) : '-';
+
+        // 2. Ambil Data Nilai Siswa dari VIEW v_student_grades
+        // Ini yang akan mengisi tabel utama
+        $students = DB::table('v_student_grades')
+            ->where('assessment_session_id', $sessionId) // Filter berdasarkan sesi ujian
+            ->where('class_id', $classId)
+            ->orderBy('student_number', 'ASC') // Urutkan sesuai nomor induk
+            ->get();
+
+        // 3. Kirim ke View Blade
+        return view('admin.assessment.assessment-report', compact('headerData', 'students'));
+    }
 }

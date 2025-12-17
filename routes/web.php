@@ -91,6 +91,8 @@ Route::middleware(['auth', 'verified', 'admin'])
             Route::get('/{classId}/assessment/{type}', [AdminAssessmentController::class, 'detail'])->name('assessment.detail');
             Route::post('/{classId}/assessment/{type}/save', [AdminAssessmentController::class, 'storeOrUpdateGrades'])->name('assessment.storeOrUpdateGrades');
             Route::get('/daily-recap', [AdminClassController::class, 'dailyRecap'])->name('daily-recap');
+            Route::get('/{classId}/assessment-session/{sessionId}/print', [AdminAssessmentController::class, 'printAssessmentForm'])
+            ->name('assessment.print');        
         });
 
         /* TEACHER LIST */
@@ -128,23 +130,6 @@ Route::middleware(['auth', 'verified', 'admin'])
         /* ASSESSMENT (Global) */
         Route::prefix('assessment')->name('assessment.')->group(function () {
             Route::get('/', [AdminAssessmentController::class, 'index'])->name('index');
-        });
-        
-        // --- ROUTE TES TAMPILAN (HAPUS JIKA SUDAH TIDAK PERLU) ---  
-        Route::get('/test-assessment-print', function () {
-            $headerInfo = (object) ['month' => 'July - December ' . date('Y'), 'form_teacher' => 'Mr. Richard', 'other_teacher' => 'Mr. Jimmy', 'class_name' => 'STEP 3', 'class_time' => '7 - 9 pm', 'class_days' => 'Tuesday & Thursday'];
-            $subjects = ['Vocabulary', 'Grammar', 'Reading', 'Spelling', 'Listening', 'Speaking'];
-            $studentNames = ['Charlene Alycia Chen', 'Felix Horatio', 'Reagan Immanuel', 'Xaviera Cleosa Shielder', 'Livia Melosa Shielder', 'Wira', 'Jozio Notal Ezer'];
-            $students = collect([]);
-            foreach ($studentNames as $index => $name) {
-                $marks = []; $totalAve = 0;
-                foreach ($subjects as $subj) { $mid = rand(70, 95); $final = rand(70, 95); $ave = round(($mid + $final) / 2); $marks[$subj] = (object) ['mid' => $mid, 'final' => $final, 'ave' => $ave]; $totalAve += $ave; }
-                $grandAve = round($totalAve / count($subjects));
-                $students->push((object)['no' => $index + 1, 'student_number' => '041' . rand(1000, 9999), 'name' => $name, 'marks' => $marks, 'total_ave' => $grandAve, 'rank' => 0, 'at' => '']);
-            }
-            $students = $students->sortByDesc('total_ave')->values();
-            foreach ($students as $idx => $s) { $s->rank = $idx + 1; }
-            return view('admin.classes.partials.assessment-report', ['header' => $headerInfo, 'subjects' => $subjects, 'students' => $students]);
         });
     });
 
