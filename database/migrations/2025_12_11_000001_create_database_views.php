@@ -286,5 +286,6 @@ return new class extends Migration
         DB::unprepared("DROP VIEW IF EXISTS v_attendance_summary"); 
         DB::unprepared("DROP VIEW IF EXISTS v_weekly_absence");
         DB::unprepared("DROP VIEW IF EXISTS v_teacher_teaching_history");
+        DB::unprepared("DROP VIEW IF EXISTS v_class_attendance_summary");
     }
 };

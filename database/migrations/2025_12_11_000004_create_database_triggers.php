@@ -176,5 +176,6 @@ return new class extends Migration
         DB::unprepared('DROP TRIGGER IF EXISTS tr_prevent_duplicate_session_update');
         DB::unprepared('DROP TRIGGER IF EXISTS tr_prevent_premature_submission');
         DB::unprepared('DROP TRIGGER IF EXISTS tr_sync_speaking_total_insert');
+        DB::unprepared('DROP TRIGGER IF EXISTS tr_sync_speaking_total_update');
     }
 };
