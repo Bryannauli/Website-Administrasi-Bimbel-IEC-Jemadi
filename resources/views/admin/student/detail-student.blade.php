@@ -34,7 +34,7 @@
             }
         },
 
-        // 5. FUNGSI DELETE
+        // 5. FUNGSI DELETE (Soft Delete via Modal Edit)
         confirmDelete() {
             Swal.fire({
                 title: 'Are you sure?',
@@ -58,7 +58,6 @@
                 <ol class="inline-flex items-center space-x-1 md:space-x-3">
                     <li class="inline-flex items-center">
                         <a href="{{ route('dashboard') }}" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600">
-                            {{-- [FIX] Icon Dashboard Ditambahkan Kembali --}}
                             <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
                             Dashboard
                         </a>
@@ -111,13 +110,26 @@
                 </h2>
                 
                 @if($isTrashed)
-                    <form action="{{ route('admin.trash.restore', ['type' => 'student', 'id' => $student->id]) }}" method="POST">
-                        @csrf
-                        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                            Restore Student
-                        </button>
-                    </form>
+                    <div class="flex items-center gap-3">
+                        {{-- RESTORE BUTTON --}}
+                        <form action="{{ route('admin.trash.restore', ['type' => 'student', 'id' => $student->id]) }}" method="POST" onsubmit="return confirmAction(event, 'restore')">
+                            @csrf
+                            <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                Restore
+                            </button>
+                        </form>
+
+                        {{-- FORCE DELETE BUTTON --}}
+                        <form action="{{ route('admin.trash.force_delete', ['type' => 'student', 'id' => $student->id]) }}" method="POST" onsubmit="return confirmAction(event, 'delete')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                Delete Permanently
+                            </button>
+                        </form>
+                    </div>
                 @else
                     <button @click="showEditModal = true" 
                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
@@ -268,7 +280,7 @@
         @if(!$isTrashed)
             @include('admin.student.partials.edit-modal', ['showClassAssignment' => true])
 
-            {{-- 5. HIDDEN FORM DELETE --}}
+            {{-- 5. HIDDEN FORM DELETE (Soft Delete) --}}
             <form id="delete-student-form" action="{{ route('admin.student.delete', $student->id) }}" method="POST" style="display: none;">
                 @csrf 
                 @method('DELETE')
@@ -288,6 +300,43 @@
     
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        // Fungsi Konfirmasi untuk Restore & Force Delete
+        function confirmAction(e, type) {
+            e.preventDefault();
+            const form = e.target;
+            
+            const config = type === 'restore' 
+                ? {
+                    title: 'Restore Student?',
+                    text: "This student will be moved back to the active list.",
+                    icon: 'question',
+                    confirmButtonColor: '#10B981', // Green
+                    confirmButtonText: 'Yes, Restore!'
+                  }
+                : {
+                    title: 'Delete Permanently?',
+                    text: "WARNING: This action cannot be undone. All data related to this student will be lost forever.",
+                    icon: 'warning',
+                    confirmButtonColor: '#EF4444', // Red
+                    confirmButtonText: 'Yes, Delete Permanently!'
+                  };
+
+            Swal.fire({
+                title: config.title,
+                text: config.text,
+                icon: config.icon,
+                showCancelButton: true,
+                confirmButtonColor: config.confirmButtonColor,
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: config.confirmButtonText
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+            return false;
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const successMessage = "{{ session('success') }}";
             const errorMessage = "{{ session('error') }}";

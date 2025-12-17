@@ -24,10 +24,8 @@
             </nav>
 
             {{-- 2. HEADER / TITLE SECTION --}}
-            {{-- Mengubah mb-6 menjadi mb-8 agar sama persis dengan class.blade.php --}}
             <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
                 <div>
-                    {{-- Mengubah h3 menjadi h1 dan text-2xl menjadi text-3xl agar ukurannya sama --}}
                     <h1 class="text-3xl font-bold text-red-600">Deleted Items</h1>
                     <p class="text-sm text-gray-500 mt-1">Manage deleted teachers, students, and classes.</p>
                 </div>
@@ -36,17 +34,7 @@
                 </div>
             </div>
 
-            {{-- FLASH MESSAGE --}}
-            @if (session('success'))
-                <div class="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded shadow-sm">
-                    <p class="font-medium">{{ session('success') }}</p>
-                </div>
-            @endif
-            @if (session('error'))
-                <div class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded shadow-sm">
-                    <p class="font-medium">{{ session('error') }}</p>
-                </div>
-            @endif
+            {{-- NOTE: Flash Message HTML dihapus karena sudah digantikan SweetAlert di script bawah --}}
 
             {{-- TABLE SECTION --}}
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-xl border border-gray-100">
@@ -123,18 +111,24 @@
                                             @endif
 
                                             {{-- RESTORE --}}
-                                            <form action="{{ route('admin.trash.restore', ['type' => $log->type, 'id' => $log->id]) }}" method="POST" class="inline-block">
+                                            <form action="{{ route('admin.trash.restore', ['type' => $log->type, 'id' => $log->id]) }}" 
+                                                  method="POST" 
+                                                  class="inline-block"
+                                                  onsubmit="return confirmRestore(event, '{{ $log->name }}')">
                                                 @csrf
-                                                <button type="submit" class="text-green-600 hover:text-green-900 transition-colors" title="Restore" onclick="return confirm('Are you sure you want to restore this item?')">
+                                                <button type="submit" class="text-green-600 hover:text-green-900 transition-colors" title="Restore">
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                                                 </button>
                                             </form>
 
                                             {{-- FORCE DELETE --}}
-                                            <form action="{{ route('admin.trash.force_delete', ['type' => $log->type, 'id' => $log->id]) }}" method="POST" class="inline-block">
+                                            <form action="{{ route('admin.trash.force_delete', ['type' => $log->type, 'id' => $log->id]) }}" 
+                                                  method="POST" 
+                                                  class="inline-block"
+                                                  onsubmit="return confirmForceDelete(event, '{{ $log->name }}')">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="text-red-500 hover:text-red-700 transition-colors" title="Delete Permanently" onclick="return confirm('WARNING: This action is irreversible. Are you sure?')">
+                                                <button type="submit" class="text-red-500 hover:text-red-700 transition-colors" title="Delete Permanently">
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                                 </button>
                                             </form>
@@ -164,4 +158,74 @@
             
         </div>
     </div>
+
+    {{-- SWEETALERT SCRIPTS --}}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        // 1. CONFIRM RESTORE
+        function confirmRestore(e, itemName) {
+            e.preventDefault();
+            const form = e.target;
+            
+            Swal.fire({
+                title: 'Restore Item?',
+                text: `Are you sure you want to restore "${itemName}"?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#10B981', // Green
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: 'Yes, Restore it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+            return false;
+        }
+
+        // 2. CONFIRM FORCE DELETE
+        function confirmForceDelete(e, itemName) {
+            e.preventDefault();
+            const form = e.target;
+
+            Swal.fire({
+                title: 'Delete Permanently?',
+                text: `WARNING: "${itemName}" will be deleted FOREVER. This action cannot be undone!`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#EF4444', // Red
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: 'Yes, Delete Permanently'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+            return false;
+        }
+
+        // 3. FLASH MESSAGES (Success / Error)
+        document.addEventListener('DOMContentLoaded', function() {
+            const successMessage = <?php echo json_encode(session('success')); ?>;
+            const errorMessage   = <?php echo json_encode(session('error')); ?>;
+
+            if (successMessage) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: successMessage,
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            }
+
+            if (errorMessage) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: errorMessage,
+                });
+            }
+        });
+    </script>
 </x-app-layout>

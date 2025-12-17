@@ -139,12 +139,22 @@
                 
                 <div class="flex items-center gap-3">
                     @if($isTrashed)
-                        {{-- TOMBOL RESTORE --}}
-                        <form action="{{ route('admin.trash.restore', ['type' => 'teacher', 'id' => $teacher->id]) }}" method="POST">
+                        {{-- RESTORE BUTTON --}}
+                        <form action="{{ route('admin.trash.restore', ['type' => 'teacher', 'id' => $teacher->id]) }}" method="POST" onsubmit="return confirmAction(event, 'restore')">
                             @csrf
                             <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                                Restore Teacher
+                                Restore
+                            </button>
+                        </form>
+
+                        {{-- FORCE DELETE BUTTON --}}
+                        <form action="{{ route('admin.trash.force_delete', ['type' => 'teacher', 'id' => $teacher->id]) }}" method="POST" onsubmit="return confirmAction(event, 'delete')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                Delete Permanently
                             </button>
                         </form>
                     @else
@@ -322,6 +332,43 @@
     {{-- SWEETALERT --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        // Fungsi Konfirmasi untuk Restore & Force Delete
+        function confirmAction(e, type) {
+            e.preventDefault();
+            const form = e.target;
+            
+            const config = type === 'restore' 
+                ? {
+                    title: 'Restore Teacher?',
+                    text: "This teacher will be moved back to the active list.",
+                    icon: 'question',
+                    confirmButtonColor: '#10B981', // Green
+                    confirmButtonText: 'Yes, Restore!'
+                  }
+                : {
+                    title: 'Delete Permanently?',
+                    text: "WARNING: This action cannot be undone. All data related to this teacher will be lost forever.",
+                    icon: 'warning',
+                    confirmButtonColor: '#EF4444', // Red
+                    confirmButtonText: 'Yes, Delete Permanently!'
+                  };
+
+            Swal.fire({
+                title: config.title,
+                text: config.text,
+                icon: config.icon,
+                showCancelButton: true,
+                confirmButtonColor: config.confirmButtonColor,
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: config.confirmButtonText
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+            return false;
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const successMessage = "{{ session('success') }}";
             const errorMessage = "{{ session('error') }}";

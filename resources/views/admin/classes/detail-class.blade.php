@@ -9,18 +9,17 @@
     {{-- WRAPPER UTAMA DENGAN ALPINE JS --}}
     <div class="bg-[#EEF2FF] min-h-screen font-sans" x-data="{ 
         // 1. STATE MODAL
-        // Jika trashed, paksa semua modal edit/add jadi false
         showEditModal: {{ !$isTrashed && ($errors->any() || session('edit_failed')) ? 'true' : 'false' }},
         showAddStudentModal: {{ !$isTrashed && request('search_student') ? 'true' : 'false' }},
         
-        // Modal History & Stats (READ ONLY) tetap boleh dibuka
+        // Modal History & Stats (READ ONLY)
         showHistoryModal: false,
         showStudentStatsModal: false,
         
         showAssignTeacherModal: false,
         assignTeacherRole: '',
 
-        // 2. STATE FORM DATA (Hanya load jika TIDAK trashed untuk efisiensi)
+        // 2. STATE FORM DATA
         @if(!$isTrashed)
         editForm: {
             name: '{{ addslashes($class->name) }}',
@@ -49,9 +48,6 @@
 
         // 3. URL & ID
         classId: '{{ $class->id }}', 
-        
-        // URL Action hanya relevan jika active (tapi didefinisikan agar tidak error JS)
-        deleteUrl: '{{ route('admin.classes.delete', $class->id) }}',
         updateBaseUrl: '{{ route('admin.classes.update', ['id' => 'PLACEHOLDER']) }}'.replace('/PLACEHOLDER', ''),
         
         getUpdateUrl() {
@@ -62,40 +58,19 @@
 
         closeModal(modalVar) {
             if ({{ !$isTrashed && ($errors->any() || session('edit_failed')) ? 'true' : 'false' }}) {
-                window.location.href = window.location.href; // Refresh untuk clear error session
+                window.location.href = window.location.href; 
             } else {
                 this[modalVar] = false;
             }
         },
 
         openAssignTeacherModal(role) {
-            // Guard: Jangan buka modal jika trashed
             if ({{ $isTrashed ? 'true' : 'false' }}) return;
-            
             this.assignTeacherRole = role;
             this.showAssignTeacherModal = true;
         },
         
-        // 4. FUNCTION ACTIONS (SweetAlert)
-        // Kita definisikan fungsi kosong jika isTrashed agar tidak error saat dipanggil
-        confirmDelete() {
-            @if(!$isTrashed)
-            Swal.fire({
-                title: 'Delete Class?',
-                text: 'This class will be moved to trash (Soft Delete).',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#EF4444',
-                cancelButtonColor: '#6B7280',
-                confirmButtonText: 'Yes, Delete'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = this.deleteUrl;
-                }
-            });
-            @endif
-        },
-        
+        // 4. ACTIONS
         confirmRemove(studentName, formId) {
             @if(!$isTrashed)
             Swal.fire({
@@ -122,7 +97,7 @@
 
             Swal.fire({
                 title: `${action} Student?`,
-                text: `Change status to ${statusText}? Inactive students remain in history.`,
+                text: `Change status to ${statusText}?`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: iconColor,
@@ -131,7 +106,6 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     const form = document.getElementById('toggleStatusForm');
-                    // Ganti URL action secara dinamis
                     const url = '{{ route('admin.student.toggleStatus', ':id') }}'.replace(':id', studentId);
                     form.action = url;
                     form.submit();
@@ -144,7 +118,7 @@
             @if(!$isTrashed)
             Swal.fire({
                 title: 'Unassign Teacher?',
-                text: `Are you sure you want to remove ${teacherName} as the ${type === 'form' ? 'Form' : 'Local'} Teacher?`,
+                text: `Remove ${teacherName} as ${type === 'form' ? 'Form' : 'Local'} Teacher?`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#EF4444',
@@ -156,7 +130,6 @@
                                 .replace(':classId', this.classId)
                                 .replace(':type', type);
                     
-                    // Buat form dinamis untuk submit DELETE/PATCH
                     const form = document.createElement('form');
                     form.method = 'POST';
                     form.action = url;
@@ -196,7 +169,6 @@
                     </li>
                     
                     @if($isTrashed)
-                        {{-- Context: Trash Bin --}}
                         <li>
                             <div class="flex items-center">
                                 <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
@@ -204,7 +176,6 @@
                             </div>
                         </li>
                     @else
-                        {{-- Context: Classes List --}}
                         <li>
                             <div class="flex items-center">
                                 <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
@@ -231,16 +202,28 @@
                 </h2>
                 
                 @if($isTrashed)
-                    {{-- TOMBOL RESTORE (Khusus Trash) --}}
-                    <form action="{{ route('admin.trash.restore', ['type' => 'class', 'id' => $class->id]) }}" method="POST">
-                        @csrf
-                        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                            Restore Class
-                        </button>
-                    </form>
+                    <div class="flex items-center gap-3">
+                        {{-- RESTORE BUTTON --}}
+                        <form action="{{ route('admin.trash.restore', ['type' => 'class', 'id' => $class->id]) }}" method="POST" onsubmit="return confirmAction(event, 'restore')">
+                            @csrf
+                            <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                Restore
+                            </button>
+                        </form>
+
+                        {{-- FORCE DELETE BUTTON --}}
+                        <form action="{{ route('admin.trash.force_delete', ['type' => 'class', 'id' => $class->id]) }}" method="POST" onsubmit="return confirmAction(event, 'delete')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                Delete Permanently
+                            </button>
+                        </form>
+                    </div>
                 @else
-                    {{-- TOMBOL EDIT (Normal) --}}
+                    {{-- [UPDATED] TOMBOL EDIT CLASS SAJA (Delete ada di Modal) --}}
                     <button @click="showEditModal = true" 
                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
@@ -748,6 +731,11 @@
             <form id="toggleStatusForm" method="POST" action="#" style="display: none;">
                 @csrf @method('PATCH')
             </form>
+
+            {{-- [ADDED] FORM HIDDEN UNTUK DELETE CLASS (Soft Delete) --}}
+            <form id="delete-class-form" action="{{ route('admin.classes.delete', $class->id) }}" method="POST" style="display: none;">
+                @csrf @method('DELETE')
+            </form>
         @endif
 
     </div>
@@ -755,6 +743,43 @@
     {{-- SWEETALERT --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        // Fungsi Konfirmasi untuk Restore & Force Delete
+        function confirmAction(e, type) {
+            e.preventDefault();
+            const form = e.target;
+            
+            const config = type === 'restore' 
+                ? {
+                    title: 'Restore Class?',
+                    text: "This class will be moved back to the active list.",
+                    icon: 'question',
+                    confirmButtonColor: '#10B981', // Green
+                    confirmButtonText: 'Yes, Restore!'
+                  }
+                : {
+                    title: 'Delete Permanently?',
+                    text: "WARNING: This action cannot be undone. All data related to this class will be lost forever.",
+                    icon: 'warning',
+                    confirmButtonColor: '#EF4444', // Red
+                    confirmButtonText: 'Yes, Delete Permanently!'
+                  };
+
+            Swal.fire({
+                title: config.title,
+                text: config.text,
+                icon: config.icon,
+                showCancelButton: true,
+                confirmButtonColor: config.confirmButtonColor,
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: config.confirmButtonText
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+            return false;
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const successMessage = <?php echo json_encode(session('success')); ?>;
             const errorMessage = <?php echo json_encode(session('error')); ?>;
