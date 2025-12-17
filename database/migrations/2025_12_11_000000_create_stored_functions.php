@@ -117,7 +117,6 @@ return new class extends Migration
         // ==========================================
         DB::unprepared("
             DROP FUNCTION IF EXISTS f_get_total_sessions;
-            DROP PROCEDURE IF EXISTS p_get_total_sessions; -- Hapus procedure lama jika ada
             
             CREATE FUNCTION f_get_total_sessions(p_class_id INT) 
             RETURNS INT
@@ -128,8 +127,8 @@ return new class extends Migration
                 SELECT COUNT(*) INTO v_total 
                 FROM class_sessions 
                 WHERE class_id = p_class_id 
-                  AND deleted_at IS NULL;
-                  
+                    AND deleted_at IS NULL;
+                
                 RETURN v_total;
             END
         ");
@@ -139,7 +138,6 @@ return new class extends Migration
         // ==========================================
         DB::unprepared("
             DROP FUNCTION IF EXISTS f_get_student_attendance_total;
-            DROP PROCEDURE IF EXISTS p_get_student_attendance_total; -- Hapus procedure lama jika ada
 
             CREATE FUNCTION f_get_student_attendance_total(p_class_id INT, p_student_id INT) 
             RETURNS INT
@@ -151,10 +149,10 @@ return new class extends Migration
                 FROM attendance_records ar
                 INNER JOIN class_sessions cs ON ar.class_session_id = cs.id
                 WHERE ar.student_id = p_student_id
-                  AND cs.class_id = p_class_id
-                  AND ar.status = 'present'
-                  AND cs.deleted_at IS NULL;
-                  
+                    AND cs.class_id = p_class_id
+                    AND ar.status = 'present'
+                    AND cs.deleted_at IS NULL;
+
                 RETURN v_total_present;
             END
         ");
@@ -200,7 +198,7 @@ return new class extends Migration
                 SELECT status INTO v_status
                 FROM attendance_records
                 WHERE class_session_id = p_session_id 
-                  AND student_id = p_student_id
+                    AND student_id = p_student_id
                 LIMIT 1;
                 
                 -- 2. Kembalikan simbol sesuai mapping

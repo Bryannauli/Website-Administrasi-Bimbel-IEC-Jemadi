@@ -304,8 +304,8 @@ return new class extends Migration
                 LEFT JOIN attendance_records ar 
                     ON s.id = ar.student_id AND ar.class_session_id = p_session_id
                 WHERE s.class_id = p_class_id
-                  AND s.is_active = 1
-                  AND s.deleted_at IS NULL
+                    AND s.is_active = 1
+                    AND s.deleted_at IS NULL
                 ORDER BY s.student_number ASC;
             END
         ");
