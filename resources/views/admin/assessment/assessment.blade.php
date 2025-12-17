@@ -149,15 +149,15 @@
                                         </button>
 
                                         {{-- 3. PRINT ICON (With Alert Logic) --}}
-                                        <button type="button" 
-                                            onclick="handlePrint('{{ $assessment->status }}', '{{ $assessment->class_id }}', '{{ $assessment->type }}')"
-                                            class="p-1.5 transition-colors rounded-lg {{ $assessment->status === 'final' ? 'text-gray-400 hover:text-purple-600 hover:bg-purple-50' : 'text-gray-300' }}" 
-                                            title="Print Report Card">
+                                        <a href="{{ route('admin.classes.assessment.print', ['classId' => $assessment->class_id, 'sessionId' => $assessment->id]) }}" 
+                                        target="_blank"
+                                        class="p-1.5 transition-colors rounded-lg flex items-center justify-center {{ $assessment->status === 'final' ? 'text-gray-400 hover:text-purple-600 hover:bg-purple-50' : 'text-gray-300 pointer-events-none cursor-not-allowed' }}" 
+                                        title="Print Report Card">
+                                            
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 00-2 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                                             </svg>
-                                        </button>
-
+                                        </a>
                                     </div>
                                 </td>
                             </tr>
