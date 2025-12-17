@@ -125,7 +125,7 @@ Route::middleware(['auth', 'verified', 'admin'])
         });
 
         /* ACTIVITY LOG */
-        Route::resource('activity-log', AdminLogController::class)->only(['index', 'show']);
+        Route::resource('log', AdminLogController::class)->only(['index', 'show']);
 
         /* ASSESSMENT (Global) */
         Route::prefix('assessment')->name('assessment.')->group(function () {
