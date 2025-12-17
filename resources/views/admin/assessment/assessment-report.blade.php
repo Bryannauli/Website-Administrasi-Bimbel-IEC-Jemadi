@@ -180,12 +180,18 @@
             </tbody>
         </table>
         
-        {{-- FOOTER TOMBOL (Tidak ikut ter-print) --}}
+    {{-- FOOTER TOMBOL (Tidak ikut ter-print) --}}
         <div class="no-print fixed bottom-10 right-10 flex gap-4">
-            <button onclick="window.print()" class="bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg hover:bg-blue-700 font-bold transition">
-                <i class="fas fa-print mr-2"></i> Print Form
+            
+            {{-- TOMBOL CANCEL / BACK --}}
+            <a href="{{ url()->previous() }}" class="bg-gray-500 text-white px-6 py-3 rounded-full shadow-lg hover:bg-gray-600 font-bold transition flex items-center gap-2">
+                <i class="fas fa-arrow-left"></i> Cancel
+            </a>
+
+            {{-- TOMBOL PRINT --}}
+            <button onclick="window.print()" class="bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg hover:bg-blue-700 font-bold transition flex items-center gap-2">
+                <i class="fas fa-print"></i> Print Form
             </button>
-        </div>
 
     </div>
 
