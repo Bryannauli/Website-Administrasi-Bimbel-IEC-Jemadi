@@ -91,21 +91,23 @@ class TeacherClassController extends Controller
         // 1. Load Data Kelas Utama
         $class = ClassModel::with(['formTeacher', 'localTeacher'])->findOrFail($id);
         
-        // 2. [UPDATE] Ambil Stats Siswa dari Stored Procedure (Sama seperti Admin)
-        // Procedure ini sudah mengembalikan: id, name, student_number, total_sessions, total_present, percentage
+        // 2. Ambil Stats Siswa dari Stored Procedure (Raw Data termasuk Deleted)
         $studentStatsRaw = DB::select('CALL p_get_class_attendance_stats(?)', [$id]);
-        
-        // Ubah array of objects menjadi Collection agar mudah diolah di Blade (optional, tapi disarankan)
         $studentStats = collect($studentStatsRaw);
 
-        // 3. [UPDATE] Ambil History Sesi dari View (Sama seperti Admin)
-        // View ini sudah menghitung 'present_count' dan 'attendance_percentage' per sesi
+        // [FIX] Filter khusus untuk tampilan "Enrolled Students List"
+        // Kita hanya ambil siswa yang deleted_at-nya NULL (Sembunyikan Deleted Student)
+        $enrolledStudents = $studentStats->filter(function($student) {
+            return is_null($student->deleted_at);
+        });
+
+        // 3. Ambil History Sesi dari View
         $classSessions = DB::table('v_class_activity_logs')
             ->where('class_id', $id)
             ->orderBy('date', 'desc')
-            ->paginate(5, ['*'], 'session_page'); // Gunakan pagination agar halaman tidak berat
+            ->paginate(5, ['*'], 'session_page'); 
 
-        // 4. Sesi Hari Ini (Untuk tombol Quick Action)
+        // 4. Sesi Hari Ini
         $sessionToday = ClassSession::where('class_id', $id)
                                     ->where('date', Carbon::today()->format('Y-m-d'))
                                     ->first();
@@ -115,37 +117,28 @@ class TeacherClassController extends Controller
             ->orderBy('date', 'desc')
             ->paginate(5, ['*'], 'assessment_page');
 
-        // ====================================================
-        // 6. DATA UNTUK MODAL MATRIX (VISUAL ONLY)
-        // ====================================================
-        // Kita tetap butuh raw data untuk membuat kotak-kotak (Matrix), 
-        // tapi kita TIDAK lagi menghitung persentase di sini.
-        
+        // 6. Data Matrix (Tetap pakai full data $studentStats agar history deleted student tetap ada)
         $allSessions = ClassSession::where('class_id', $id)
                         ->with(['records:id,class_session_id,student_id,status', 'teacher'])
-                        ->orderBy('date', 'desc') // Sesuai request: Newest first untuk list, tapi view modal mungkin butuh sort by date asc
+                        ->orderBy('date', 'desc')
                         ->get();
 
         $attendanceMatrix = [];
-        
-        // Build Matrix: [student_id][session_id] = status
         foreach ($allSessions as $session) {
             foreach ($session->records as $record) {
                 $attendanceMatrix[$record->student_id][$session->id] = $record->status;
             }
         }
 
-        // Untuk keperluan Modal Matrix yang menampilkan nama siswa, kita bisa reuse $studentStats
-        // Karena $studentStats dari procedure sudah memuat semua siswa di kelas tersebut.
-
         return view('teacher.classes.detail', compact(
             'class', 
-            'classSessions', // Sekarang isinya dari View v_class_activity_logs
+            'classSessions', 
             'assessments',
             'sessionToday',
             'allSessions',
             'attendanceMatrix',
-            'studentStats'   // Sekarang isinya dari Procedure p_get_class_attendance_stats
+            'studentStats',     // Full Data (untuk Modal History)
+            'enrolledStudents'  // Filtered Data (untuk List Utama)
         ));
     }
 }

@@ -311,8 +311,9 @@
                         <div class="flex justify-between items-center mb-5">
                             <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
                                 Enrolled Students
+                                {{-- Gunakan count dari enrolledStudents agar akurat --}}
                                 <span class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-0.5 rounded-full ml-2">
-                                    {{ $studentStats->count() }}
+                                    {{ $enrolledStudents->count() }}
                                 </span>
                             </h3>
                         </div>
@@ -330,11 +331,13 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 text-sm text-gray-800 bg-white">
-                                    @forelse($studentStats as $index => $student)
+                                    {{-- [UPDATE] Gunakan $enrolledStudents (yang sudah bersih dari Deleted) --}}
+                                    @forelse($enrolledStudents as $index => $student)
                                         <tr class="transition group {{ $student->is_active ? 'hover:bg-gray-50' : 'bg-red-50 hover:bg-red-100' }}">
                                             
                                             {{-- NOMOR --}}
-                                            <td class="px-4 py-3 text-center text-gray-400 text-xs">{{ $index + 1 }}</td>
+                                            {{-- Karena $index dari collection filter mungkin loncat, kita pakai loop iteration atau counter manual --}}
+                                            <td class="px-4 py-3 text-center text-gray-400 text-xs">{{ $loop->iteration }}</td>
                                             
                                             {{-- ID --}}
                                             <td class="px-4 py-3 font-mono text-xs text-gray-500">{{ $student->student_number }}</td>
@@ -356,7 +359,7 @@
                                                 @endif
                                             </td>
 
-                                            {{-- STATUS (UPDATED: PILL STYLE LIKE ADMIN) --}}
+                                            {{-- STATUS (Pill Style) --}}
                                             <td class="px-4 py-3 text-center">
                                                 @if($student->is_active)
                                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">Active</span>
