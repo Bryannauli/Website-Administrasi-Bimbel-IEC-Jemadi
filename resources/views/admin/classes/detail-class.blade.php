@@ -200,7 +200,7 @@
                         <li>
                             <div class="flex items-center">
                                 <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                                <a href="{{ route('admin.trash.trash') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Trash Bin</a>
+                                <a href="{{ route('admin.trash.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Trash Bin</a>
                             </div>
                         </li>
                     @else
@@ -480,8 +480,9 @@
                                         <th class="px-4 py-3 font-normal w-12 bg-gray-50">No</th>
                                         <th class="px-4 py-3 font-normal bg-gray-50">Student ID</th>
                                         <th class="px-4 py-3 font-normal bg-gray-50">Name</th>
-                                        <th class="px-4 py-3 font-normal bg-gray-50">Status</th>
-                                        {{-- Sembunyikan Action jika Trashed --}}
+                                        {{-- HEADER BARU --}}
+                                        <th class="px-4 py-3 font-normal bg-gray-50 text-center">Attendance</th>
+                                        <th class="px-4 py-3 font-normal bg-gray-50 text-center">Status</th>
                                         @if(!$isTrashed)
                                             <th class="px-4 py-3 font-normal text-center w-28 bg-gray-50">Action</th>
                                         @endif
@@ -489,6 +490,14 @@
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 text-sm text-gray-800 bg-white">
                                     @forelse($class->students ?? [] as $index => $student)
+                                    
+                                    {{-- LOGIC LOOKUP PERSENTASE --}}
+                                    @php
+                                        // Cari data statistik siswa ini dari array $studentStats (dari Controller)
+                                        $stat = collect($studentStats)->firstWhere('student_id', $student->id);
+                                        $percentage = $stat ? $stat->percentage : 0;
+                                    @endphp
+
                                     <tr class="transition group {{ $student->is_active ? 'hover:bg-gray-50' : 'bg-red-50 hover:bg-red-100' }}">
                                         
                                         <td class="px-4 py-3 text-gray-400 text-xs">{{ $index + 1 }}</td>
@@ -500,8 +509,20 @@
                                                 <span class="text-[10px] text-red-500 font-bold ml-1">(DELETED)</span>
                                             @endif
                                         </td>
+
+                                        {{-- KOLOM BARU: ATTENDANCE --}}
+                                        <td class="px-4 py-3 text-center">
+                                            @if($student->is_active)
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold 
+                                                    {{ $percentage >= 80 ? 'bg-green-50 text-green-700' : ($percentage >= 50 ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-700') }}">
+                                                    {{ $percentage }}%
+                                                </span>
+                                            @else
+                                                <span class="text-xs text-gray-400">-</span>
+                                            @endif
+                                        </td>
                                         
-                                        <td class="px-4 py-3">
+                                        <td class="px-4 py-3 text-center">
                                             @if($student->is_active)
                                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">Active</span>
                                             @else
@@ -542,7 +563,7 @@
                                     </tr>
                                     @empty
                                     <tr>
-                                        <td colspan="{{ $isTrashed ? 4 : 5 }}" class="px-4 py-12 text-center text-gray-400 italic bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                                        <td colspan="{{ $isTrashed ? 5 : 6 }}" class="px-4 py-12 text-center text-gray-400 italic bg-gray-50 rounded-lg border border-dashed border-gray-200">
                                             No students enrolled in this class yet.
                                         </td>
                                     </tr>

@@ -306,12 +306,11 @@
 
                     </div>
 
-                    {{-- C. STUDENT LIST (Main Content) (Mobile: Order-2) --}}
+                    {{-- C. STUDENT LIST (Main Content) --}}
                     <div class="order-2 lg:order-1 lg:col-span-2 bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col min-h-[400px]">
                         <div class="flex justify-between items-center mb-5">
                             <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
                                 Enrolled Students
-                                {{-- Gunakan count() dari collection $studentStats --}}
                                 <span class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-0.5 rounded-full ml-2">
                                     {{ $studentStats->count() }}
                                 </span>
@@ -326,13 +325,11 @@
                                         <th class="px-4 py-3 font-normal w-12 text-center bg-gray-50">No</th>
                                         <th class="px-4 py-3 font-normal bg-gray-50">Student ID</th>
                                         <th class="px-4 py-3 font-normal bg-gray-50">Student Name</th>
-                                        {{-- KOLOM BARU: Attendance --}}
                                         <th class="px-4 py-3 font-normal text-center bg-gray-50">Attendance</th>
                                         <th class="px-4 py-3 font-normal text-center bg-gray-50">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 text-sm text-gray-800 bg-white">
-                                    {{-- UPDATE: Menggunakan $studentStats bukan $students --}}
                                     @forelse($studentStats as $index => $student)
                                         <tr class="transition group {{ $student->is_active ? 'hover:bg-gray-50' : 'bg-red-50 hover:bg-red-100' }}">
                                             
@@ -359,12 +356,12 @@
                                                 @endif
                                             </td>
 
-                                            {{-- STATUS --}}
+                                            {{-- STATUS (UPDATED: PILL STYLE LIKE ADMIN) --}}
                                             <td class="px-4 py-3 text-center">
                                                 @if($student->is_active)
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700 border border-green-100">Active</span>
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">Active</span>
                                                 @else
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 border border-red-100">Inactive</span>
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 border border-red-200">Inactive</span>
                                                 @endif
                                             </td>
                                         </tr>
@@ -379,7 +376,6 @@
                             </table>
                         </div>
                     </div>
-
                 </div>
                 
                 {{-- 4. ACADEMIC ASSESSMENTS (BOTTOM FULL WIDTH) --}}

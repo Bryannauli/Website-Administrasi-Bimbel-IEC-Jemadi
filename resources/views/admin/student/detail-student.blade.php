@@ -22,7 +22,7 @@
             class_id: '{{ $student->class_id ?? '' }}'
         },
 
-        // 3. URL ACTIONS (Tambahkan ini agar JS bisa memanggilnya)
+        // 3. URL ACTIONS
         deleteUrl: '{{ route('admin.student.delete', $student->id) }}',
 
         // 4. Helper Functions
@@ -34,7 +34,7 @@
             }
         },
 
-        // 5. FUNGSI DELETE (INI YANG SEBELUMNYA HILANG)
+        // 5. FUNGSI DELETE
         confirmDelete() {
             Swal.fire({
                 title: 'Are you sure?',
@@ -46,7 +46,6 @@
                 confirmButtonText: 'Yes, delete it!'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Cari form berdasarkan ID dan submit
                     document.getElementById('delete-student-form').submit();
                 }
             });
@@ -59,6 +58,8 @@
                 <ol class="inline-flex items-center space-x-1 md:space-x-3">
                     <li class="inline-flex items-center">
                         <a href="{{ route('dashboard') }}" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600">
+                            {{-- [FIX] Icon Dashboard Ditambahkan Kembali --}}
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
                             Dashboard
                         </a>
                     </li>
@@ -67,7 +68,7 @@
                         <li>
                             <div class="flex items-center">
                                 <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                                <a href="{{ route('admin.trash.trash') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Trash Bin</a>
+                                <a href="{{ route('admin.trash.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Trash Bin</a>
                             </div>
                         </li>
                     @elseif(request('ref') == 'class' && $student->classModel)
@@ -112,7 +113,6 @@
                 @if($isTrashed)
                     <form action="{{ route('admin.trash.restore', ['type' => 'student', 'id' => $student->id]) }}" method="POST">
                         @csrf
-                        {{-- OPSI 2: Jika route Anda pakai PUT/PATCH, tambahkan @method('PUT') di sini --}}
                         <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                             Restore Student
@@ -236,7 +236,6 @@
 
             {{-- 3. TIMELINE ABSENSI --}}
             <div class="mb-10">
-                {{-- ... (Timeline Code Sama) ... --}}
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-bold text-gray-800">Attendance History</h3>
                     <span class="text-xs text-gray-400">&larr; Scroll for history &rarr;</span>
@@ -269,7 +268,7 @@
         @if(!$isTrashed)
             @include('admin.student.partials.edit-modal', ['showClassAssignment' => true])
 
-            {{-- 5. HIDDEN FORM DELETE (INI YANG SEBELUMNYA HILANG) --}}
+            {{-- 5. HIDDEN FORM DELETE --}}
             <form id="delete-student-form" action="{{ route('admin.student.delete', $student->id) }}" method="POST" style="display: none;">
                 @csrf 
                 @method('DELETE')
@@ -287,7 +286,6 @@
         });
     </script>
     
-    {{-- SWEETALERT SCRIPTS --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {

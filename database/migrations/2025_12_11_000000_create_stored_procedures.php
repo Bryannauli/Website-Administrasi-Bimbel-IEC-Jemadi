@@ -67,8 +67,9 @@ return new class extends Migration
         ");
 
         // ==========================================
-        // 4. PROCEDURE: Class Attendance Stats (ADMIN & TEACHER)
+        // 4. PROCEDURE: Class Attendance Stats (ADMIN & TEACHER) [UPDATED]
         // Deskripsi: Menampilkan statistik kehadiran per siswa dalam satu kelas.
+        // UPDATE: Menampilkan siswa yang Unassigned TAPI punya history kehadiran di kelas ini.
         // ==========================================
         DB::unprepared("
             DROP PROCEDURE IF EXISTS p_get_class_attendance_stats;
@@ -78,16 +79,25 @@ return new class extends Migration
                     s.id AS student_id,
                     s.name,
                     s.student_number,
-                    s.is_active, 
-                    COUNT(ar.id) AS total_sessions_recorded,
+                    s.is_active,
+                    s.deleted_at,  -- <<< INI WAJIB ADA AGAR WARNA DI MODAL BERUBAH
+                    
+                    COUNT(cs.id) AS total_sessions_recorded,
                     SUM(CASE WHEN ar.status IN ('present', 'late') THEN 1 ELSE 0 END) AS total_present,
                     ROUND(
-                        (SUM(CASE WHEN ar.status IN ('present', 'late') THEN 1 ELSE 0 END) / COUNT(ar.id)) * 100
+                        (SUM(CASE WHEN ar.status IN ('present', 'late') THEN 1 ELSE 0 END) / NULLIF(COUNT(cs.id), 0)) * 100
                     ) AS percentage
+
                 FROM students s
                 LEFT JOIN attendance_records ar ON s.id = ar.student_id
-                WHERE s.class_id = classId
-                GROUP BY s.id, s.name, s.student_number, s.is_active
+                LEFT JOIN class_sessions cs ON ar.class_session_id = cs.id AND cs.class_id = classId
+
+                WHERE 
+                    s.class_id = classId 
+                    OR 
+                    cs.id IS NOT NULL
+
+                GROUP BY s.id, s.name, s.student_number, s.is_active, s.deleted_at
                 ORDER BY s.student_number ASC; 
             END
         ");
@@ -111,7 +121,6 @@ return new class extends Migration
 
         // ==========================================
         // 6. PROCEDURE: p_UpdateStudentGrade (ADMIN & TEACHER)
-        // Deskripsi: Input/Update nilai siswa (Tertulis & Lisan)
         // ==========================================
         DB::unprepared('
             DROP PROCEDURE IF EXISTS p_UpdateStudentGrade;
@@ -275,7 +284,6 @@ return new class extends Migration
 
         // ==========================================
         // 9. PROCEDURE: Get Session Attendance List (TEACHER & ADMIN)
-        // Deskripsi: Mengambil list siswa + status absen di sesi tertentu.
         // ==========================================
         DB::unprepared("
             DROP PROCEDURE IF EXISTS p_GetSessionAttendanceList;
@@ -288,8 +296,6 @@ return new class extends Migration
                     s.id,
                     s.name,
                     s.student_number,
-                    -- Ambil status dari tabel records, jika null berarti belum absen
-                    -- Konversi 'permission' -> 'permitted' jika diperlukan UI, atau biarkan raw
                     CASE 
                         WHEN ar.status = 'permission' THEN 'permitted'
                         ELSE ar.status 
@@ -306,7 +312,6 @@ return new class extends Migration
 
         // ==========================================
         // 10. PROCEDURE: Upsert Attendance (TEACHER & ADMIN)
-        // Deskripsi: Insert or Update status kehadiran satu siswa.
         // ==========================================
         DB::unprepared("
             DROP PROCEDURE IF EXISTS p_UpsertAttendance;

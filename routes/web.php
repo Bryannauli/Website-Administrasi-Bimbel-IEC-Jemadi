@@ -112,7 +112,7 @@ Route::middleware(['auth', 'verified', 'admin'])
         ===================================================================== */
         Route::prefix('trash')->name('trash.')->group(function () {
             // Halaman Utama Trash
-            Route::get('/', [AdminTrashController::class, 'index'])->name('trash');
+            Route::get('/', [AdminTrashController::class, 'index'])->name('index');
             Route::get('/student/{id}', [AdminTrashController::class, 'detailTrashedStudent'])->name('student.detail');
             Route::get('/teacher/{id}', [AdminTrashController::class, 'detailTrashedTeacher'])->name('teacher.detail');
             Route::get('/class/{id}', [AdminTrashController::class, 'detailTrashedClass'])->name('class.detail');

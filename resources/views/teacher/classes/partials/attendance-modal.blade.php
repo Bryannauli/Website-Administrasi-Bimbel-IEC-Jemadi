@@ -1,7 +1,7 @@
 <div x-show="showStudentStatsModal" 
     x-init="$watch('showStudentStatsModal', value => {
         if (value) {
-            // Tunggu elemen render, lalu scroll mentok ke kanan (Lihat sesi terbaru)
+            // Tunggu elemen render ($nextTick) lalu scroll ke kanan
             $nextTick(() => {
                 const container = document.getElementById('attendance-matrix-container');
                 if(container) {
@@ -18,7 +18,7 @@
         <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showStudentStatsModal = false"></div>
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
         
-        {{-- Modal Lebar --}}
+        {{-- Modal Lebar (max-w-6xl) agar muat banyak kolom tanggal --}}
         <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl w-full">
             
             {{-- Header --}}
@@ -28,7 +28,7 @@
                     <p class="text-sm text-gray-500 mt-1">Recap of all {{ $allSessions->count() }} sessions (Oldest &rarr; Newest).</p>
                 </div>
                 <div class="flex items-center gap-4">
-                    {{-- Legend --}}
+                    {{-- Legend Kecil --}}
                     <div class="hidden lg:flex items-center gap-4 text-xs text-gray-600 font-medium">
                         <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-600 shadow-sm"></span> Present</span>
                         <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-yellow-500 shadow-sm"></span> Late</span>
@@ -42,7 +42,7 @@
                 </div>
             </div>
 
-            {{-- Matrix Table Container (ID untuk Scroll Logic) --}}
+            {{-- Container Scroll --}}
             <div id="attendance-matrix-container" class="max-h-[75vh] overflow-auto custom-scrollbar relative bg-white scroll-smooth">
                 <table class="w-full text-left border-collapse">
                     <thead class="bg-gray-50 text-gray-500 text-xs font-bold uppercase border-b border-gray-200 sticky top-0 z-20 shadow-sm">
@@ -55,7 +55,7 @@
                                 Rate
                             </th>
                             
-                            {{-- Loop Header Sesi (Diurutkan LAMA -> BARU) --}}
+                            {{-- Loop Header Sesi (Sort Oldest -> Newest) --}}
                             @foreach($allSessions->sortBy('date') as $session)
                                 <th class="px-2 py-2 text-center min-w-[80px] whitespace-nowrap bg-gray-50 align-top group hover:bg-gray-100 transition-colors">
                                     <div class="flex flex-col items-center justify-between h-full gap-1">
@@ -65,6 +65,7 @@
                                         </div>
                                         
                                         @php
+                                            // Handle Teacher Name (Optional in Teacher View, but good for consistency)
                                             $teacherName = $session->teacher->name ?? '-';
                                             $shortName = ($teacherName !== '-') ? explode(' ', trim($teacherName))[0] : '-';
                                         @endphp
@@ -77,35 +78,66 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 text-sm">
-                        {{-- Ubah $studentId menjadi $index atau biarkan, tapi JANGAN pakai untuk lookup matrix --}}
-                        @foreach($studentStats as $index => $stat)
-                            <tr class="transition group {{ $stat->is_active ? 'hover:bg-gray-50' : 'bg-red-50 hover:bg-red-100' }}">
+                        @foreach($studentStats as $stat)
+                            {{-- LOGIC 1: Background Baris (TR) --}}
+                            <tr class="transition group 
+                                @if($stat->deleted_at) bg-gray-100 text-gray-500
+                                @elseif(!$stat->is_active) bg-red-50 text-red-800
+                                @else hover:bg-gray-50 text-gray-900
+                                @endif">
                                 
-                                {{-- ... (Bagian Nama Siswa & Rate TETAP SAMA) ... --}}
+                                {{-- LOGIC 2: Background Sticky Column (TD) --}}
                                 <td class="px-4 py-3 sticky left-0 z-10 border-r border-gray-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] 
-                                    {{ $stat->is_active ? 'bg-white group-hover:bg-gray-50' : 'bg-red-50 group-hover:bg-red-100' }}">
-                                    <div class="truncate w-40 {{ $stat->is_active ? 'text-gray-900 font-medium' : 'text-red-800 line-through decoration-red-400' }}" title="{{ $stat->name }}">
-                                        {{ $stat->name }}
-                                        @if(!$stat->is_active)
-                                            <span class="ml-1 text-[9px] text-red-600 bg-white border border-red-200 px-1 rounded no-underline inline-block">QUIT</span>
+                                    @if($stat->deleted_at) bg-gray-100 group-hover:bg-gray-200
+                                    @elseif(!$stat->is_active) bg-red-50 group-hover:bg-red-100
+                                    @else bg-white group-hover:bg-gray-50
+                                    @endif">
+                                    
+                                    <div class="flex flex-col justify-center h-full">
+                                        {{-- 1. NAMA --}}
+                                        <div class="truncate w-40 font-medium text-sm leading-tight {{ $stat->deleted_at ? 'text-gray-500' : ($stat->is_active ? 'text-gray-900' : 'text-red-800 line-through decoration-red-400') }}" 
+                                             title="{{ $stat->name }}">
+                                            {{ $stat->name }}
+                                        </div>
+
+                                        {{-- 2. STATUS TAG (Baris Baru) --}}
+                                        @if($stat->deleted_at || !$stat->is_active)
+                                            <div class="mt-1">
+                                                @if($stat->deleted_at)
+                                                    {{-- DELETED --}}
+                                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-600 text-white border border-red-700 uppercase tracking-wide">
+                                                        DELETED
+                                                    </span>
+                                                    <span class="text-[9px] text-gray-400 ml-1">
+                                                        {{ \Carbon\Carbon::parse($stat->deleted_at)->format('d/m/y') }}
+                                                    </span>
+                                                @elseif(!$stat->is_active)
+                                                    {{-- QUIT --}}
+                                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-white text-red-600 border border-red-200 uppercase tracking-wide">
+                                                        QUIT
+                                                    </span>
+                                                @endif
+                                            </div>
                                         @endif
-                                    </div>
-                                    <div class="text-[10px] font-mono {{ $stat->is_active ? 'text-gray-400' : 'text-red-400' }}">
-                                        {{ $stat->student_number }}
+
+                                        {{-- 3. NOMOR SISWA --}}
+                                        <div class="text-[10px] font-mono opacity-70 mt-0.5">
+                                            {{ $stat->student_number }}
+                                        </div>
                                     </div>
                                 </td>
 
-                                <td class="px-2 py-3 text-center border-r border-gray-100 {{ $stat->is_active ? 'bg-gray-50/30' : 'bg-red-50/30' }}">
+                                {{-- Rate % --}}
+                                <td class="px-2 py-3 text-center border-r border-gray-100 opacity-90">
                                     <span class="text-xs font-bold {{ $stat->percentage >= 80 ? 'text-green-600' : ($stat->percentage >= 50 ? 'text-yellow-600' : 'text-red-600') }}">
                                         {{ $stat->percentage }}%
                                     </span>
                                 </td>
 
-                                {{-- Status Matrix --}}
+                                {{-- Loop Status Matrix --}}
                                 @foreach($allSessions->sortBy('date') as $session)
                                     @php
-                                        // PERBAIKAN: Gunakan $stat->student_id untuk akses array matrix
-                                        // Pastikan nama kolom ID dari procedure sesuai (misal: student_id atau id)
+                                        // Pastikan menggunakan ID yang benar untuk akses array
                                         $realStudentId = $stat->student_id; 
                                         
                                         $status = $attendanceMatrix[$realStudentId][$session->id] ?? '-';
@@ -120,7 +152,7 @@
                                         };
                                     @endphp
 
-                                    <td class="px-2 py-3 text-center border-r border-gray-50 last:border-r-0">
+                                    <td class="px-2 py-3 text-center border-r border-gray-100 last:border-r-0">
                                         {!! $cellContent !!}
                                     </td>
                                 @endforeach
@@ -129,7 +161,6 @@
                     </tbody>
                 </table>
                 
-                {{-- Empty State --}}
                 @if(count($studentStats) == 0)
                     <div class="flex flex-col items-center justify-center py-12 text-gray-400">
                         <svg class="w-12 h-12 mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -143,6 +174,6 @@
                     Close Report
                 </button>
             </div>
-        </div>
+        </div> 
     </div>
 </div>

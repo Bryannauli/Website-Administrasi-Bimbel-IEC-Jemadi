@@ -101,7 +101,7 @@ return new class extends Migration
         ");
 
         // ==========================================
-        // 6. View: v_student_grades (UPDATED - ORDER BY Student Number)
+        // 6. View: v_student_grades
         // ==========================================
         DB::unprepared("
             CREATE OR REPLACE VIEW v_student_grades AS
@@ -115,37 +115,27 @@ return new class extends Migration
                 asess.date AS assessment_date,
                 asess.class_id,
                 c.name AS class_name,
-                
-                -- Nilai Tertulis Mentah
                 af.vocabulary,
                 af.grammar,
                 af.listening,
                 af.reading,
                 af.spelling,
-                af.speaking, -- Total Speaking (Content + Participation)
-
-                -- Detail Speaking (JOIN)
+                af.speaking, 
                 str.content_score AS speaking_content,
                 str.participation_score AS speaking_participation,
                 st.date AS speaking_date,
                 st.topic AS speaking_topic,
                 u.name AS interviewer_name,
                 st.interviewer_id,
-
-                -- Kalkulasi Otomatis via Stored Function
                 f_CalcAssessmentAvg(
                     af.vocabulary, af.grammar, af.listening, af.reading, af.spelling, af.speaking
                 ) AS final_score,
-                
-                -- Kalkulasi Predikat via Stored Function (Nested)
                 f_GetGrade(
                     f_CalcAssessmentAvg(
                         af.vocabulary, af.grammar, af.listening, af.reading, af.spelling, af.speaking
                     )
                 ) AS grade_text,
-                
                 af.updated_at
-                
             FROM assessment_forms af
             JOIN students s ON af.student_id = s.id
             JOIN assessment_sessions asess ON af.assessment_session_id = asess.id
@@ -157,7 +147,7 @@ return new class extends Migration
         ");
 
         // ==========================================
-        // 7. View: v_class_activity_logs (UPDATE KRITIS)
+        // 7. View: v_class_activity_logs
         // ==========================================
         DB::unprepared("
             CREATE OR REPLACE VIEW v_class_activity_logs AS
@@ -165,30 +155,23 @@ return new class extends Migration
                 s.id AS session_id,
                 s.class_id,             
                 s.date,
-                s.comment AS comment,     -- MENGGUNAKAN KOLOM 'comment'
+                s.comment AS comment,
                 u.name AS teacher_name,
                 u.id AS teacher_id,
-                
-                -- Hitung Total Siswa di Sesi Ini
                 COUNT(r.id) AS total_students,
-                
-                -- Hitung Yang Hadir (Present + Late biasanya dianggap hadir)
                 SUM(CASE WHEN r.status IN ('present', 'late') THEN 1 ELSE 0 END) AS present_count,
-                
-                -- Hitung Persentase (Handle division by zero)
                 CASE 
                     WHEN COUNT(r.id) > 0 THEN ROUND((SUM(CASE WHEN r.status IN ('present', 'late') THEN 1 ELSE 0 END) / COUNT(r.id)) * 100)
                     ELSE 0 
                 END AS attendance_percentage
-
-            FROM class_sessions s  -- NAMA TABEL BARU
-            LEFT JOIN users u ON s.teacher_id = u.id -- KOLOM FK GURU BARU
-            LEFT JOIN attendance_records r ON s.id = r.class_session_id -- ASUMSI FK DI attendance_records SUDAH DIGANTI
+            FROM class_sessions s  
+            LEFT JOIN users u ON s.teacher_id = u.id 
+            LEFT JOIN attendance_records r ON s.id = r.class_session_id 
             GROUP BY s.id, s.class_id, s.date, s.comment, u.name, u.id;
         ");
 
         // ==========================================
-        // 8. View: v_teacher_teaching_history (NEW)
+        // 8. View: v_teacher_teaching_history
         // ==========================================
         DB::unprepared("
             CREATE OR REPLACE VIEW v_teacher_teaching_history AS
@@ -198,17 +181,54 @@ return new class extends Migration
                 u.name AS teacher_name,
                 cs.class_id,
                 c.name AS class_name,
-                c.category,        -- Opsional: Jika butuh filter kategori
-                c.form_teacher_id,    -- <<< TAMBAHAN BARU
-                c.local_teacher_id,   -- <<< TAMBAHAN BARU
+                c.category,
+                c.form_teacher_id,
+                c.local_teacher_id, 
                 cs.date,
                 c.start_time,
                 c.end_time,
-                cs.created_at,     -- Untuk sorting secondary
-                c.deleted_at       -- Pastikan kita memfilter ini di View atau Controller
+                cs.created_at,
+                c.deleted_at
             FROM class_sessions cs
             JOIN classes c ON cs.class_id = c.id
             JOIN users u ON cs.teacher_id = u.id
+        ");
+
+        // ==========================================
+        // 9. View: v_unified_trash (BARU - UNTUK TRASH BIN)
+        // ==========================================
+        DB::unprepared("
+            CREATE OR REPLACE VIEW v_unified_trash AS
+            -- 1. Guru
+            SELECT 
+                id,
+                name,
+                'teacher' AS type,
+                deleted_at
+            FROM users 
+            WHERE is_teacher = 1 AND deleted_at IS NOT NULL
+
+            UNION ALL
+
+            -- 2. Siswa
+            SELECT 
+                id,
+                name,
+                'student' AS type,
+                deleted_at
+            FROM students 
+            WHERE deleted_at IS NOT NULL
+
+            UNION ALL
+
+            -- 3. Kelas
+            SELECT 
+                id,
+                name,
+                'class' AS type,
+                deleted_at
+            FROM classes 
+            WHERE deleted_at IS NOT NULL
         ");
     }
 
@@ -217,6 +237,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        DB::unprepared("DROP VIEW IF EXISTS v_unified_trash"); // Drop Trash View
         DB::unprepared("DROP VIEW IF EXISTS v_class_activity_logs");
         DB::unprepared("DROP VIEW IF EXISTS v_student_grades");
         DB::unprepared("DROP VIEW IF EXISTS v_teacher_attendance");

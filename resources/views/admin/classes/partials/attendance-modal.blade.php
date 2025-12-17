@@ -53,7 +53,7 @@
                 </div>
             </div>
 
-            {{-- PERUBAHAN 2: Tambahkan ID pada container scroll --}}
+            {{-- Container Scroll --}}
             <div id="attendance-matrix-container" class="max-h-[75vh] overflow-auto custom-scrollbar relative bg-white">
                 <table class="w-full text-left border-collapse">
                     <thead class="bg-gray-50 text-gray-500 text-xs font-bold uppercase border-b border-gray-200 sticky top-0 z-20 shadow-sm">
@@ -92,29 +92,59 @@
                     <tbody class="divide-y divide-gray-100 text-sm">
                         @foreach($studentStats as $stat)
                             {{-- LOGIC 1: Background Baris (TR) --}}
-                            <tr class="transition group {{ $stat->is_active ? 'hover:bg-gray-50' : 'bg-red-50 hover:bg-red-100' }}">
+                            <tr class="transition group 
+                                {{-- Prioritas 1: Deleted --}}
+                                @if($stat->deleted_at) bg-gray-100 text-gray-500
+                                {{-- Prioritas 2: Inactive/Quit --}}
+                                @elseif(!$stat->is_active) bg-red-50 text-red-800
+                                {{-- Prioritas 3: Active --}}
+                                @else hover:bg-gray-50 text-gray-900
+                                @endif">
                                 
                                 {{-- LOGIC 2: Background Sticky Column (TD) --}}
-                                {{-- Perhatikan class bg-white diganti logic --}}
+                                {{-- Kolom sticky harus punya background yang sama dengan TR agar tidak transparan --}}
                                 <td class="px-4 py-3 sticky left-0 z-10 border-r border-gray-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] 
-                                    {{ $stat->is_active ? 'bg-white group-hover:bg-gray-50' : 'bg-red-50 group-hover:bg-red-100' }}">
+                                    @if($stat->deleted_at) bg-gray-100 group-hover:bg-gray-200
+                                    @elseif(!$stat->is_active) bg-red-50 group-hover:bg-red-100
+                                    @else bg-white group-hover:bg-gray-50
+                                    @endif">
                                     
-                                    {{-- Nama & Nomor Siswa --}}
-                                    <div class="truncate w-40 {{ $stat->is_active ? 'text-gray-900 font-medium' : 'text-red-800 line-through decoration-red-400' }}" title="{{ $stat->name }}">
-                                        {{ $stat->name }}
-                                        
-                                        {{-- Opsional: Label Quit --}}
-                                        @if(!$stat->is_active)
-                                            <span class="ml-1 text-[9px] text-red-600 bg-white border border-red-200 px-1 rounded">QUIT</span>
+                                    <div class="flex flex-col justify-center h-full">
+                                        {{-- 1. NAMA (Truncated / Dipotong jika panjang) --}}
+                                        <div class="truncate w-40 font-medium text-sm leading-tight {{ $stat->deleted_at ? 'text-gray-500' : ($stat->is_active ? 'text-gray-900' : 'text-red-800 line-through decoration-red-400') }}" 
+                                            title="{{ $stat->name }}">
+                                            {{ $stat->name }}
+                                        </div>
+
+                                        {{-- 2. STATUS TAG (Baris Baru - Tidak akan terpotong) --}}
+                                        @if($stat->deleted_at || !$stat->is_active)
+                                            <div class="mt-1">
+                                                @if($stat->deleted_at)
+                                                    {{-- KASUS 1: SISWA DIHAPUS (SOFT DELETE) --}}
+                                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-600 text-white border border-red-700 uppercase tracking-wide">
+                                                        DELETED
+                                                    </span>
+                                                    <span class="text-[9px] text-gray-400 ml-1">
+                                                        {{ \Carbon\Carbon::parse($stat->deleted_at)->format('d/m/y') }}
+                                                    </span>
+                                                @elseif(!$stat->is_active)
+                                                    {{-- KASUS 2: SISWA CUMA NONAKTIF (QUIT/CUTI) --}}
+                                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-white text-red-600 border border-red-200 uppercase tracking-wide">
+                                                        QUIT
+                                                    </span>
+                                                @endif
+                                            </div>
                                         @endif
-                                    </div>
-                                    <div class="text-[10px] font-mono {{ $stat->is_active ? 'text-gray-400' : 'text-red-400' }}">
-                                        {{ $stat->student_number }}
+
+                                        {{-- 3. NOMOR SISWA --}}
+                                        <div class="text-[10px] font-mono opacity-70 mt-0.5">
+                                            {{ $stat->student_number }}
+                                        </div>
                                     </div>
                                 </td>
 
                                 {{-- Rate % --}}
-                                <td class="px-2 py-3 text-center border-r border-gray-100 {{ $stat->is_active ? 'bg-gray-50/30' : 'bg-red-50/30' }}">
+                                <td class="px-2 py-3 text-center border-r border-gray-100 opacity-90">
                                     <span class="text-xs font-bold {{ $stat->percentage >= 80 ? 'text-green-600' : ($stat->percentage >= 50 ? 'text-yellow-600' : 'text-red-600') }}">
                                         {{ $stat->percentage }}%
                                     </span>
@@ -125,18 +155,18 @@
                                     @php
                                         $status = $attendanceMatrix[$stat->student_id][$session->session_id] ?? '-';
                                         
-                                        // (Bagian Logic Icon tetap sama seperti sebelumnya)
+                                        // Bagian Logic Icon
                                         $cellContent = match($status) {
                                             'present' => '<span class="inline-flex w-6 h-6 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm" title="Present"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></span>',
                                             'late' => '<span class="inline-flex w-6 h-6 items-center justify-center rounded-full bg-yellow-500 text-white font-bold text-[10px] shadow-sm" title="Late">L</span>',
                                             'sick' => '<span class="inline-flex w-6 h-6 items-center justify-center rounded-full bg-purple-600 text-white font-bold text-[10px] shadow-sm" title="Sick">S</span>',
                                             'permission' => '<span class="inline-flex w-6 h-6 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-[10px] shadow-sm" title="Permission">P</span>',
                                             'absent' => '<span class="inline-flex w-6 h-6 items-center justify-center rounded-full bg-red-600 text-white font-bold text-[10px] shadow-sm" title="Absent">A</span>',
-                                            default => '<span class="text-gray-200 text-lg">&bull;</span>'
+                                            default => '<span class="text-gray-300 text-lg">&bull;</span>'
                                         };
                                     @endphp
 
-                                    <td class="px-2 py-3 text-center border-r border-gray-50 last:border-r-0">
+                                    <td class="px-2 py-3 text-center border-r border-gray-100 last:border-r-0">
                                         {!! $cellContent !!}
                                     </td>
                                 @endforeach
@@ -167,7 +197,7 @@
                     Print Report
                 </a>
 
-                {{-- Tombol Close Report (Lama) --}}
+                {{-- Tombol Close Report --}}
                 <button @click="showStudentStatsModal = false" 
                         class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition">
                     Close Report

@@ -1,14 +1,11 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Recycle Bin') }}
-        </h2>
-    </x-slot>
+    {{-- Header dikosongkan agar tidak bertumpuk dengan Navbar --}}
+    <x-slot name="header"></x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <div class="py-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-            {{-- 1. BREADCRUMB (Tambahkan Bagian Ini) --}}
+            {{-- 1. BREADCRUMB --}}
             <nav class="flex mb-5" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-3">
                     <li class="inline-flex items-center">
@@ -27,9 +24,11 @@
             </nav>
 
             {{-- 2. HEADER / TITLE SECTION --}}
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+            {{-- Mengubah mb-6 menjadi mb-8 agar sama persis dengan class.blade.php --}}
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
                 <div>
-                    <h3 class="text-2xl font-bold text-gray-800">Deleted Items</h3>
+                    {{-- Mengubah h3 menjadi h1 dan text-2xl menjadi text-3xl agar ukurannya sama --}}
+                    <h1 class="text-3xl font-bold text-red-600">Deleted Items</h1>
                     <p class="text-sm text-gray-500 mt-1">Manage deleted teachers, students, and classes.</p>
                 </div>
                 <div class="mt-4 md:mt-0 px-4 py-2 bg-red-50 text-red-600 rounded-lg border border-red-100 text-sm font-semibold">
@@ -68,9 +67,9 @@
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         @php
                                             $badgeClass = match($log->type) {
-                                                'teacher' => 'bg-purple-100 text-purple-800',
-                                                'student' => 'bg-blue-100 text-blue-800',
-                                                'class'   => 'bg-orange-100 text-orange-800',
+                                                'teacher' => 'bg-purple-100 text-purple-800', // Ungu
+                                                'student' => 'bg-green-100 text-green-800',   // Hijau
+                                                'class'   => 'bg-blue-100 text-blue-800',     // Biru
                                                 default   => 'bg-gray-100 text-gray-800',
                                             };
                                         @endphp
@@ -82,7 +81,6 @@
                                     {{-- NAME --}}
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm font-medium text-gray-900">{{ $log->name }}</div>
-                                        <div class="text-xs text-gray-400">ID: {{ $log->id }}</div>
                                     </td>
 
                                     {{-- DELETED AT --}}
@@ -97,16 +95,16 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <div class="flex items-center justify-end space-x-3">
                                             
-                                            {{-- VIEW DETAIL (ONLY FOR STUDENTS) --}}
+                                            {{-- VIEW DETAIL (STUDENT) - Hover Green --}}
                                             @if($log->type === 'student')
                                                 <a href="{{ route('admin.trash.student.detail', $log->id) }}" 
-                                                    class="text-gray-500 hover:text-blue-600 transition-colors"
+                                                    class="text-gray-500 hover:text-green-600 transition-colors"
                                                     title="View Deleted Details">
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                                 </a>
                                             @endif
 
-                                            {{-- VIEW DETAIL (TEACHER) - TAMBAHKAN INI --}}
+                                            {{-- VIEW DETAIL (TEACHER) - Hover Purple --}}
                                             @if($log->type === 'teacher')
                                                 <a href="{{ route('admin.trash.teacher.detail', $log->id) }}" 
                                                     class="text-gray-500 hover:text-purple-600 transition-colors"
@@ -115,10 +113,10 @@
                                                 </a>
                                             @endif
 
-                                            {{-- VIEW DETAIL (CLASS) --}}
+                                            {{-- VIEW DETAIL (CLASS) - Hover Blue --}}
                                             @if($log->type === 'class')
                                                 <a href="{{ route('admin.trash.class.detail', $log->id) }}" 
-                                                    class="text-gray-500 hover:text-orange-600 transition-colors"
+                                                    class="text-gray-500 hover:text-blue-600 transition-colors"
                                                     title="View Deleted Class">
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                                 </a>
