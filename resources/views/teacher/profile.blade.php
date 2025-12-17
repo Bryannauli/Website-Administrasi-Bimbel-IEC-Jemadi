@@ -72,6 +72,14 @@
                                 <x-input-error class="mt-2" :messages="$errors->get('phone')" />
                             </div>
 
+                            {{-- [BARU] Address --}}
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Address <span class="text-gray-400 font-normal">(Optional)</span></label>
+                                <textarea name="address" rows="3" placeholder="Street name, City, etc."
+                                    class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-sm transition-all">{{ old('address', $user->address) }}</textarea>
+                                <x-input-error class="mt-2" :messages="$errors->get('address')" />
+                            </div>
+
                             {{-- Role Badge (Read Only) --}}
                             <div>
                                 <label class="block text-sm font-medium text-gray-400 mb-1">Role</label>
