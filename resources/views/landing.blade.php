@@ -54,10 +54,10 @@
                        class="bg-brand-blue text-white px-6 py-2 rounded-lg font-bold">
                         Login
                     </a>
-                    <a href="{{ route('register') }}"
+                    <!-- <a href="{{ route('register') }}"
                        class="text-brand-blue font-bold">
                         Register
-                    </a>
+                    </a> -->
                 @endauth
             </div>
 
@@ -89,10 +89,10 @@
                            class="bg-brand-blue text-white text-center py-2 rounded-lg font-bold">
                             Login
                         </a>
-                        <a href="{{ route('register') }}"
+                        <!-- <a href="{{ route('register') }}"
                            class="border border-brand-blue text-brand-blue text-center py-2 rounded-lg font-bold">
                             Register
-                        </a>
+                        </a> -->
                     @endauth
                 </div>
             </div>
