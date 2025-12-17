@@ -23,8 +23,7 @@ class TeacherAssessmentController extends Controller
         $class = ClassModel::with('formTeacher')->findOrFail($classId);
         $assessment = AssessmentSession::findOrFail($assessmentId);
 
-        // 2. Pastikan Row Speaking Test ada (Header untuk speaking)
-        // Jika belum ada, buat baru (default interviewer = local teacher)
+        // 2. Pastikan Row Speaking Test ada
         $speakingTest = SpeakingTest::firstOrCreate(
             ['assessment_session_id' => $assessment->id],
             ['date' => null, 'interviewer_id' => $class->local_teacher_id]
@@ -38,49 +37,42 @@ class TeacherAssessmentController extends Controller
             ->get();
 
         // =================================================================
-        // OPTIMISASI: MENGGUNAKAN VIEW & ELOCUENT HYBRID
+        // OPTIMISASI: MENGGUNAKAN STORED PROCEDURE (SAMA DENGAN ADMIN)
         // =================================================================
+        
+        // Panggil Procedure yang sama persis dengan Admin.
+        $rawStudentData = DB::select('CALL p_GetAssessmentSheet(?, ?)', [$classId, $assessmentId]);
 
-        // A. Ambil Master Siswa (Agar siswa yang belum punya nilai tetap muncul)
-        $students = Student::where('class_id', $classId)
-            ->where('is_active', true)
-            ->orderBy('student_number', 'asc') 
-            ->get();
+        // Mapping Data agar sesuai struktur yang diharapkan View (Array Based)
+        // Kita samakan strukturnya dengan AdminAssessmentController
+        $studentData = collect($rawStudentData)->map(function ($row) {
+            return [
+                'id' => $row->student_id,
+                'name' => $row->name,
+                'student_number' => $row->student_number,
+                'is_active' => $row->is_active,
+                'deleted_at' => $row->deleted_at,
+                'current_class_id' => $row->current_class_id,
+                'written' => [
+                    'form_id' => $row->form_id,
+                    'vocabulary' => $row->vocabulary,
+                    'grammar' => $row->grammar,
+                    'listening' => $row->listening,
+                    'reading' => $row->reading,
+                    'spelling' => $row->spelling,
+                ],
+                'speaking' => [
+                    'content' => $row->speaking_content,
+                    'participation' => $row->speaking_participation,
+                    'total' => $row->speaking_total,
+                ],
+                'avg_score' => $row->final_score,
+                'grade_text' => $row->grade_text ?? '-',
+            ];
+        });
 
-        // B. Ambil Nilai dari VIEW (Hanya mengambil yang assessment_id nya cocok)
-        // View 'v_student_grades' sudah melakukan JOIN form + speaking + hitung rata-rata
-        $grades = DB::table('v_student_grades')
-            ->where('assessment_session_id', $assessmentId)
-            ->get()
-            ->keyBy('student_id'); // Index array menggunakan student_id biar cepat dicari
-
-        // C. Mapping Data View ke Object Student (Agar Blade tidak error)
-        foreach ($students as $student) {
-            // Cek apakah siswa ini sudah punya data nilai di View?
-            $gradeData = $grades->get($student->id);
-
-            // Mapping struktur 'form' (Nilai Tertulis)
-            $student->form = (object) [
-                'vocabulary' => $gradeData->vocabulary ?? null,
-                'grammar'    => $gradeData->grammar ?? null,
-                'listening'  => $gradeData->listening ?? null,
-                'reading'    => $gradeData->reading ?? null,
-                'spelling'   => $gradeData->spelling ?? null,
-                'speaking'   => $gradeData->speaking ?? null, // Total Speaking
-            ]; 
-
-            // Mapping struktur 'speaking_detail' (Nilai Lisan Pecahan)
-            $student->speaking_detail = (object) [
-                'content_score'       => $gradeData->speaking_content ?? null,
-                'participation_score' => $gradeData->speaking_participation ?? null,
-            ]; 
-            
-            // Tambahan: View juga sudah menghitung final_score & grade_text (opsional dipakai)
-            // Blade AlpineJS Anda menghitung sendiri secara realtime, jadi ini untuk backup server-side.
-            $student->server_grade = $gradeData->grade_text ?? '-';
-        }
-
-        return view('teacher.classes.assessment-marks', compact('class', 'assessment', 'students', 'speakingTest', 'teachers'));
+        // Kirim variable $studentData (bukan $students) ke view
+        return view('teacher.classes.assessment-marks', compact('class', 'assessment', 'studentData', 'speakingTest', 'teachers'));
     }
 
     /**

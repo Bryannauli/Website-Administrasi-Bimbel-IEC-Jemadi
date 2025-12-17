@@ -42,7 +42,6 @@ class MySQLUserSeeder extends Seeder
         DB::statement("GRANT SELECT ON iec_jemadi.schedules TO 'iec_teacher'@'%';");
 
         // B. Akses Tabel Transaksi (Full CRUD)
-        // Teacher perlu input/edit nilai & absen
         DB::statement("GRANT SELECT, INSERT, UPDATE ON iec_jemadi.assessment_sessions TO 'iec_teacher'@'%';");
         DB::statement("GRANT SELECT, INSERT, UPDATE ON iec_jemadi.assessment_forms TO 'iec_teacher'@'%';");
         DB::statement("GRANT SELECT, INSERT, UPDATE ON iec_jemadi.speaking_tests TO 'iec_teacher'@'%';");
@@ -50,18 +49,17 @@ class MySQLUserSeeder extends Seeder
         DB::statement("GRANT SELECT, INSERT, UPDATE ON iec_jemadi.class_sessions TO 'iec_teacher'@'%';");
         DB::statement("GRANT SELECT, INSERT, UPDATE ON iec_jemadi.attendance_records TO 'iec_teacher'@'%';");
 
-        // C. [BARU] Akses Tabel Log (Single Table)
-        // Teacher boleh mencatat log (INSERT) dan melihat log (SELECT)
+        // C. Akses Tabel Log
         DB::statement("GRANT SELECT, INSERT ON iec_jemadi.activity_logs TO 'iec_teacher'@'%';");
 
         // ---------------------------------------------------------------------
         // D. Izin Mengakses VIEWS
         // ---------------------------------------------------------------------
         $views = [
-            'v_today_schedule',       // Dashboard
-            'v_student_grades',       // Assessment Detail
-            'v_class_activity_logs',  // Class Detail History
-            'v_teacher_teaching_history' // History umum
+            'v_today_schedule',       
+            'v_student_grades',       
+            'v_class_activity_logs',  
+            'v_teacher_teaching_history' 
         ];
         
         foreach ($views as $view) {
@@ -75,10 +73,11 @@ class MySQLUserSeeder extends Seeder
         // 1. Input Nilai
         DB::statement("GRANT EXECUTE ON PROCEDURE iec_jemadi.p_UpdateStudentGrade TO 'iec_teacher'@'%';");
         
-        // 2. Detail Kelas (List Siswa & Stats Kehadiran)
+        // 2. Detail Kelas & Assessment Sheet (YANG BARU DITAMBAHKAN)
         DB::statement("GRANT EXECUTE ON PROCEDURE iec_jemadi.p_get_class_attendance_stats TO 'iec_teacher'@'%';");
+        DB::statement("GRANT EXECUTE ON PROCEDURE iec_jemadi.p_GetAssessmentSheet TO 'iec_teacher'@'%';"); // <<< NEW
         
-        // 3. Input Absensi (Optimized)
+        // 3. Input Absensi
         DB::statement("GRANT EXECUTE ON PROCEDURE iec_jemadi.p_GetSessionAttendanceList TO 'iec_teacher'@'%';");
         DB::statement("GRANT EXECUTE ON PROCEDURE iec_jemadi.p_UpsertAttendance TO 'iec_teacher'@'%';");
         

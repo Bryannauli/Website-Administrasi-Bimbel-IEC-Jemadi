@@ -89,6 +89,7 @@ class AdminAssessmentController extends Controller
     
     /**
      * Menampilkan form input nilai (Detail View)
+     * [UPDATED] Menggunakan Stored Procedure p_GetAssessmentSheet
      */
     public function detail(Request $request, $classId, $type)
     {
@@ -96,66 +97,53 @@ class AdminAssessmentController extends Controller
             abort(404);
         }
 
-        // 1. Load data Kelas & Siswa Aktif (SORT BY STUDENT NUMBER)
-        $class = ClassModel::with([
-            'students' => function($query) { 
-                $query->where('is_active', true)
-                      ->orderBy('student_number', 'asc'); // <<< UPDATE: Sort by ID
-            }, 
-            'localTeacher', 
-            'formTeacher' 
-        ])->findOrFail($classId);
-
-        // 2. First or Create Session
+        // 1. First or Create Session
         $session = AssessmentSession::firstOrCreate(
             ['class_id' => $classId, 'type' => $type],
             ['date' => null]
         );
 
+        // 2. Load Data Kelas
+        $class = ClassModel::with(['localTeacher', 'formTeacher'])->findOrFail($classId);
+
+        // 3. AMBIL DATA SISWA + NILAI DARI STORED PROCEDURE
+        // Procedure ini sudah menangani logika: Siswa Aktif OR Siswa Keluar tapi punya nilai
+        $rawStudentData = DB::select('CALL p_GetAssessmentSheet(?, ?)', [$classId, $session->id]);
+
         $allTeachers = User::where('role', 'teacher')->where('is_active', true)->orderBy('name', 'asc')->get();
 
-        // 3. AMBIL SEMUA GRADES DARI DATABASE VIEW
-        $gradesFromView = DB::table('v_student_grades')
-            ->where('class_id', $classId)
-            ->where('assessment_type', $type)
-            ->get()
-            ->keyBy('student_id');
-
-        // 4. AMBIL INFO SPEAKING TEST UTAMA
+        // 4. Info Speaking Test
         $speakingTest = SpeakingTest::with(['interviewer'])
             ->where('assessment_session_id', $session->id)
             ->first();
         
         $currentInterviewerId = $speakingTest->interviewer_id ?? $class->local_teacher_id;
 
-        // 5. MAPPING DATA SISWA
-        $studentData = $class->students->map(function ($student) use ($gradesFromView) {
-            
-            $gradeRecord = $gradesFromView->get($student->id);
-            $written = $gradeRecord;
-            $speaking = $gradeRecord;
-
-            $totalSpeakingScore = ($speaking->speaking_content ?? 0) + ($speaking->speaking_participation ?? 0);
-
+        // 5. MAPPING KE STRUKTUR VIEW
+        // Karena result procedure flat (1 baris per siswa), kita perlu format jadi nested array
+        $studentData = collect($rawStudentData)->map(function ($row) {
             return [
-                'id' => $student->id,
-                'name' => $student->name,
-                'student_number' => $student->student_number,
+                'id' => $row->student_id,
+                'name' => $row->name,
+                'student_number' => $row->student_number,
+                'is_active' => $row->is_active,
+                'deleted_at' => $row->deleted_at,
+                'current_class_id' => $row->current_class_id,
                 'written' => [
-                    'form_id' => $written->form_id ?? null,
-                    'vocabulary' => $written->vocabulary ?? null,
-                    'grammar' => $written->grammar ?? null,
-                    'listening' => $written->listening ?? null,
-                    'reading' => $written->reading ?? null,
-                    'spelling' => $written->spelling ?? null,
+                    'form_id' => $row->form_id,
+                    'vocabulary' => $row->vocabulary,
+                    'grammar' => $row->grammar,
+                    'listening' => $row->listening,
+                    'reading' => $row->reading,
+                    'spelling' => $row->spelling,
                 ],
                 'speaking' => [
-                    'content' => $speaking->speaking_content ?? null,
-                    'participation' => $speaking->speaking_participation ?? null,
-                    'total' => $totalSpeakingScore,
+                    'content' => $row->speaking_content,
+                    'participation' => $row->speaking_participation,
+                    'total' => $row->speaking_total,
                 ],
-                'avg_score' => $written->final_score ?? null,
-                'grade_text' => $written->grade_text ?? '-',
+                'avg_score' => $row->final_score,
+                'grade_text' => $row->grade_text ?? '-',
             ];
         });
         

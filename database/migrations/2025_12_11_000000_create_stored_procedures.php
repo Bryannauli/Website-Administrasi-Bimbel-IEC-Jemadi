@@ -328,6 +328,58 @@ return new class extends Migration
                     updated_at = NOW();
             END
         ");
+
+        // ==========================================
+        // 11. PROCEDURE: Get Assessment Sheet (ADMIN) [BARU]
+        // Deskripsi: Mengambil data siswa + nilai untuk lembar penilaian.
+        // Menggabungkan siswa aktif di kelas tsb ATAU siswa non-aktif yang sudah punya nilai.
+        // ==========================================
+        DB::unprepared("
+            DROP PROCEDURE IF EXISTS p_GetAssessmentSheet;
+            CREATE PROCEDURE p_GetAssessmentSheet(
+                IN p_class_id INT,
+                IN p_session_id INT
+            )
+            BEGIN
+                SELECT 
+                    -- Info Siswa
+                    s.id AS student_id,
+                    s.name,
+                    s.student_number,
+                    s.is_active,
+                    s.deleted_at,
+                    s.class_id AS current_class_id,
+
+                    -- Nilai (Dari View v_student_grades)
+                    vg.form_id,
+                    vg.vocabulary,
+                    vg.grammar,
+                    vg.listening,
+                    vg.reading,
+                    vg.spelling,
+                    vg.speaking_content,
+                    vg.speaking_participation,
+                    (IFNULL(vg.speaking_content, 0) + IFNULL(vg.speaking_participation, 0)) AS speaking_total,
+                    vg.final_score,
+                    vg.grade_text
+
+                FROM students s
+                -- Join ke View Nilai (Filter berdasarkan Session ID)
+                LEFT JOIN v_student_grades vg 
+                    ON s.id = vg.student_id AND vg.assessment_session_id = p_session_id
+
+                WHERE 
+                    -- 1. Siswa yang MASIH ada di kelas ini
+                    s.class_id = p_class_id
+                    
+                    OR
+                    
+                    -- 2. Siswa yang SUDAH PUNYA nilai di sesi ini (meskipun sudah pindah/keluar/dihapus)
+                    vg.form_id IS NOT NULL
+
+                ORDER BY s.student_number ASC;
+            END
+        ");
     }
 
     public function down(): void
@@ -342,5 +394,6 @@ return new class extends Migration
         DB::unprepared('DROP PROCEDURE IF EXISTS p_get_teacher_global_stats');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_GetSessionAttendanceList');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_UpsertAttendance');
+        DB::unprepared('DROP PROCEDURE IF EXISTS p_GetAssessmentSheet');
     }
 };

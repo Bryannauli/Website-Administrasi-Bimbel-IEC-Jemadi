@@ -285,7 +285,12 @@
                             {{-- ALPINE JS LOGIC --}}
                             <tbody class="divide-y divide-gray-100 text-sm text-gray-700 bg-white">
                                 @foreach($studentData as $index => $student)
-                                <tr class="hover:bg-gray-50 transition-colors group"
+                                <tr class="transition-colors group
+                                    {{-- Styling Row Berdasarkan Status (Hanya Deleted & Quit) --}}
+                                    @if($student['deleted_at']) bg-gray-100 text-gray-500
+                                    @elseif(!$student['is_active']) bg-red-50 text-red-800
+                                    @else hover:bg-gray-50
+                                    @endif"
                                     x-data="{
                                         vocab: '{{ old("grades.{$student['id']}.vocabulary", $student['written']['vocabulary'] ?? '') }}',
                                         grammar: '{{ old("grades.{$student['id']}.grammar", $student['written']['grammar'] ?? '') }}',
@@ -349,40 +354,65 @@
                                     <input type="hidden" name="grades[{{ $student['id'] }}][form_id]" value="{{ $student['written']['form_id'] ?? '' }}">
 
                                     <td class="px-6 py-4 text-center text-gray-500 font-medium">{{ $index + 1 }}</td>
-                                    <td class="px-4 py-4 font-mono text-xs text-gray-500">{{ $student['student_number'] ?? '-' }}</td>
-                                    <td class="px-6 py-4 font-bold text-gray-900">{{ $student['name'] }}</td>
+                                    
+                                    {{-- Student Number --}}
+                                    <td class="px-4 py-4 font-mono text-xs opacity-70">{{ $student['student_number'] ?? '-' }}</td>
+                                    
+                                    {{-- Student Name & Badge --}}
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-col">
+                                            {{-- Nama Siswa --}}
+                                            <span class="font-bold {{ $student['deleted_at'] ? 'text-gray-500 line-through' : ($student['is_active'] ? 'text-gray-900' : 'text-red-800') }}">
+                                                {{ $student['name'] }}
+                                            </span>
+                                            
+                                            {{-- Status Badges (Hanya Deleted & Quit) --}}
+                                            <div class="flex flex-wrap gap-1 mt-1">
+                                                @if($student['deleted_at'])
+                                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-gray-200 text-gray-600 border border-gray-300 uppercase">
+                                                        DELETED
+                                                    </span>
+                                                @elseif(!$student['is_active'])
+                                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-white text-red-600 border border-red-200 uppercase">
+                                                        QUIT
+                                                    </span>
+                                                @endif
+                                                {{-- LOGIK MOVED DIHAPUS DISINI --}}
+                                            </div>
+                                        </div>
+                                    </td>
                                     
                                     {{-- INPUT FIELDS --}}
                                     <td class="px-3 py-3 text-center border-l">
-                                        <span x-show="!isEditing" class="font-medium text-gray-700" x-text="vocab || '-'"></span>
-                                        <input x-show="isEditing" x-model="vocab" @input="vocab = limit($el.value, 100); $el.value = vocab" type="number" min="0" max="100" name="grades[{{ $student['id'] }}][vocabulary]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1">
+                                        <span x-show="!isEditing" class="font-medium opacity-80" x-text="vocab || '-'"></span>
+                                        <input x-show="isEditing" x-model="vocab" @input="vocab = limit($el.value, 100); $el.value = vocab" type="number" min="0" max="100" name="grades[{{ $student['id'] }}][vocabulary]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 shadow-sm">
                                     </td>
                                     <td class="px-3 py-3 text-center">
-                                        <span x-show="!isEditing" class="font-medium text-gray-700" x-text="grammar || '-'"></span>
-                                        <input x-show="isEditing" x-model="grammar" @input="grammar = limit($el.value, 100); $el.value = grammar" type="number" min="0" max="100" name="grades[{{ $student['id'] }}][grammar]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1">
+                                        <span x-show="!isEditing" class="font-medium opacity-80" x-text="grammar || '-'"></span>
+                                        <input x-show="isEditing" x-model="grammar" @input="grammar = limit($el.value, 100); $el.value = grammar" type="number" min="0" max="100" name="grades[{{ $student['id'] }}][grammar]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 shadow-sm">
                                     </td>
                                     <td class="px-3 py-3 text-center">
-                                        <span x-show="!isEditing" class="font-medium text-gray-700" x-text="listening || '-'"></span>
-                                        <input x-show="isEditing" x-model="listening" @input="listening = limit($el.value, 100); $el.value = listening" type="number" min="0" max="100" name="grades[{{ $student['id'] }}][listening]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1">
+                                        <span x-show="!isEditing" class="font-medium opacity-80" x-text="listening || '-'"></span>
+                                        <input x-show="isEditing" x-model="listening" @input="listening = limit($el.value, 100); $el.value = listening" type="number" min="0" max="100" name="grades[{{ $student['id'] }}][listening]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 shadow-sm">
                                     </td>
-                                    <td class="px-3 py-3 text-center bg-purple-50/50">
+                                    <td class="px-3 py-3 text-center bg-purple-50/30">
                                         <span x-show="!isEditing" class="font-bold text-purple-700" x-text="s_content || '-'"></span>
-                                        <input x-show="isEditing" x-model="s_content" @input="s_content = limit($el.value, 50); $el.value = s_content" type="number" min="0" max="50" name="grades[{{ $student['id'] }}][speaking_content]" class="w-14 h-8 text-center border-purple-200 rounded-lg bg-white focus:ring-2 focus:ring-purple-500 text-xs p-1">
+                                        <input x-show="isEditing" x-model="s_content" @input="s_content = limit($el.value, 50); $el.value = s_content" type="number" min="0" max="50" name="grades[{{ $student['id'] }}][speaking_content]" class="w-14 h-8 text-center border-purple-200 rounded-lg bg-white focus:ring-2 focus:ring-purple-500 text-xs p-1 shadow-sm">
                                     </td>
-                                    <td class="px-3 py-3 text-center bg-purple-50/50">
+                                    <td class="px-3 py-3 text-center bg-purple-50/30">
                                         <span x-show="!isEditing" class="font-bold text-purple-700" x-text="s_partic || '-'"></span>
-                                        <input x-show="isEditing" x-model="s_partic" @input="s_partic = limit($el.value, 50); $el.value = s_partic" type="number" min="0" max="50" name="grades[{{ $student['id'] }}][speaking_participation]" class="w-14 h-8 text-center border-purple-200 rounded-lg bg-white focus:ring-2 focus:ring-purple-500 text-xs p-1">
+                                        <input x-show="isEditing" x-model="s_partic" @input="s_partic = limit($el.value, 50); $el.value = s_partic" type="number" min="0" max="50" name="grades[{{ $student['id'] }}][speaking_participation]" class="w-14 h-8 text-center border-purple-200 rounded-lg bg-white focus:ring-2 focus:ring-purple-500 text-xs p-1 shadow-sm">
                                     </td>
                                     <td class="px-4 py-3 text-center bg-purple-100/50 font-black text-purple-900 border-x">
                                         <span x-text="speakingTotal > 0 ? speakingTotal : '-'"></span>
                                     </td>
                                     <td class="px-3 py-3 text-center border-l">
-                                        <span x-show="!isEditing" class="font-medium text-gray-700" x-text="reading || '-'"></span>
-                                        <input x-show="isEditing" x-model="reading" @input="reading = limit($el.value, 100); $el.value = reading" type="number" min="0" max="100" name="grades[{{ $student['id'] }}][reading]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1">
+                                        <span x-show="!isEditing" class="font-medium opacity-80" x-text="reading || '-'"></span>
+                                        <input x-show="isEditing" x-model="reading" @input="reading = limit($el.value, 100); $el.value = reading" type="number" min="0" max="100" name="grades[{{ $student['id'] }}][reading]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 shadow-sm">
                                     </td>
                                     <td class="px-3 py-3 text-center border-l">
-                                        <span x-show="!isEditing" class="font-medium text-gray-700" x-text="spelling || '-'"></span>
-                                        <input x-show="isEditing" x-model="spelling" @input="spelling = limit($el.value, 100); $el.value = spelling" type="number" min="0" max="100" name="grades[{{ $student['id'] }}][spelling]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1">
+                                        <span x-show="!isEditing" class="font-medium opacity-80" x-text="spelling || '-'"></span>
+                                        <input x-show="isEditing" x-model="spelling" @input="spelling = limit($el.value, 100); $el.value = spelling" type="number" min="0" max="100" name="grades[{{ $student['id'] }}][spelling]" class="w-14 h-8 text-center border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 text-xs p-1 shadow-sm">
                                     </td>
                                     <td class="px-4 py-3 text-center bg-blue-50/30">
                                         <div class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white text-[11px] font-black shadow-md">
