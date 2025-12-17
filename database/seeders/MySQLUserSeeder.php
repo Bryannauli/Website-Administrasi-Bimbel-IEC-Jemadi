@@ -33,7 +33,7 @@ class MySQLUserSeeder extends Seeder
         // A. Akses Tabel Utama (Data Mentah)
         DB::statement("GRANT SELECT ON iec_jemadi.users TO 'iec_teacher'@'%';");
         DB::statement("
-            GRANT UPDATE (name, email, phone, password, remember_token, updated_at) 
+            GRANT UPDATE (name, email, phone, address, password, remember_token, updated_at) 
             ON iec_jemadi.users TO 'iec_teacher'@'%';
         ");
 
@@ -44,7 +44,7 @@ class MySQLUserSeeder extends Seeder
         // B. Akses Tabel Transaksi (Full CRUD)
         DB::statement("GRANT SELECT, INSERT, UPDATE ON iec_jemadi.assessment_sessions TO 'iec_teacher'@'%';");
         DB::statement("GRANT SELECT, INSERT, UPDATE ON iec_jemadi.assessment_forms TO 'iec_teacher'@'%';");
-        DB::statement("GRANT SELECT, INSERT, UPDATE ON iec_jemadi.speaking_tests TO 'iec_teacher'@'%';");
+        // [REMOVED] speaking_tests table grant removed
         DB::statement("GRANT SELECT, INSERT, UPDATE ON iec_jemadi.speaking_test_results TO 'iec_teacher'@'%';");
         DB::statement("GRANT SELECT, INSERT, UPDATE ON iec_jemadi.class_sessions TO 'iec_teacher'@'%';");
         DB::statement("GRANT SELECT, INSERT, UPDATE ON iec_jemadi.attendance_records TO 'iec_teacher'@'%';");
@@ -73,9 +73,9 @@ class MySQLUserSeeder extends Seeder
         // 1. Input Nilai
         DB::statement("GRANT EXECUTE ON PROCEDURE iec_jemadi.p_UpdateStudentGrade TO 'iec_teacher'@'%';");
         
-        // 2. Detail Kelas & Assessment Sheet (YANG BARU DITAMBAHKAN)
+        // 2. Detail Kelas & Assessment Sheet
         DB::statement("GRANT EXECUTE ON PROCEDURE iec_jemadi.p_get_class_attendance_stats TO 'iec_teacher'@'%';");
-        DB::statement("GRANT EXECUTE ON PROCEDURE iec_jemadi.p_GetAssessmentSheet TO 'iec_teacher'@'%';"); // <<< NEW
+        DB::statement("GRANT EXECUTE ON PROCEDURE iec_jemadi.p_GetAssessmentSheet TO 'iec_teacher'@'%';");
         
         // 3. Input Absensi
         DB::statement("GRANT EXECUTE ON PROCEDURE iec_jemadi.p_GetSessionAttendanceList TO 'iec_teacher'@'%';");

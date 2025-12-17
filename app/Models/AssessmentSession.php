@@ -14,26 +14,49 @@ class AssessmentSession extends Model
 
     protected $fillable = [
         'class_id',
-        'date',
         'type',
-        'status', // <--- WAJIB DITAMBAHKAN
+        'written_date',    // [RENAMED] Dari 'date'
+        'speaking_date',   // [NEW]
+        'speaking_topic',  // [NEW]
+        'interviewer_id',  // [NEW]
+        'status',
     ];
 
-    // Relasi ke model kelas
+    /**
+     * Relasi ke Class
+     */
     public function classModel()
     {
         return $this->belongsTo(ClassModel::class, 'class_id');
     }
 
-    // Relasi ke banyak form nilai
-    public function forms()
+    /**
+     * Relasi ke Interviewer (Guru)
+     */
+    public function interviewer()
     {
-        return $this->hasMany(AssessmentForm::class);
+        return $this->belongsTo(User::class, 'interviewer_id')->where('is_teacher', true);
     }
 
     /**
-     * Helper untuk cek apakah sesi ini terkunci (tidak bisa diedit guru).
-     * Bisa dipakai di Blade: @if($session->isLocked()) ... @endif
+     * Relasi ke Nilai Written (Assessment Forms)
+     */
+    public function forms()
+    {
+        return $this->hasMany(AssessmentForm::class, 'assessment_session_id');
+    }
+
+    /**
+     * Relasi ke Nilai Speaking (Speaking Test Results)
+     * Langsung hasMany karena SpeakingTestResult sekarang punya assessment_session_id
+     */
+    public function speakingResults()
+    {
+        return $this->hasMany(SpeakingTestResult::class, 'assessment_session_id');
+    }
+
+    /**
+     * Helper untuk cek apakah sesi terkunci
      */
     public function isLocked()
     {

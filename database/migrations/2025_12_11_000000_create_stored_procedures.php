@@ -120,7 +120,9 @@ return new class extends Migration
         ');
 
         // ==========================================
-        // 6. PROCEDURE: p_UpdateStudentGrade (ADMIN & TEACHER)
+        // 6. PROCEDURE: p_UpdateStudentGrade [UPDATED]
+        // Deskripsi: Update nilai siswa (Written & Speaking) dalam satu transaksi.
+        // Perubahan: Menghapus parameter p_speaking_test_id.
         // ==========================================
         DB::unprepared('
             DROP PROCEDURE IF EXISTS p_UpdateStudentGrade;
@@ -128,7 +130,7 @@ return new class extends Migration
                 IN p_session_id INT,
                 IN p_student_id INT,
                 IN p_form_id INT,          
-                IN p_speaking_test_id INT,
+                -- IN p_speaking_test_id INT,  <-- DIHAPUS
                 
                 IN p_vocab INT,
                 IN p_grammar INT,
@@ -150,12 +152,13 @@ return new class extends Migration
 
                 START TRANSACTION;
                 
-                -- 1. Simpan Detail Speaking
-                INSERT INTO speaking_test_results (speaking_test_id, student_id, content_score, participation_score)
-                VALUES (p_speaking_test_id, p_student_id, p_s_content, p_s_partic)
+                -- 1. Simpan Detail Speaking (Langsung pakai Session ID)
+                INSERT INTO speaking_test_results (assessment_session_id, student_id, content_score, participation_score, created_at, updated_at)
+                VALUES (p_session_id, p_student_id, p_s_content, p_s_partic, NOW(), NOW())
                 ON DUPLICATE KEY UPDATE
                     content_score = p_s_content,
-                    participation_score = p_s_partic;
+                    participation_score = p_s_partic,
+                    updated_at = NOW();
                 
                 -- Hitung Total Speaking
                 SET total_speaking = IFNULL(p_s_content, 0) + IFNULL(p_s_partic, 0);
@@ -173,12 +176,13 @@ return new class extends Migration
                         listening = p_listening,
                         reading = p_reading,
                         spelling = p_spelling,
-                        speaking = total_speaking
+                        speaking = total_speaking,
+                        updated_at = NOW()
                     WHERE student_id = p_student_id AND assessment_session_id = p_session_id;
                 ELSE
                     -- INSERT New Record
-                    INSERT INTO assessment_forms (student_id, assessment_session_id, vocabulary, grammar, listening, reading, spelling, speaking)
-                    VALUES (p_student_id, p_session_id, p_vocab, p_grammar, p_listening, p_reading, p_spelling, total_speaking);
+                    INSERT INTO assessment_forms (student_id, assessment_session_id, vocabulary, grammar, listening, reading, spelling, speaking, created_at, updated_at)
+                    VALUES (p_student_id, p_session_id, p_vocab, p_grammar, p_listening, p_reading, p_spelling, total_speaking, NOW(), NOW());
                 END IF;
                     
                 COMMIT;
@@ -186,7 +190,9 @@ return new class extends Migration
         ');
 
         // ==========================================
-        // 7. PROCEDURE: Create Class (ADMIN)
+        // 7. PROCEDURE: Create Class [UPDATED]
+        // Deskripsi: Membuat kelas beserta jadwal ujian otomatis.
+        // Perubahan: Menghapus insert ke tabel speaking_tests.
         // ==========================================
         DB::unprepared("
             DROP PROCEDURE IF EXISTS p_CreateClass;
@@ -205,8 +211,6 @@ return new class extends Migration
                 OUT p_new_class_id BIGINT
             )
             BEGIN
-                DECLARE mid_session_id BIGINT;
-                DECLARE final_session_id BIGINT;
                 DECLARE v_interviewer_id BIGINT;
 
                 DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -246,20 +250,16 @@ return new class extends Migration
                     )
                 ) AS jt;
 
-                -- C. Otomatisasi Assessment
+                -- C. Otomatisasi Assessment (Include Speaking Info di sini)
                 SET v_interviewer_id = p_local_teacher_id;
 
-                INSERT INTO assessment_sessions (class_id, type, date, status, created_at, updated_at)
-                VALUES (p_new_class_id, 'mid', NULL, 'draft', NOW(), NOW());
-                SET mid_session_id = LAST_INSERT_ID();
-                INSERT INTO speaking_tests (assessment_session_id, date, topic, interviewer_id, created_at, updated_at)
-                VALUES (mid_session_id, NULL, NULL, v_interviewer_id, NOW(), NOW());
+                -- Mid Term (Insert interviewer default ke session)
+                INSERT INTO assessment_sessions (class_id, type, date, speaking_date, speaking_topic, interviewer_id, status, created_at, updated_at)
+                VALUES (p_new_class_id, 'mid', NULL, NULL, NULL, v_interviewer_id, 'draft', NOW(), NOW());
 
-                INSERT INTO assessment_sessions (class_id, type, date, status, created_at, updated_at)
-                VALUES (p_new_class_id, 'final', NULL, 'draft', NOW(), NOW());
-                SET final_session_id = LAST_INSERT_ID();
-                INSERT INTO speaking_tests (assessment_session_id, date, topic, interviewer_id, created_at, updated_at)
-                VALUES (final_session_id, NULL, NULL, v_interviewer_id, NOW(), NOW());
+                -- Final Exam
+                INSERT INTO assessment_sessions (class_id, type, date, speaking_date, speaking_topic, interviewer_id, status, created_at, updated_at)
+                VALUES (p_new_class_id, 'final', NULL, NULL, NULL, v_interviewer_id, 'draft', NOW(), NOW());
 
                 COMMIT; 
             END

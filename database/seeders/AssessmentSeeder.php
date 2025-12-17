@@ -6,7 +6,6 @@ use Illuminate\Database\Seeder;
 use App\Models\ClassModel;
 use App\Models\User;
 use App\Models\AssessmentSession;
-use App\Models\SpeakingTest;
 use App\Models\SpeakingTestResult;
 use App\Models\AssessmentForm;
 use Carbon\Carbon;
@@ -41,13 +40,13 @@ class AssessmentSeeder extends Seeder
                 // =================================================================
                 // 1. PENENTUAN TANGGAL & STATUS SESI
                 // =================================================================
-                $sessionDate = $isEmptyExample 
+                $writtenDate = $isEmptyExample 
                     ? null 
                     : ($type === 'mid' ? Carbon::now()->subMonths(2) : Carbon::now()->subMonth());
                 
                 $speakingDate = $isEmptyExample 
                     ? null 
-                    : ($sessionDate ? $sessionDate->copy()->addDays(1) : null);
+                    : ($writtenDate ? $writtenDate->copy()->addDays(1) : null);
                 
                 $topic = $isEmptyExample 
                     ? null 
@@ -55,29 +54,22 @@ class AssessmentSeeder extends Seeder
 
                 // Tentukan Status: 
                 // Jika kosong -> 'draft'
-                // Jika terisi (seeder) -> 'submitted' (siap direview admin)
+                // Jika terisi (seeder) -> 'submitted'
                 $status = $isEmptyExample ? 'draft' : 'submitted'; 
                 // =================================================================
 
-                // 2. Buat Assessment Session
-                $session = AssessmentSession::firstOrCreate(
+                // 2. Buat Assessment Session (Header Written & Speaking digabung)
+                $session = AssessmentSession::updateOrCreate(
                     [
                         'class_id' => $class->id,
                         'type' => $type
                     ],
                     [
-                        'date' => $sessionDate,
-                        'status' => $status, // <--- KOLOM STATUS BARU (ENUM)
-                    ]
-                );
-
-                // 3. Buat Speaking Test Event
-                $speakingTest = SpeakingTest::firstOrCreate(
-                    ['assessment_session_id' => $session->id],
-                    [
-                        'date' => $speakingDate,
-                        'topic' => $topic, 
-                        'interviewer_id' => $interviewerId,
+                        'written_date'   => $writtenDate,   // Nama kolom baru
+                        'speaking_date'  => $speakingDate,  // Pindahan dari tabel speaking_tests
+                        'speaking_topic' => $topic,         // Pindahan dari tabel speaking_tests
+                        'interviewer_id' => $interviewerId,  // Pindahan dari tabel speaking_tests
+                        'status'         => $status,
                     ]
                 );
                 
@@ -85,22 +77,23 @@ class AssessmentSeeder extends Seeder
                 // PENCEGAHAN SEEDING NILAI (Jika nama kelas mengandung 'Empty Assessment')
                 // =================================================================
                 if ($isEmptyExample) {
-                    continue; // Lompati proses pembuatan nilai siswa
+                    continue; 
                 }
                 // =================================================================
 
-                // 4. Loop semua siswa di kelas tersebut (Hanya berjalan jika TIDAK di-skip)
+                // 3. Loop semua siswa di kelas tersebut
                 foreach ($class->students as $student) {
                     
                     // A. Generate Nilai Speaking (Detail)
                     // Max 50 per komponen
                     $contentScore = rand(30, 50); 
                     $participationScore = rand(30, 50);
-                    $totalSpeakingScore = $contentScore + $participationScore; // Total Max 100
+                    $totalSpeakingScore = $contentScore + $participationScore; 
 
+                    // Update FK ke assessment_session_id
                     SpeakingTestResult::updateOrCreate(
                         [
-                            'speaking_test_id' => $speakingTest->id,
+                            'assessment_session_id' => $session->id, // [UPDATED] Langsung ke Session
                             'student_id' => $student->id
                         ],
                         [
@@ -110,7 +103,6 @@ class AssessmentSeeder extends Seeder
                     );
 
                     // B. Buat Assessment Form (Rekap Nilai Semua Skill)
-                    // Max 100 per komponen
                     AssessmentForm::updateOrCreate(
                         [
                             'assessment_session_id' => $session->id,
@@ -122,8 +114,7 @@ class AssessmentSeeder extends Seeder
                             'listening'  => rand(60, 95),
                             'reading'    => rand(60, 95),
                             'spelling'   => rand(60, 95),
-                            'speaking'   => $totalSpeakingScore, // Ambil dari total speaking test result
-                            // 'is_submitted' SUDAH DIHAPUS, tidak perlu di-seed lagi.
+                            'speaking'   => $totalSpeakingScore, 
                         ]
                     );
                 }

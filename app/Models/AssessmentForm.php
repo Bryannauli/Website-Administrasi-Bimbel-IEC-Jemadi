@@ -34,29 +34,14 @@ class AssessmentForm extends Model
     }
 
     /**
-     * Update total speaking dari speaking test
+     * Update total speaking dari speaking test result
+     * [UPDATED LOGIC]
      */
     public function updateSpeakingFromTest()
     {
-        // Pastikan relasi session sudah ter-load
-        $this->loadMissing('session');
-
-        // Jika session tidak ada, tidak ada yang bisa dilakukan
-        if (!$this->session) {
-            return;
-        }
-
-        // Ambil info dari session induk
-        $class_id = $this->session->class_id;
-        $type = $this->session->type;
-        $student_id = $this->student_id;
-
-        // Temukan hasil tes speaking yang relevan menggunakan join
-        $result = SpeakingTestResult::join('speaking_tests', 'speaking_tests.id', '=', 'speaking_test_results.speaking_test_id')
-            ->where('speaking_tests.class_id', $class_id)             // Cocokkan Class ID
-            ->where('speaking_tests.type', $type)                     // Cocokkan Type (mid/final)
-            ->where('speaking_test_results.student_id', $student_id)  // Cocokkan Student ID
-            ->select('speaking_test_results.*')                       // Pastikan mendapatkan data dari model result
+        // Cari result speaking berdasarkan Session ID dan Student ID
+        $result = SpeakingTestResult::where('assessment_session_id', $this->assessment_session_id)
+            ->where('student_id', $this->student_id)
             ->first();
 
         if ($result) {
@@ -66,8 +51,7 @@ class AssessmentForm extends Model
     }
 
     /**
-     * Hitung rata-rata semua skor (abaikan null) dan bulatkan
-     * @return int|null
+     * Hitung rata-rata
      */
     public function averageScore(): ?int
     {
@@ -84,7 +68,7 @@ class AssessmentForm extends Model
         $validScores = array_filter($scores, fn($score) => !is_null($score));
 
         if (empty($validScores)) {
-            return null; // jika semua null, kembalikan null
+            return null; 
         }
 
         return (int) round(array_sum($validScores) / count($validScores));

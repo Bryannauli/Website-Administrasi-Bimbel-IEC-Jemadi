@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('speaking_test_results', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('speaking_test_id')
-                ->constrained('speaking_tests')
+            $table->foreignId('assessment_session_id')
+                ->constrained('assessment_sessions')
                 ->cascadeOnDelete();
 
             $table->foreignId('student_id')
@@ -26,7 +26,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('participation_score')->nullable();
 
             $table->timestamps();
-            $table->unique(['speaking_test_id', 'student_id']);
+            $table->unique(['assessment_session_id', 'student_id']);
             $table->softDeletes();
         });
     }

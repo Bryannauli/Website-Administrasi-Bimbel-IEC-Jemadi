@@ -105,18 +105,76 @@ return new class extends Migration
                 END IF;
             END
         ");
+
+        // =========================================================================
+        // C. WORKFLOW INTEGRITY (BARU: MENCEGAH SUBMIT KOSONG)
+        // =========================================================================
+        
+        // 5. Mencegah status berubah ke 'submitted' jika belum ada minimal 1 data lengkap
+        DB::unprepared("DROP TRIGGER IF EXISTS tr_prevent_premature_submission");
+        DB::unprepared("
+            CREATE TRIGGER tr_prevent_premature_submission
+            BEFORE UPDATE ON assessment_sessions
+            FOR EACH ROW
+            BEGIN
+                DECLARE complete_count INT DEFAULT 0;
+
+                -- Hanya cek jika status berubah menjadi 'submitted'
+                IF NEW.status = 'submitted' AND OLD.status != 'submitted' THEN
+                    
+                    -- [UPDATED JOIN] Langsung ke speaking_test_results via assessment_session_id
+                    SELECT COUNT(*) INTO complete_count
+                    FROM assessment_forms af
+                    INNER JOIN speaking_test_results str 
+                        ON str.assessment_session_id = NEW.id 
+                        AND str.student_id = af.student_id
+                    WHERE af.assessment_session_id = NEW.id
+                        AND af.vocabulary IS NOT NULL
+                        AND af.grammar IS NOT NULL
+                        AND af.listening IS NOT NULL
+                        AND af.reading IS NOT NULL
+                        AND str.content_score IS NOT NULL
+                        AND str.participation_score IS NOT NULL;
+
+                    -- Jika tidak ada satupun yang lengkap, tolak update
+                    IF complete_count = 0 THEN
+                        SIGNAL SQLSTATE '45000' 
+                        SET MESSAGE_TEXT = 'Data Integrity Violation: Cannot submit assessment. At least one student must have complete grades (Written & Speaking).';
+                    END IF;
+                END IF;
+            END
+        ");
+
+        // =========================================================================
+        // D. AUTOMATIC SYNC: SPEAKING TOTAL (BARU)
+        // Deskripsi: Mengupdate kolom 'speaking' di assessment_forms secara otomatis
+        // =========================================================================
+        
+        $syncSpeakingSql = "
+            BEGIN
+                UPDATE assessment_forms 
+                SET speaking = NEW.content_score + NEW.participation_score
+                WHERE assessment_session_id = NEW.assessment_session_id 
+                    AND student_id = NEW.student_id;
+            END
+        ";
+
+        DB::unprepared("DROP TRIGGER IF EXISTS tr_sync_speaking_total_insert");
+        DB::unprepared("CREATE TRIGGER tr_sync_speaking_total_insert AFTER INSERT ON speaking_test_results FOR EACH ROW $syncSpeakingSql");
+
+        DB::unprepared("DROP TRIGGER IF EXISTS tr_sync_speaking_total_update");
+        DB::unprepared("CREATE TRIGGER tr_sync_speaking_total_update AFTER UPDATE ON speaking_test_results FOR EACH ROW $syncSpeakingSql");
     }
 
     public function down(): void
     {
-        // 1. Drop Validation Triggers
         DB::unprepared('DROP TRIGGER IF EXISTS tr_val_assessment_insert');
         DB::unprepared('DROP TRIGGER IF EXISTS tr_val_assessment_update');
         DB::unprepared('DROP TRIGGER IF EXISTS tr_val_speaking_insert');
         DB::unprepared('DROP TRIGGER IF EXISTS tr_val_speaking_update');
-
-        // 2. Drop Session Integrity Triggers
         DB::unprepared('DROP TRIGGER IF EXISTS tr_prevent_duplicate_session_insert');
         DB::unprepared('DROP TRIGGER IF EXISTS tr_prevent_duplicate_session_update');
+        DB::unprepared('DROP TRIGGER IF EXISTS tr_prevent_premature_submission');
+        DB::unprepared('DROP TRIGGER IF EXISTS tr_sync_speaking_total_insert');
     }
 };

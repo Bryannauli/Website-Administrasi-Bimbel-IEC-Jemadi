@@ -39,7 +39,6 @@
                     {{-- SEARCH BAR --}}
                     <div class="w-full mb-4">
                         <form action="{{ route('admin.assessment.index') }}" method="GET" class="relative w-full">
-                            {{-- Pertahankan filter saat searching --}}
                             @foreach(['academic_year', 'category', 'type', 'class_id', 'class_status', 'assessment_status'] as $key)
                                 @if(request()->has($key)) 
                                     <input type="hidden" name="{{ $key }}" value="{{ request($key) }}"> 
@@ -64,11 +63,8 @@
                         @endif
                         
                         <div class="flex flex-wrap items-end gap-3">
-                            
-                            {{-- 1. Year Filter --}}
                             <div class="relative">
-                                <select name="academic_year" onchange="this.form.submit()" 
-                                        class="h-10 w-full sm:w-32 px-3 pr-10 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 bg-gray-50 focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer appearance-none">
+                                <select name="academic_year" onchange="this.form.submit()" class="h-10 w-full sm:w-32 px-3 pr-10 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 bg-gray-50 focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer appearance-none">
                                     <option value="">All Years</option>
                                     @foreach($years as $year)
                                         <option value="{{ $year }}" {{ request('academic_year') == $year ? 'selected' : '' }}>{{ $year }}</option>
@@ -76,10 +72,8 @@
                                 </select>
                             </div>
 
-                            {{-- 2. Category Filter --}}
                             <div class="relative">
-                                <select name="category" onchange="this.form.submit()" 
-                                        class="h-10 w-full sm:w-36 px-3 pr-10 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer appearance-none">
+                                <select name="category" onchange="this.form.submit()" class="h-10 w-full sm:w-36 px-3 pr-10 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer appearance-none">
                                     <option value="">All Categories</option>
                                     @foreach($categories as $category)
                                         <option value="{{ $category }}" {{ request('category') == $category ? 'selected' : '' }}>{{ ucwords(str_replace('_', ' ', $category)) }}</option>
@@ -87,31 +81,16 @@
                                 </select>
                             </div>
 
-                            {{-- 3. Class Filter --}}
                             <div class="relative">
-                                <select name="class_id" onchange="this.form.submit()" 
-                                        class="h-10 w-full sm:w-36 px-3 pr-10 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer appearance-none">
-                                    <option value="">All Classes</option>
-                                    @foreach($classes as $classItem)
-                                        <option value="{{ $classItem->id }}" {{ request('class_id') == $classItem->id ? 'selected' : '' }}>{{ $classItem->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            {{-- 4. Class Status Filter (Active/Inactive) --}}
-                            <div class="relative">
-                                <select name="class_status" onchange="this.form.submit()" 
-                                        class="h-10 w-full sm:w-36 px-3 pr-10 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer appearance-none">
+                                <select name="class_status" onchange="this.form.submit()" class="h-10 w-full sm:w-36 px-3 pr-10 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer appearance-none">
                                     <option value="" {{ request('class_status') == '' ? 'selected' : '' }}>All Status</option>
                                     <option value="active" {{ request('class_status', 'active') == 'active' ? 'selected' : '' }}>Active</option>
                                     <option value="inactive" {{ request('class_status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
                                 </select>
                             </div>
                             
-                            {{-- 5. Exam Type Filter (Mid/Final) --}}
                             <div class="relative">
-                                <select name="type" onchange="this.form.submit()" 
-                                        class="h-10 w-full sm:w-32 px-3 pr-10 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer appearance-none">
+                                <select name="type" onchange="this.form.submit()" class="h-10 w-full sm:w-32 px-3 pr-10 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer appearance-none">
                                     <option value="">All Types</option>
                                     @foreach($types as $type)
                                         <option value="{{ $type }}" {{ request('type') == $type ? 'selected' : '' }}>{{ ucfirst($type) }}</option>
@@ -119,10 +98,8 @@
                                 </select>
                             </div>
 
-                            {{-- 6. Assessment Progress Filter (Draft/Submitted/Final) --}}
                             <div class="relative">
-                                <select name="assessment_status" onchange="this.form.submit()" 
-                                        class="h-10 w-full sm:w-36 px-3 pr-10 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer appearance-none">
+                                <select name="assessment_status" onchange="this.form.submit()" class="h-10 w-full sm:w-36 px-3 pr-10 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer appearance-none">
                                     <option value="">All Progress</option>
                                     @foreach($statuses as $statusOption)
                                         <option value="{{ $statusOption }}" {{ request('assessment_status') == $statusOption ? 'selected' : '' }}>
@@ -132,16 +109,10 @@
                                 </select>
                             </div>
                             
-                            {{-- Reset Filter Button (Tetap di akhir) --}}
                             @if(request('academic_year') || request('category') || request('type') || request('class_id') || request('search') || request('assessment_status') || (request()->has('class_status') && request('class_status') != 'active'))
-                            <div class="flex flex-col gap-1">
-                                <div class="h-3 hidden sm:block">&nbsp;</div> 
-                                <a href="{{ route('admin.assessment.index') }}" 
-                                class="h-10 w-10 flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg transition-colors shadow-sm" 
-                                title="Reset Filters">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                </a>
-                            </div>
+                            <a href="{{ route('admin.assessment.index') }}" class="h-10 w-10 flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg transition-colors shadow-sm" title="Reset Filters">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </a>
                             @endif
                         </div>
                     </form>
@@ -152,15 +123,15 @@
                     <table class="w-full text-left border-collapse min-w-max">
                         <thead class="bg-gray-50 text-xs text-gray-500 font-bold uppercase border-b border-gray-200 tracking-wider">
                             <tr>
-                                <th class="px-6 py-4 w-16 whitespace-nowrap text-center font-bold">No</th>
-                                <th class="px-6 py-4 whitespace-nowrap font-bold">Category</th>
-                                <th class="px-6 py-4 whitespace-nowrap font-bold">Class Name</th>
-                                <th class="px-6 py-4 whitespace-nowrap text-center font-bold">Class Status</th> {{-- KOLOM BARU --}}
-                                <th class="px-6 py-4 whitespace-nowrap text-center font-bold">Year</th>
-                                <th class="px-6 py-4 whitespace-nowrap text-center font-bold">Exam Date</th>
-                                <th class="px-6 py-4 whitespace-nowrap text-center font-bold">Type</th>
-                                <th class="px-6 py-4 whitespace-nowrap text-center font-bold">Progress</th> {{-- UBAH LABEL JADI PROGRESS AGAR BEDA --}}
-                                <th class="px-6 py-4 whitespace-nowrap text-center font-bold w-32">Action</th>
+                                <th class="px-6 py-4 w-16 text-center">No</th>
+                                <th class="px-6 py-4">Category</th>
+                                <th class="px-6 py-4">Class Name</th>
+                                <th class="px-6 py-4 text-center">Class Status</th>
+                                <th class="px-6 py-4 text-center">Year</th>
+                                <th class="px-6 py-4 text-center">Exam Date</th>
+                                <th class="px-6 py-4 text-center">Type</th>
+                                <th class="px-6 py-4 text-center">Progress</th>
+                                <th class="px-6 py-4 text-center w-32">Action</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
@@ -170,42 +141,33 @@
                                     {{ $assessments->firstItem() + $index }}
                                 </td>
                                 
-                                {{-- CATEGORY (Semua Biru) --}}
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200">
                                         {{ str_replace('_', ' ', $assessment->classModel->category ?? '-') }}
                                     </span>
                                 </td>
                                 
-                                {{-- CLASS NAME --}}
                                 <td class="px-6 py-4 font-semibold text-gray-800 whitespace-nowrap">
                                     {{ $assessment->classModel->name ?? '-' }}
                                 </td>
 
-                                {{-- CLASS STATUS (Kolom Baru) --}}
                                 <td class="px-6 py-4 text-center whitespace-nowrap">
                                     @if($assessment->classModel && $assessment->classModel->is_active)
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
-                                            Active
-                                        </span>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">Active</span>
                                     @else
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500 border border-gray-200">
-                                            Inactive
-                                        </span>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500 border border-gray-200">Inactive</span>
                                     @endif
                                 </td>
 
-                                {{-- YEAR --}}
                                 <td class="px-6 py-4 text-gray-600 font-bold text-xs whitespace-nowrap text-center">
                                     {{ $assessment->classModel->academic_year ?? '-' }}
                                 </td>
 
-                                {{-- EXAM DATE --}}
+                                {{-- [FIXED] Kolom written_date --}}
                                 <td class="px-6 py-4 text-center text-gray-600 font-medium whitespace-nowrap">
-                                    {{ $assessment->date ? \Carbon\Carbon::parse($assessment->date)->format('d M Y') : '-' }}
+                                    {{ $assessment->written_date ? \Carbon\Carbon::parse($assessment->written_date)->format('d M Y') : '-' }}
                                 </td>
                                 
-                                {{-- TYPE --}}
                                 <td class="px-6 py-4 text-center whitespace-nowrap">
                                     <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest
                                         {{ $assessment->type == 'final' ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200' }}">
@@ -213,61 +175,32 @@
                                     </span>
                                 </td>
 
-                                {{-- PROGRESS (Assessment Status) --}}
                                 <td class="px-6 py-4 text-center whitespace-nowrap">
                                     @php
                                         $statusColor = match($assessment->status) {
-                                            'submitted' => 'bg-blue-100 text-blue-700 border-blue-200 ring-1 ring-blue-500/20', 
-                                            'final'     => 'bg-purple-100 text-purple-700 border-purple-200 ring-1 ring-purple-500/20', 
+                                            'submitted' => 'bg-blue-100 text-blue-700 border-blue-200', 
+                                            'final'     => 'bg-purple-100 text-purple-700 border-purple-200', 
                                             default     => 'bg-gray-100 text-gray-600 border-gray-200', 
                                         };
-                                        
-                                        $statusIcon = match($assessment->status) {
-                                            'submitted' => '<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
-                                            'final'     => '<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
-                                            default     => '<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>',
-                                        };
                                     @endphp
-                                    
                                     <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border {{ $statusColor }}">
-                                        {!! $statusIcon !!}
                                         {{ ucfirst($assessment->status) }}
                                     </span>
                                 </td>
 
-                                {{-- ACTION --}}
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
                                     <div class="flex items-center justify-center gap-3">
                                         <a href="{{ route('admin.classes.assessment.detail', ['classId' => $assessment->class_id, 'type' => $assessment->type, 'from' => 'assessment']) }}" 
                                             class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="View Grades">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                            </svg>
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                         </a>
                                         
-                                        {{-- CASE A: SUBMITTED (Admin Boleh Edit/Finalize) --}}
                                         @if($assessment->status === 'submitted')
                                             <a href="{{ route('admin.classes.assessment.detail', ['classId' => $assessment->class_id, 'type' => $assessment->type, 'from' => 'assessment', 'mode' => 'edit']) }}" 
-                                            class="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" 
-                                            title="Review & Finalize">
+                                            class="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Review & Finalize">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                             </a>
-                                        
-                                        {{-- CASE B: DRAFT (Admin Menunggu Guru - Disabled) --}}
-                                        @elseif($assessment->status === 'draft')
-                                            <button type="button" class="p-1.5 text-gray-300 cursor-not-allowed" title="Teacher is currently working (Cannot Edit)">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                            </button>
                                         @endif
-                                        
-                                        {{-- CASE C: FINAL (Tidak Menampilkan Tombol Edit) --}}
-
-                                        <button type="button" class="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Print Report">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                                            </svg>
-                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -287,7 +220,6 @@
                 </div>
                 @endif
             </div>
-
         </div>
     </div>
 </x-app-layout>

@@ -21,7 +21,7 @@ class UserSeeder extends Seeder
             'phone' => null,
             'password' => Hash::make('admin123'),
             'role' => 'admin',
-            'is_teacher' => false,
+            'is_teacher' => true,
             'is_active' => true,
         ]);
 

@@ -406,7 +406,7 @@
                                 <div>
                                     <h4 class="text-lg font-bold text-gray-800">Mid Term</h4>
                                     <p class="text-xs text-gray-400 mt-1">
-                                        {{ $midSession && $midSession->date ? \Carbon\Carbon::parse($midSession->date)->format('d M Y') : 'Date not set' }}
+                                        {{ $midSession && $midSession->written_date ? \Carbon\Carbon::parse($midSession->date)->format('d M Y') : 'Date not set' }}
                                     </p>
                                 </div>
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border {{ $midColor }}">
@@ -446,7 +446,7 @@
                                 <div>
                                     <h4 class="text-lg font-bold text-gray-800">Final Term</h4>
                                     <p class="text-xs text-gray-400 mt-1">
-                                        {{ $finalSession && $finalSession->date ? \Carbon\Carbon::parse($finalSession->date)->format('d M Y') : 'Date not set' }}
+                                        {{ $finalSession && $finalSession->written_date ? \Carbon\Carbon::parse($finalSession->date)->format('d M Y') : 'Date not set' }}
                                     </p>
                                 </div>
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border {{ $finalColor }}">

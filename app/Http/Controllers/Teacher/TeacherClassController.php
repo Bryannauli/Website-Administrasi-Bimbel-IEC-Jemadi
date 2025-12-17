@@ -114,7 +114,7 @@ class TeacherClassController extends Controller
 
         // 5. Assessment Pagination
         $assessments = AssessmentSession::where('class_id', $id)
-            ->orderBy('date', 'desc')
+            ->orderBy('written_date', 'desc')
             ->paginate(5, ['*'], 'assessment_page');
 
         // 6. Data Matrix (Tetap pakai full data $studentStats agar history deleted student tetap ada)

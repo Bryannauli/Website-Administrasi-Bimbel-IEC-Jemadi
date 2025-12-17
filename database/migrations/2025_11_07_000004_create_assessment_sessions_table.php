@@ -19,7 +19,16 @@ return new class extends Migration
                 ->nullOnDelete();
 
             $table->enum('type', ['mid', 'final']);
-            $table->date('date')->nullable();
+
+            $table->date('written_date')->nullable();
+            
+            $table->date('speaking_date')->nullable();
+            $table->string('speaking_topic', 200)->nullable();
+            $table->foreignId('interviewer_id')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+
             $table->enum('status', ['draft', 'submitted', 'final'])->default('draft');
 
             $table->timestamps();

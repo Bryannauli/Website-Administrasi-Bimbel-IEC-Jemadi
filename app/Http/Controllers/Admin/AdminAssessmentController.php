@@ -5,9 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ClassModel;
 use App\Models\AssessmentSession;
-use App\Models\AssessmentForm;
-use App\Models\SpeakingTest;
-use App\Models\SpeakingTestResult;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -74,7 +71,7 @@ class AdminAssessmentController extends Controller
         }
         
         // 2. Pagination & Sorting
-        $assessments = $query->orderBy('date', 'desc')->paginate(10);
+        $assessments = $query->orderBy('written_date', 'desc')->paginate(10);
         $assessments->appends($request->all());
 
         // 3. Data Pendukung untuk Dropdown Filter
@@ -93,34 +90,23 @@ class AdminAssessmentController extends Controller
      */
     public function detail(Request $request, $classId, $type)
     {
-        if (!in_array($type, ['mid', 'final'])) {
-            abort(404);
-        }
+        if (!in_array($type, ['mid', 'final'])) { abort(404); }
 
-        // 1. First or Create Session
-        $session = AssessmentSession::firstOrCreate(
+        // [UPDATED] Load Session dengan interviewer
+        $session = AssessmentSession::with('interviewer')->firstOrCreate(
             ['class_id' => $classId, 'type' => $type],
-            ['date' => null]
+            ['written_date' => null, 'status' => 'draft']
         );
 
-        // 2. Load Data Kelas
         $class = ClassModel::with(['localTeacher', 'formTeacher'])->findOrFail($classId);
 
-        // 3. AMBIL DATA SISWA + NILAI DARI STORED PROCEDURE
-        // Procedure ini sudah menangani logika: Siswa Aktif OR Siswa Keluar tapi punya nilai
+        // Call Procedure
         $rawStudentData = DB::select('CALL p_GetAssessmentSheet(?, ?)', [$classId, $session->id]);
 
         $allTeachers = User::where('role', 'teacher')->where('is_active', true)->orderBy('name', 'asc')->get();
 
-        // 4. Info Speaking Test
-        $speakingTest = SpeakingTest::with(['interviewer'])
-            ->where('assessment_session_id', $session->id)
-            ->first();
-        
-        $currentInterviewerId = $speakingTest->interviewer_id ?? $class->local_teacher_id;
+        $currentInterviewerId = $session->interviewer_id ?? $class->local_teacher_id;
 
-        // 5. MAPPING KE STRUKTUR VIEW
-        // Karena result procedure flat (1 baris per siswa), kita perlu format jadi nested array
         $studentData = collect($rawStudentData)->map(function ($row) {
             return [
                 'id' => $row->student_id,
@@ -147,11 +133,13 @@ class AdminAssessmentController extends Controller
             ];
         });
         
-        return view('admin.assessment.assessment-detail', compact('class', 'session', 'type', 'speakingTest', 'studentData', 'allTeachers', 'currentInterviewerId'));
+        return view('admin.assessment.assessment-detail', compact(
+            'class', 'session', 'type', 'studentData', 'allTeachers', 'currentInterviewerId'
+        ));
     }
 
     /**
-     * Menyimpan/Update Nilai
+     * Store/Update Grades
      */
     public function storeOrUpdateGrades(Request $request, $classId, $type)
     {
@@ -161,33 +149,21 @@ class AdminAssessmentController extends Controller
 
         $action = $request->input('action_type', 'save');
 
-        // LOGIKA QUICK STATUS CHANGE
+        // QUICK STATUS CHANGE
         if ($action === 'finalize_quick' || $action === 'draft_quick') {
             $newStatus = ($action === 'finalize_quick') ? 'final' : 'draft';
-            
             if ($session->status !== $newStatus) {
                 $session->update(['status' => $newStatus]);
-                $msg = ($newStatus === 'final') 
-                    ? 'Assessment has been APPROVED and FINALISED. All grades are now locked.' 
-                    : 'Assessment status reverted to DRAFT. Teachers can now edit grades again.';
+                $msg = ($newStatus === 'final') ? 'Assessment has been FINALISED.' : 'Assessment status reverted to DRAFT.';
             } else {
-                $msg = 'Assessment status is already ' . ucfirst($newStatus) . '. No changes made.';
+                $msg = 'Status already updated.';
             }
-
-            return redirect()->route('admin.classes.assessment.detail', [
-                'classId' => $classId,
-                'type' => $type
-            ])->with('success', $msg);
+            return redirect()->route('admin.classes.assessment.detail', ['classId' => $classId, 'type' => $type])->with('success', $msg);
         }
         
-        // LOGIKA FULL GRADE UPDATE
-        if ($session->status === 'draft') {
-            return back()->with('error', 'Action denied. You cannot edit grades while the assessment is still in DRAFT mode (Teacher is working on it).');
-        }
-
-        if ($session->status === 'final') {
-            return back()->with('error', 'Action denied. Assessment is already FINALISED.');
-        }
+        // CHECK LOCK
+        if ($session->status === 'draft') return back()->with('error', 'Cannot edit grades in DRAFT mode.');
+        if ($session->status === 'final') return back()->with('error', 'Assessment is FINALISED.');
 
         $rules = [
             'written_date' => 'required|date',
@@ -203,56 +179,32 @@ class AdminAssessmentController extends Controller
             'grades.*.speaking_content'      => 'required|integer|between:0,50',
             'grades.*.speaking_participation'=> 'required|integer|between:0,50',
             'grades.*.student_id' => 'required|exists:students,id',
-            'grades.*.form_id' => 'nullable', 
-            'action_type' => 'nullable|string|in:save,finalize,draft', 
         ];
 
-        $messages = [
-            'grades.*.vocabulary.required' => 'Vocabulary field is required.',
-            'grades.*.grammar.required' => 'Grammar field is required.',
-            'grades.*.listening.required' => 'Listening field is required.',
-            'grades.*.reading.required' => 'Reading field is required.',
-            'grades.*.speaking_content.required' => 'Speaking Content field is required.',
-            'grades.*.speaking_participation.required' => 'Speaking Participation field is required.',
-            'grades.*.vocabulary.between' => 'Vocabulary must be between 0 and 100.',
-            'grades.*.speaking_content.between' => 'Speaking Content must be between 0 and 50.',
-        ];
-
-        $validatedData = $request->validate($rules, $messages);
+        $validatedData = $request->validate($rules);
         $grades = $validatedData['grades'];
 
         try {
             $newStatus = $session->status;
+            if ($action === 'finalize') $newStatus = 'final';
+            if ($action === 'draft') $newStatus = 'draft';
 
-            if ($action === 'finalize') {
-                $newStatus = 'final';
-            } elseif ($action === 'draft') {
-                $newStatus = 'draft';
-            }
-
+            // [UPDATED] Update Session Headers
             $session->update([
-                'date' => $validatedData['written_date'],
+                'written_date' => $validatedData['written_date'],
+                'speaking_date' => $validatedData['speaking_date'],
+                'speaking_topic' => $validatedData['topic'],
+                'interviewer_id' => $validatedData['interviewer_id'],
                 'status' => $newStatus,
             ]);
 
-            $speakingTest = SpeakingTest::updateOrCreate(
-                ['assessment_session_id' => $session->id],
-                [
-                    'date' => $validatedData['speaking_date'],
-                    'topic' => $validatedData['topic'],
-                    'interviewer_id' => $validatedData['interviewer_id'],
-                ]
-            );
-
-            $speakingTestId = $speakingTest->id;
-            $sessionId = $session->id;
-
             foreach ($grades as $grade) {
-                DB::statement('CALL p_UpdateStudentGrade(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-                    $sessionId,
+                // [UPDATED] Call Procedure (10 Params)
+                DB::statement('CALL p_UpdateStudentGrade(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+                    $session->id,
                     $grade['student_id'],
                     $grade['form_id'] ?? null, 
-                    $speakingTestId,
+                    // Speaking test id REMOVED
                     $grade['vocabulary'],
                     $grade['grammar'],
                     $grade['listening'],
@@ -264,17 +216,14 @@ class AdminAssessmentController extends Controller
             }
             
             $msg = 'Grades updated successfully!';
-            if ($action === 'finalize') $msg = 'Assessment has been APPROVED and FINALISED. All grades are now locked.';
-            if ($action === 'draft') $msg = 'Assessment status reverted to DRAFT.';
+            if ($action === 'finalize') $msg = 'Assessment FINALISED.';
+            if ($action === 'draft') $msg = 'Reverted to DRAFT.';
 
-            return redirect()->route('admin.classes.assessment.detail', [
-                'classId' => $classId,
-                'type' => $type
-            ])->with('success', $msg);
+            return redirect()->route('admin.classes.assessment.detail', ['classId' => $classId, 'type' => $type])->with('success', $msg);
 
         } catch (\Exception $e) {
-            Log::error("Grade update failed for class {$classId} type {$type}: " . $e->getMessage());
-            return back()->with('error', 'Error Detail: ' . $e->getMessage())->withInput();
+            Log::error("Update failed: " . $e->getMessage());
+            return back()->with('error', 'Error: ' . $e->getMessage())->withInput();
         }
     }
 }

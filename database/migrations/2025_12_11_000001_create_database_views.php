@@ -101,7 +101,7 @@ return new class extends Migration
         ");
 
         // ==========================================
-        // 6. View: v_student_grades
+        // 6. View: v_student_grades [UPDATED]
         // ==========================================
         DB::unprepared("
             CREATE OR REPLACE VIEW v_student_grades AS
@@ -110,23 +110,33 @@ return new class extends Migration
                 af.student_id,
                 s.name AS student_name,
                 s.student_number,
+                
+                -- Info Sesi
                 af.assessment_session_id,
                 asess.type AS assessment_type,
-                asess.date AS assessment_date,
+                asess.written_date AS assessment_date, -- [FIXED] asess.date diganti ke asess.written_date
                 asess.class_id,
                 c.name AS class_name,
+                
+                -- Nilai Written
                 af.vocabulary,
                 af.grammar,
                 af.listening,
                 af.reading,
                 af.spelling,
-                af.speaking, 
+                af.speaking, -- Total Speaking (Hasil tambah)
+                
+                -- Nilai Speaking Detail (Langsung dari Result ke Session)
                 str.content_score AS speaking_content,
                 str.participation_score AS speaking_participation,
-                st.date AS speaking_date,
-                st.topic AS speaking_topic,
+                
+                -- Info Speaking Header (Sekarang ada di assessment_sessions)
+                asess.speaking_date,
+                asess.speaking_topic,
+                asess.interviewer_id,
                 u.name AS interviewer_name,
-                st.interviewer_id,
+                
+                -- Kalkulasi Akhir
                 f_CalcAssessmentAvg(
                     af.vocabulary, af.grammar, af.listening, af.reading, af.spelling, af.speaking
                 ) AS final_score,
@@ -136,13 +146,20 @@ return new class extends Migration
                     )
                 ) AS grade_text,
                 af.updated_at
+
             FROM assessment_forms af
             JOIN students s ON af.student_id = s.id
             JOIN assessment_sessions asess ON af.assessment_session_id = asess.id
             JOIN classes c ON asess.class_id = c.id
-            LEFT JOIN speaking_tests st ON asess.id = st.assessment_session_id
-            LEFT JOIN speaking_test_results str ON st.id = str.speaking_test_id AND af.student_id = str.student_id
-            LEFT JOIN users u ON st.interviewer_id = u.id
+            
+            -- [UPDATE] Join langsung ke Speaking Result berdasarkan Session ID
+            LEFT JOIN speaking_test_results str 
+                ON asess.id = str.assessment_session_id 
+                AND af.student_id = str.student_id
+            
+            -- [UPDATE] Join Interviewer langsung dari Session
+            LEFT JOIN users u ON asess.interviewer_id = u.id
+            
             ORDER BY s.student_number ASC;
         ");
 

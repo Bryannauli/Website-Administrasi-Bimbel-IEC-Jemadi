@@ -13,15 +13,18 @@ class SpeakingTestResult extends Model
     use LogsActivity;
 
     protected $fillable = [
-        'speaking_test_id',
+        'assessment_session_id', // [UPDATED] FK baru
         'student_id',
         'content_score',
         'participation_score',
     ];
 
-    public function session()
+    /**
+     * Relasi balik ke Assessment Session
+     */
+    public function assessmentSession()
     {
-        return $this->belongsTo(SpeakingTest::class, 'speaking_test_id');
+        return $this->belongsTo(AssessmentSession::class, 'assessment_session_id');
     }
 
     public function student()
@@ -31,6 +34,6 @@ class SpeakingTestResult extends Model
 
     public function totalScore(): int
     {
-        return $this->content_score + $this->participation_score;
+        return (int) $this->content_score + (int) $this->participation_score;
     }
 }

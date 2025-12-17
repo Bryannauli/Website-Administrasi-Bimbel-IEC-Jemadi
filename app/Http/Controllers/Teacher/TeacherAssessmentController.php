@@ -5,9 +5,7 @@ namespace App\Http\Controllers\Teacher;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\ClassModel;
-use App\Models\Student;
 use App\Models\AssessmentSession;
-use App\Models\SpeakingTest;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -19,32 +17,25 @@ class TeacherAssessmentController extends Controller
      */
     public function assessmentDetail($classId, $assessmentId)
     {
-        // 1. Load Data Kelas & Guru
         $class = ClassModel::with('formTeacher')->findOrFail($classId);
-        $assessment = AssessmentSession::findOrFail($assessmentId);
+        
+        // Load Session dengan relasi interviewer
+        $assessment = AssessmentSession::with('interviewer')->findOrFail($assessmentId);
 
-        // 2. Pastikan Row Speaking Test ada
-        $speakingTest = SpeakingTest::firstOrCreate(
-            ['assessment_session_id' => $assessment->id],
-            ['date' => null, 'interviewer_id' => $class->local_teacher_id]
-        );
-        $speakingTest->load('interviewer');
+        // Default Interviewer logic (jika kosong, isi dengan local teacher kelas)
+        if (!$assessment->interviewer_id && $class->local_teacher_id) {
+            $assessment->interviewer_id = $class->local_teacher_id;
+        }
 
-        // 3. List Guru untuk Dropdown Interviewer
+        // List Guru untuk Dropdown
         $teachers = User::where('is_teacher', true)
             ->where('is_active', true)
             ->orderBy('name', 'asc')
             ->get();
 
-        // =================================================================
-        // OPTIMISASI: MENGGUNAKAN STORED PROCEDURE (SAMA DENGAN ADMIN)
-        // =================================================================
-        
-        // Panggil Procedure yang sama persis dengan Admin.
+        // Ambil Data Nilai (Stored Procedure)
         $rawStudentData = DB::select('CALL p_GetAssessmentSheet(?, ?)', [$classId, $assessmentId]);
 
-        // Mapping Data agar sesuai struktur yang diharapkan View (Array Based)
-        // Kita samakan strukturnya dengan AdminAssessmentController
         $studentData = collect($rawStudentData)->map(function ($row) {
             return [
                 'id' => $row->student_id,
@@ -71,23 +62,20 @@ class TeacherAssessmentController extends Controller
             ];
         });
 
-        // Kirim variable $studentData (bukan $students) ke view
-        return view('teacher.classes.assessment-marks', compact('class', 'assessment', 'studentData', 'speakingTest', 'teachers'));
+        return view('teacher.classes.assessment-marks', compact('class', 'assessment', 'studentData', 'teachers'));
     }
 
     /**
-     * Menyimpan / Update Nilai (Menggunakan Stored Procedure)
+     * Menyimpan / Update Nilai
      */
     public function updateAssessmentMarks(Request $request, $classId, $assessmentId)
     {
         $session = AssessmentSession::findOrFail($assessmentId);
 
-        // SECURITY: Kunci jika status bukan draft
         if ($session->status !== 'draft') {
             return redirect()->back()->with('error', 'Assessment has been submitted. Changes locked.');
         }
 
-        // 1. Validasi Input
         $request->validate([
             'written_date' => 'required|date',
             'speaking_date' => 'nullable|date',
@@ -95,73 +83,80 @@ class TeacherAssessmentController extends Controller
             'topic' => 'nullable|string|max:200',
             'action_type' => 'required|in:save,submit', 
             
-            // Validasi Array Nilai
             'marks' => 'array',
             'marks.*.vocabulary' => 'nullable|numeric|min:0|max:100',
             'marks.*.grammar'    => 'nullable|numeric|min:0|max:100',
             'marks.*.listening'  => 'nullable|numeric|min:0|max:100',
             'marks.*.reading'    => 'nullable|numeric|min:0|max:100',
             'marks.*.spelling'   => 'nullable|numeric|min:0|max:100',
-            // Speaking max 50 karena totalnya 100
             'marks.*.speaking_content' => 'nullable|numeric|min:0|max:50',
             'marks.*.speaking_participation' => 'nullable|numeric|min:0|max:50',
         ]);
 
+        // --- VALIDASI LOGIKA SUBMIT ---
+        if ($request->action_type === 'submit') {
+            if (!$request->has('marks') || empty($request->marks)) {
+                return redirect()->back()->with('error', 'Cannot submit empty assessment. Please input grades.')->withInput();
+            }
+
+            $hasOneCompleteStudent = collect($request->marks)->contains(function ($scores) {
+                $mandatoryFields = ['vocabulary', 'grammar', 'listening', 'reading', 'speaking_content', 'speaking_participation'];
+                foreach ($mandatoryFields as $field) {
+                    if (!array_key_exists($field, $scores) || $scores[$field] === null || $scores[$field] === '') return false;
+                }
+                return true;
+            });
+
+            if (!$hasOneCompleteStudent) {
+                return redirect()->back()->with('error', 'Submission Failed: At least one student must have ALL mandatory grades.')->withInput();
+            }
+        }
+
         try {
             DB::beginTransaction();
 
-            // 2. Update Header Assessment (Tanggal & Status)
-            $updateData = ['date' => $request->written_date];
+            // [UPDATED] Update Header Assessment (Gabungan Written & Speaking)
+            $updateData = [
+                'written_date'   => $request->written_date,  // Kolom baru
+                'speaking_date'  => $request->speaking_date, // Pindah dari tabel speaking_tests
+                'speaking_topic' => $request->topic,         // Pindah dari tabel speaking_tests
+                'interviewer_id' => $request->interviewer_id // Pindah dari tabel speaking_tests
+            ];
+            
             if ($request->action_type === 'submit') {
                 $updateData['status'] = 'submitted';
             }
+            
             $session->update($updateData);
 
-            // 3. Update Header Speaking Test
-            $speakingTest = SpeakingTest::updateOrCreate(
-                ['assessment_session_id' => $assessmentId],
-                [
-                    'date' => $request->speaking_date,
-                    'interviewer_id' => $request->interviewer_id,
-                    'topic' => $request->topic
-                ]
-            );
-
-            // =============================================================
-            // 4. LOOP & CALL PROCEDURE (Logika Inti)
-            // =============================================================
+            // Loop Nilai Siswa
             if ($request->has('marks')) {
                 foreach ($request->marks as $studentId => $scores) {
-                    
-                    // Panggil Stored Procedure: p_UpdateStudentGrade
-                    // Procedure ini menangani: 
-                    // - Insert/Update ke tabel assessment_forms
-                    // - Insert/Update ke tabel speaking_test_results
-                    // - Menghitung total speaking (content + participation)
-                    
-                    DB::statement('CALL p_UpdateStudentGrade(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-                        $assessmentId,                          // p_session_id
-                        $studentId,                             // p_student_id
-                        0,                                      // p_form_id (Set 0/null karena procedure handle by logic)
-                        $speakingTest->id,                      // p_speaking_test_id
+                    // [UPDATED] Procedure call: Hapus parameter ke-4 (speaking_test_id)
+                    // Total parameter sekarang 10 (sebelumnya 11)
+                    DB::statement('CALL p_UpdateStudentGrade(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+                        $assessmentId,                          
+                        $studentId,                             
+                        0, // p_form_id (dummy, handled inside proc)
                         
-                        $scores['vocabulary'] ?? null,          // p_vocab
-                        $scores['grammar'] ?? null,             // p_grammar
-                        $scores['listening'] ?? null,           // p_listening
-                        $scores['reading'] ?? null,             // p_reading
-                        $scores['spelling'] ?? null,            // p_spelling
+                        // Nilai Written
+                        $scores['vocabulary'] ?? null,          
+                        $scores['grammar'] ?? null,             
+                        $scores['listening'] ?? null,           
+                        $scores['reading'] ?? null,             
+                        $scores['spelling'] ?? null,            
                         
-                        $scores['speaking_content'] ?? null,      // p_s_content
-                        $scores['speaking_participation'] ?? null // p_s_partic
+                        // Nilai Speaking
+                        $scores['speaking_content'] ?? null,      
+                        $scores['speaking_participation'] ?? null 
                     ]);
                 }
             }
 
             DB::commit();
 
-            // Feedback Message
             $msg = ($request->action_type === 'submit') 
-                ? 'Assessment submitted successfully! Waiting for Admin review.' 
+                ? 'Assessment submitted successfully!' 
                 : 'Changes saved successfully.';
 
             return redirect()->route('teacher.classes.assessment.detail', ['classId' => $classId, 'assessmentId' => $assessmentId])
@@ -173,9 +168,6 @@ class TeacherAssessmentController extends Controller
         }
     }
     
-    /**
-     * Membuat Sesi Assessment Baru (Create)
-     */
     public function storeAssessment(Request $request, $classId)
     {
         $request->validate([
@@ -185,21 +177,16 @@ class TeacherAssessmentController extends Controller
 
         ClassModel::findOrFail($classId);
 
-        // Gunakan Eloquent biasa karena ini simple insert header
-        $assessmentSession = AssessmentSession::create([
+        // [UPDATED] Create AssessmentSession saja (SpeakingTest sudah dihapus)
+        AssessmentSession::create([
             'class_id' => $classId,
             'type' => $request->type,
-            'date' => $request->date,
+            'written_date' => $request->date, // Kolom baru
+            'speaking_date' => null,
+            'interviewer_id' => Auth::id(), // Default interviewer
             'status' => 'draft'
         ]);
         
-        // Buat dummy speaking test row
-        SpeakingTest::create([
-            'assessment_session_id' => $assessmentSession->id,
-            'date' => null, 
-            'interviewer_id' => Auth::id() // Default interviewer diri sendiri
-        ]);
-
         $typeLabel = ($request->type == 'mid') ? 'Mid Term Exam' : 'Final Exam';
         
         return redirect()->route('teacher.classes.detail', $classId)
