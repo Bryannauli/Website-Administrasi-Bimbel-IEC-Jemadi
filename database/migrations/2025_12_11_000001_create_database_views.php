@@ -110,6 +110,8 @@ return new class extends Migration
                 af.student_id,
                 s.name AS student_name,
                 s.student_number,
+                s.is_active, 
+                s.deleted_at,
                 
                 -- Info Sesi
                 af.assessment_session_id,

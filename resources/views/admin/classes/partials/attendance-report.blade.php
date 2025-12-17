@@ -49,7 +49,7 @@
         }
         .report-table th, .report-table td {
             border: 1px solid #000;
-            padding: 2px; /* Padding saya kecilkan dikit (3px -> 2px) biar muat 18 kolom */
+            padding: 2px;
             overflow: hidden;
             white-space: nowrap; 
         }
@@ -64,7 +64,6 @@
 <body class="bg-gray-200 p-4 font-sans print:p-0 print:bg-white">
 
     @php
-        // === UPDATE DISINI: GANTI JADI 18 ===
         $chunkSize = 18; 
         $sessionChunks = $teachingLogs->chunk($chunkSize);
         
@@ -129,14 +128,14 @@
                         </div>
                         <div class="flex items-end">
                             <span class="w-28 font-bold text-[9px] shrink-0">FORM TEACHER:</span> 
-                            <span class="border-b border-black border-dotted flex-1 text-[10px] uppercase">
-                                {{ $teacherName }}
+                            <span class="border-b border-black border-dotted flex-1 text-[10px]">
+                                {{ ucwords(strtolower($teacherName)) }}
                             </span>
                         </div>
                         <div class="flex items-end">
                             <span class="w-28 font-bold text-[9px] shrink-0">LOCAL TEACHER:</span> 
-                            <span class="border-b border-black border-dotted flex-1 text-[10px] uppercase">
-                                {{ $localTeacher }}
+                            <span class="border-b border-black border-dotted flex-1 text-[10px]">
+                                {{ ucwords(strtolower($localTeacher)) }}
                             </span>
                         </div>
                     </div>
@@ -149,18 +148,20 @@
                     <tr class="bg-gray-100 text-center">
                         <th rowspan="2" class="w-8">No</th>
                         
-                        {{-- Header ID Student Wrap --}}
+                        {{-- Header ID Student --}}
                         <th rowspan="2" class="w-16 whitespace-normal leading-tight px-1">
                             Student's<br>ID No:
                         </th>
 
-                        <th rowspan="2" class="text-left px-2 w-[180px]">Student Name</th> <th colspan="{{ $chunkSize }}" class="h-4">Meeting Date</th>
+                        <th rowspan="2" class="text-left px-2 w-[180px]">Student Name</th>
+                        <th colspan="{{ $chunkSize }}" class="h-4">Meeting Date</th>
                         <th rowspan="2" class="w-7 text-[9px]">Pres</th>
                         <th rowspan="2" class="w-7 text-[9px]">%</th>
                     </tr>
                     <tr class="bg-gray-50">
                         @foreach($chunkedSessions as $index => $session)
-                            <th class="w-7 text-center bg-white p-0.5 align-middle"> <div class="flex flex-col items-center justify-center">
+                            <th class="w-7 text-center bg-white p-0.5 align-middle">
+                                <div class="flex flex-col items-center justify-center">
                                     <div class="text-[8px] font-bold bg-gray-100 border border-gray-300 w-full mb-0.5">
                                         {{ $startNumber + $index }}
                                     </div>
@@ -192,9 +193,15 @@
                         <tr class="{{ $rowClass }}">
                             <td class="text-center font-bold">{{ $idx + 1 }}</td>
                             <td class="text-center font-mono text-[9px]">{{ $stat->student_number }}</td>
-                            <td class="truncate px-1 text-[10px] uppercase font-semibold">
-                                {{ $stat->student_name }}
-                                @if($isInactive) <span class="text-[8px] border border-red-500 rounded px-1 ml-1">OUT</span> @endif
+                            
+                            {{-- KOLOM NAMA dengan Badge DEL / OUT --}}
+                            <td class="truncate px-1 text-[10px] font-semibold">
+                                {{ ucwords(strtolower($stat->student_name)) }}
+                                @if($isInactive) 
+                                    <span class="text-[8px] border border-red-500 rounded px-1 ml-1 font-bold">
+                                        {{ $stat->deleted_at ? 'DEL' : 'OUT' }}
+                                    </span> 
+                                @endif
                             </td>
 
                             @foreach($chunkedSessions as $session)

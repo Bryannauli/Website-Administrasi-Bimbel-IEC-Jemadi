@@ -112,9 +112,9 @@
                                                         {{ \Carbon\Carbon::parse($stat->deleted_at)->format('d/m/y') }}
                                                     </span>
                                                 @elseif(!$stat->is_active)
-                                                    {{-- QUIT --}}
+                                                    {{-- OUT --}}
                                                     <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-white text-red-600 border border-red-200 uppercase tracking-wide">
-                                                        QUIT
+                                                        OUT
                                                     </span>
                                                 @endif
                                             </div>

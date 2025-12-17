@@ -525,7 +525,7 @@
                                                 <button type="button" 
                                                     @click="confirmToggleStatus({{ $student->id }}, {{ $student->is_active ? 'true' : 'false' }})"
                                                     class="p-1.5 rounded transition-colors {{ $student->is_active ? 'text-gray-400 hover:text-red-600 hover:bg-red-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50' }}"
-                                                    title="{{ $student->is_active ? 'Deactivate (Quit)' : 'Activate' }}">
+                                                    title="{{ $student->is_active ? 'Deactivate (Out)' : 'Activate' }}">
                                                     @if($student->is_active)
                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
                                                     @else

@@ -12,7 +12,7 @@
         @media print {
             @page {
                 size: A4 landscape;
-                margin: 0; /* Nol-kan margin kertas browser */
+                margin: 0; 
             }
             body {
                 -webkit-print-color-adjust: exact;
@@ -25,33 +25,29 @@
                 display: none !important;
             }
             
-            /* Sembunyikan header/footer default browser (URL, Tanggal, Title) */
             header, footer, aside, nav, form {
                 display: none !important;
             }
 
-            /* Reset container agar pas layar */
             .print-container {
                 width: 100% !important;
                 max-width: 100% !important;
                 box-shadow: none !important;
                 margin: 0 !important;
-                padding: 10mm !important; /* Kita atur margin kertas manual di sini (1cm) */
-                min-height: auto !important; /* Jangan paksa tinggi */
+                padding: 10mm !important; 
+                min-height: auto !important; 
                 border: none !important;
             }
 
-            /* Pastikan border tabel hitam pekat */
             table, th, td, .border-black {
                 border-color: #000 !important;
             }
         }
 
-        /* Styling Table ala Laporan Fisik */
         .report-table {
             width: 100%;
             border-collapse: collapse;
-            font-family: 'Times New Roman', Times, serif; /* Font formal */
+            font-family: 'Times New Roman', Times, serif; 
         }
         
         .report-table th, 
@@ -61,20 +57,12 @@
             font-size: 12px;
             vertical-align: middle;
         }
-
-        /* Garis titik-titik untuk isian manual header */
-        .dotted-line {
-            border-bottom: 1px solid #000;
-            display: inline-block;
-            width: 100%;
-            height: 18px; /* Tinggi baris */
-        }
     </style>
 </head>
-<body class="bg-gray-200 p-8 font-sans">
+<body class="bg-gray-200 p-8 font-sans print:p-0 print:bg-white">
 
     {{-- WRAPPER KERTAS A4 LANDSCAPE --}}
-    <div class="max-w-[297mm] mx-auto bg-white shadow-lg p-8 min-h-[210mm] relative">
+    <div class="max-w-[297mm] mx-auto bg-white shadow-lg p-8 min-h-[210mm] relative print:shadow-none print:m-0 print:h-screen print:w-screen">
 
         {{-- 1. HEADER JUDUL --}}
         <div class="text-center mb-6">
@@ -83,7 +71,7 @@
             </h1>
         </div>
 
-        {{-- 2. INFORMASI KELAS (HEADER FORM) --}}
+        {{-- 2. INFORMASI KELAS --}}
         <div class="grid grid-cols-2 gap-12 mb-4 font-bold text-sm" style="font-family: Arial, sans-serif;">
             
             {{-- KOLOM KIRI --}}
@@ -97,13 +85,13 @@
                 <div class="flex items-end">
                     <span class="w-32 shrink-0">FORM TEACHER</span>
                     <span class="border-b border-black flex-1 pl-2">
-                        {{ $headerData->form_teacher ?? '-' }}
+                        {{ ucwords(strtolower($headerData->form_teacher ?? '-')) }}
                     </span>
                 </div>
                 <div class="flex items-end">
                     <span class="w-32 shrink-0">OTHER TEACHER </span>
                     <span class="border-b border-black flex-1 pl-2">
-                        {{ $headerData->other_teacher ?? '-' }}
+                        {{ ucwords(strtolower($headerData->other_teacher ?? '-')) }}
                     </span>
                 </div>
             </div>
@@ -119,8 +107,8 @@
                 <div class="flex items-end">
                     <span class="w-24 shrink-0">CLASS TIME</span>
                     <span class="border-b border-black flex-1 pl-2 font-bold">
-                        {{ \Carbon\Carbon::parse($headerData->start_time)->format('H:i') }} - 
-                        {{ \Carbon\Carbon::parse($headerData->end_time)->format('H:i') }}
+                        {{ \Carbon\Carbon::parse($headerData->start_time)->format('g:i A') }} - 
+                        {{ \Carbon\Carbon::parse($headerData->end_time)->format('g:i A') }}
                     </span>
                 </div>
                 <div class="flex items-end">
@@ -144,7 +132,7 @@
                         {{ strtoupper($headerData->assessment_type ?? 'ASSESSMENT') }}                    
                     </th>
                 </tr>
-                {{-- Baris Header 2 (Sub-kolom FINAL) --}}
+                {{-- Baris Header 2 --}}
                 <tr class="bg-gray-100 text-center font-semibold text-[11px] font-sans">
                     <th class="w-20">Vocabulary</th>
                     <th class="w-20">Grammar</th>
@@ -156,42 +144,62 @@
                 </tr>
             </thead>
             <tbody>
-                {{-- 1. Looping Data Siswa yang Ada Nilainya --}}
                 @foreach($students as $index => $student)
-                <tr class="h-8">
-                    <td class="text-center font-bold bg-gray-50">{{ $index + 1 }}</td>
-                    <td class="text-center font-mono">{{ $student->student_number }}</td>
-                    <td class="pl-2 uppercase truncate max-w-[200px]">{{ $student->student_name }}</td>
-                    
-                    {{-- Kolom Nilai (Ambil dari View v_student_grades) --}}
-                    <td class="text-center">{{ $student->vocabulary ?? '' }}</td>
-                    <td class="text-center">{{ $student->grammar ?? '' }}</td>
-                    <td class="text-center">{{ $student->listening ?? '' }}</td>
-                    <td class="text-center">{{ $student->speaking ?? '' }}</td>
-                    <td class="text-center">{{ $student->reading ?? '' }}</td>
-                    <td class="text-center">{{ $student->spelling ?? '' }}</td>
-                    
-                    {{-- Kolom Average / Final Score --}}
-                    <td class="text-center font-bold bg-gray-50">
-                        {{ $student->final_score ? round($student->final_score) : '' }}
-                    </td>
-                </tr>
+                    @php
+                        // Cek Status Inactive / Deleted
+                        $isInactive = (isset($student->deleted_at) && $student->deleted_at != null) || (isset($student->is_active) && $student->is_active == 0);
+                        
+                        // Styling Baris & Nama
+                        $rowClass = $isInactive ? 'text-red-600 bg-red-50' : '';
+                        $nameStyle = $isInactive ? 'text-red-600 line-through decoration-red-400' : 'font-semibold';
+                        
+                        // Background khusus kolom summary (No & Avg) agar ikut merah jika inactive
+                        $summaryBg = $isInactive ? 'bg-red-50 text-red-600' : 'bg-gray-50';
+                    @endphp
+
+                    <tr class="h-8 {{ $rowClass }}">
+                        {{-- Kolom No --}}
+                        <td class="text-center font-bold {{ $summaryBg }}">{{ $index + 1 }}</td>
+                        
+                        <td class="text-center font-mono {{ $isInactive ? 'text-red-600' : '' }}">{{ $student->student_number }}</td>
+                        
+                        {{-- Kolom Nama dengan Badge OUT / DEL --}}
+                        <td class="pl-2 truncate max-w-[200px] {{ $nameStyle }}">
+                            {{ ucwords(strtolower($student->student_name)) }}
+                            
+                            @if($isInactive)
+                                <span class="ml-1 text-[9px] border border-red-500 rounded px-1 no-underline inline-block align-middle font-bold" style="text-decoration: none;">
+                                    {{ $student->deleted_at ? 'DEL' : 'OUT' }}
+                                </span>
+                            @endif
+                        </td>
+                        
+                        {{-- Kolom Nilai --}}
+                        <td class="text-center {{ $isInactive ? 'border-red-200' : '' }}">{{ $student->vocabulary ?? '' }}</td>
+                        <td class="text-center {{ $isInactive ? 'border-red-200' : '' }}">{{ $student->grammar ?? '' }}</td>
+                        <td class="text-center {{ $isInactive ? 'border-red-200' : '' }}">{{ $student->listening ?? '' }}</td>
+                        <td class="text-center {{ $isInactive ? 'border-red-200' : '' }}">{{ $student->speaking ?? '' }}</td>
+                        <td class="text-center {{ $isInactive ? 'border-red-200' : '' }}">{{ $student->reading ?? '' }}</td>
+                        <td class="text-center {{ $isInactive ? 'border-red-200' : '' }}">{{ $student->spelling ?? '' }}</td>
+                        
+                        {{-- Kolom Average --}}
+                        <td class="text-center font-bold {{ $summaryBg }}">
+                            {{ $student->final_score ? round($student->final_score) : '' }}
+                        </td>
+                    </tr>
                 @endforeach
             </tbody>
         </table>
         
-    {{-- FOOTER TOMBOL (Tidak ikut ter-print) --}}
+        {{-- FOOTER TOMBOL --}}
         <div class="no-print fixed bottom-10 right-10 flex gap-4">
-            
-            {{-- TOMBOL CANCEL / BACK --}}
             <a href="{{ url()->previous() }}" class="bg-gray-500 text-white px-6 py-3 rounded-full shadow-lg hover:bg-gray-600 font-bold transition flex items-center gap-2">
-                <i class="fas fa-arrow-left"></i> Cancel
+                <i class="fas fa-arrow-left"></i> Back
             </a>
-
-            {{-- TOMBOL PRINT --}}
             <button onclick="window.print()" class="bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg hover:bg-blue-700 font-bold transition flex items-center gap-2">
                 <i class="fas fa-print"></i> Print Form
             </button>
+        </div>
 
     </div>
 

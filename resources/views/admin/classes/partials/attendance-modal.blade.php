@@ -95,7 +95,7 @@
                             <tr class="transition group 
                                 {{-- Prioritas 1: Deleted --}}
                                 @if($stat->deleted_at) bg-gray-100 text-gray-500
-                                {{-- Prioritas 2: Inactive/Quit --}}
+                                {{-- Prioritas 2: Inactive/Out --}}
                                 @elseif(!$stat->is_active) bg-red-50 text-red-800
                                 {{-- Prioritas 3: Active --}}
                                 @else hover:bg-gray-50 text-gray-900
@@ -128,9 +128,9 @@
                                                         {{ \Carbon\Carbon::parse($stat->deleted_at)->format('d/m/y') }}
                                                     </span>
                                                 @elseif(!$stat->is_active)
-                                                    {{-- KASUS 2: SISWA CUMA NONAKTIF (QUIT/CUTI) --}}
+                                                    {{-- KASUS 2: SISWA CUMA NONAKTIF (OUT/CUTI) --}}
                                                     <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-white text-red-600 border border-red-200 uppercase tracking-wide">
-                                                        QUIT
+                                                        OUT
                                                     </span>
                                                 @endif
                                             </div>

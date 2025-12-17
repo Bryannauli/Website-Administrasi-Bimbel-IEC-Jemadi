@@ -249,7 +249,7 @@
                                             </span>
                                             <div class="flex flex-wrap gap-1 mt-1">
                                                 @if($student['deleted_at']) <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-gray-200 text-gray-600 border border-gray-300 uppercase">DELETED</span>
-                                                @elseif(!$student['is_active']) <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-white text-red-600 border border-red-200 uppercase">QUIT</span>
+                                                @elseif(!$student['is_active']) <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-white text-red-600 border border-red-200 uppercase">OUT</span>
                                                 @endif
                                             </div>
                                         </div>
