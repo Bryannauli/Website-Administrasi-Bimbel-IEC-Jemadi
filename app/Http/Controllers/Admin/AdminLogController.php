@@ -24,11 +24,12 @@ class AdminLogController extends Controller
     /**
      * Menampilkan detail log tertentu (untuk melihat perubahan 'properties')
      */
-    public function show(ActivityLog $activityLog)
+    public function show(ActivityLog $log)
     {
-        // Pastikan relasi di-load untuk tampilan detail
-        $activityLog->load(['actor', 'subject']);
+        // Load relasi agar data Actor dan Subject muncul
+        $log->load(['actor', 'subject']);
         
-        return view('admin.logs.detail-log', compact('activityLog'));
+        // Kirim variabel $log ke view (pastikan di blade juga diupdate atau pakai compact)
+        return view('admin.logs.detail-log', ['activityLog' => $log]);
     }
 }

@@ -28,9 +28,10 @@
 
     <div class="h-10 lg:h-20"></div> 
 
-    {{-- NAV CONTAINER: Menggunakan flex-col dan h-full --}}
+    {{-- NAV CONTAINER --}}
     <nav class="flex-1 px-4 py-6 flex flex-col overflow-y-auto">
         
+        {{-- ================= MENU UTAMA (OPERASIONAL) ================= --}}
         <div class="space-y-2 flex-1">
             {{-- 1. DASHBOARD --}}
             <a href="{{ $isAdmin ? route('dashboard') : route('teacher.dashboard') }}"
@@ -80,19 +81,9 @@
                     </svg>
                     Teachers
                 </a>
-
-                <a href="{{ route('admin.log.index') }}" 
-                class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ease-in-out 
-                {{ request()->routeIs('admin.log.*') ? $activeClasses : $inactiveClasses }}">
-                    <svg class="mr-3 h-6 w-6 flex-shrink-0 {{ request()->routeIs('admin.log.*') ? $activeClassesIcon : $inactiveClassesIcon }}" 
-                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                    </svg>
-                    Logs
-                </a>
             @endif
 
-            {{-- TEACHER SCHEDULE --}}
+            {{-- TEACHER SCHEDULE (Sekarang langsung di bawah Teacher/Student) --}}
             @if($isTeacher)
                 <a href="{{ route('teacher.classes.index') }}"
                    class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ease-in-out
@@ -100,16 +91,34 @@
                     <svg class="mr-3 h-6 w-6 flex-shrink-0 {{ request()->routeIs('teacher.classes.*') ? $activeClassesIcon : $inactiveClassesIcon }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    Class Schedule
+                    My Class Schedule
                 </a>
             @endif
         </div>
 
-        {{-- BAGIAN PALING BAWAH: SYSTEM TRASH --}}
+        {{-- ================= BAGIAN SYSTEM & MAINTENANCE ================= --}}
         @if($isAdmin)
-            <div class="mt-auto pt-6"> {{-- mt-auto akan mendorong elemen ini ke dasar --}}
+            <div class="mt-auto pt-6 border-t border-gray-200/50"> 
+                
+                {{-- JUDUL KECIL (OPSIONAL) --}}
+                <div class="px-3 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    System
+                </div>
+
+                {{-- 1. LOGS (DIPINDAHKAN KE SINI) --}}
+                <a href="{{ route('admin.log.index') }}" 
+                   class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ease-in-out mb-1
+                   {{ request()->routeIs('admin.log.*') ? $activeClasses : $inactiveClasses }}">
+                    <svg class="mr-3 h-6 w-6 flex-shrink-0 {{ request()->routeIs('admin.log.*') ? $activeClassesIcon : $inactiveClassesIcon }}" 
+                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                    Activity Logs
+                </a>
+
+                {{-- 2. TRASH --}}
                 <a href="{{ route('admin.trash.index') }}"
-                   class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ease-in-out border-t border-gray-200 pt-4
+                   class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ease-in-out
                    {{ request()->routeIs('admin.trash.index') ? 'bg-red-200 text-red-700' : 'text-gray-700 hover:bg-red-100 hover:text-red-700' }}">
                     <svg class="mr-3 h-6 w-6 flex-shrink-0 {{ request()->routeIs('admin.trash.index') ? 'text-red-700' : 'text-gray-700 group-hover:text-red-700' }}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

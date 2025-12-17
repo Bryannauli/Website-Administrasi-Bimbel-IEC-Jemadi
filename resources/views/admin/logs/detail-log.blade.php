@@ -13,7 +13,7 @@
                     <li>
                         <div class="flex items-center">
                             <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M7.293 14.707a1 1 0 010-1.414L10.586 10l-3.293-3.293a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" fill-rule="evenodd"></path></svg>
-                            <a href="{{ route('admin.activity-log.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Activity Log</a>
+                            <a href="{{ route('admin.log.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Activity Log</a>
                         </div>
                     </li>
                     <li>
@@ -59,7 +59,9 @@
                         </div>
                         <div class="border-b pb-2">
                             <p class="text-xs font-medium text-gray-500 uppercase">Timestamp</p>
-                            <p class="text-sm font-semibold text-gray-900">{{ $activityLog->created_at->format('d F Y, H:i:s') }}</p>
+                            <p class="text-sm font-semibold text-gray-900">
+                                {{ $activityLog->created_at ? $activityLog->created_at->format('d F Y, H:i:s') : 'N/A' }}
+                            </p>
                         </div>
                         <div class="border-b pb-2">
                             <p class="text-xs font-medium text-gray-500 uppercase">IP Address / User Agent</p>

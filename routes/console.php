@@ -1,8 +1,10 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+// Menjalankan backup otomatis setiap 3 bulan sekali (Quarterly)
+// Jadwal: 1 Januari, 1 April, 1 Juli, 1 Oktober jam 00:00
+Schedule::command('db:backup')->quarterly();
+
+// Jalankan pembersihan log setiap hari pada jam 01:00 pagi
+Schedule::command('logs:cleanup')->dailyAt('01:00');

@@ -22,7 +22,8 @@
             class_id: '{{ $student->class_id ?? '' }}'
         },
 
-        // 3. URL ACTIONS
+        // 3. URL ACTIONS (FIX: Menambahkan updateUrl agar form tidak submit ke route detail)
+        updateUrl: '{{ route('admin.student.update', $student->id) }}',
         deleteUrl: '{{ route('admin.student.delete', $student->id) }}',
 
         // 4. Helper Functions
@@ -46,6 +47,7 @@
                 confirmButtonText: 'Yes, delete it!'
             }).then((result) => {
                 if (result.isConfirmed) {
+                    // ID form ini berasal dari include edit-modal.blade.php
                     document.getElementById('delete-student-form').submit();
                 }
             });
@@ -279,12 +281,8 @@
         {{-- INCLUDE MODAL EDIT (Partial) --}}
         @if(!$isTrashed)
             @include('admin.student.partials.edit-modal', ['showClassAssignment' => true])
-
-            {{-- 5. HIDDEN FORM DELETE (Soft Delete) --}}
-            <form id="delete-student-form" action="{{ route('admin.student.delete', $student->id) }}" method="POST" style="display: none;">
-                @csrf 
-                @method('DELETE')
-            </form>
+            
+            {{-- Form delete dihapus dari sini karena sudah ada di dalam edit-modal.blade.php --}}
         @endif
 
     </div>
