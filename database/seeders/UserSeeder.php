@@ -16,7 +16,7 @@ class UserSeeder extends Seeder
         // Admin default
         User::create([
             'username' => 'admin',
-            'name' => 'Fita',
+            'name' => 'Ms. Fita',
             'email' => null,
             'phone' => null,
             'password' => Hash::make('admin123'),
@@ -28,7 +28,7 @@ class UserSeeder extends Seeder
         // Akun tes teacher
         User::create([
             'username' => 'teacher',
-            'name' => 'Richard',
+            'name' => 'Ms. Valerine',
             'email' => null,
             'phone' => null,
             'password' => Hash::make('password'),
@@ -40,9 +40,9 @@ class UserSeeder extends Seeder
         // Guru 1: Form Teacher Senior
         User::create([
             'username'   => 'teacher1',
-            'name'       => 'Andi Pratama',
-            'email'      => 'andi@school.com',
-            'phone'      => '081234567890',
+            'name'       => 'Mr. Richard',
+            'email'      => null,
+            'phone'      => null,
             'password'   => Hash::make('password'),
             'role'       => 'teacher',
             'is_teacher' => true,
@@ -51,9 +51,9 @@ class UserSeeder extends Seeder
 
         User::create([
             'username'   => 'teacher2',
-            'name'       => 'Bunga Citra',
-            'email'      => 'bunga@school.com',
-            'phone'      => '081298765432',
+            'name'       => 'Mr. Jimmy',
+            'email'      => null,
+            'phone'      => null,
             'password'   => Hash::make('password'),
             'role'       => 'teacher',
             'is_teacher' => true,
@@ -62,8 +62,8 @@ class UserSeeder extends Seeder
 
         User::create([
             'username'   => 'teacher3',
-            'name'       => 'Chandra Wijaya',
-            'email'      => 'chandra@school.com',
+            'name'       => 'Ms. Angeline',
+            'email'      => null,
             'phone'      => null,
             'password'   => Hash::make('password'),
             'role'       => 'teacher',
