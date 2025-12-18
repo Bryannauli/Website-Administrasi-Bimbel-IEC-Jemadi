@@ -395,13 +395,13 @@
                         </div>
                     </div>
 
-                    <div class="lg:col-span-1 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg shadow-blue-200 p-6 text-white flex flex-col justify-between relative overflow-hidden">
+                    <div class="lg:col-span-1 bg-white rounded-2xl  p-6 text-black flex flex-col justify-between relative overflow-hidden">
                         <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
                         <div>
                             <div class="flex justify-between items-start">
-                                <h4 class="text-blue-100 text-xs font-bold uppercase tracking-widest mb-2">Latest Activity</h4>
+                                <h4 class="text-blue-700 text-xs font-bold uppercase tracking-widest mb-2">Latest Activity</h4>
                                 @if($lastSession)
-                                    <span class="bg-blue-800 bg-opacity-50 text-xs px-2 py-1 rounded border border-blue-400 border-opacity-30">
+                                    <span class="bg-blue-600 text-white  text-xs px-2 py-1 rounded border border-blue-400 border-opacity-30">
                                         {{ \Carbon\Carbon::parse($lastSession->date)->format('d M') }}
                                     </span>
                                 @endif
@@ -411,8 +411,8 @@
 
                             @if($lastTeacher)
                                 <h3 class="text-lg font-bold truncate" title="{{ $lastTeacher->name }}">{{ $lastTeacher->name }}</h3>
-                                <div class="mt-3 bg-blue-800 bg-opacity-40 p-3 rounded-lg border border-blue-500 border-opacity-30">
-                                    <p class="text-blue-50 text-xs italic line-clamp-3">"{{ $lastSession->comment ?? 'No teaching notes provided.' }}"</p>
+                                <div class="mt-3 bg-blue-100  p-3 rounded-lg border  border-opacity-30">
+                                    <p class="text-blue-700 text-xs italic line-clamp-3">"{{ $lastSession->comment ?? 'No teaching notes provided.' }}"</p>
                                 </div>
                             @else
                                 <h3 class="text-xl font-bold">No Data Yet</h3>
@@ -421,7 +421,7 @@
                         </div>
 
                         <button @click="showHistoryModal = true" 
-                                class="mt-4 w-full py-2.5 bg-white text-blue-700 rounded-lg text-sm font-bold hover:bg-blue-50 transition shadow-sm flex items-center justify-center gap-2">
+                                class="mt-4 w-full py-2.5 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition shadow-blue-200 shadow-sm flex items-center justify-center gap-2">
                             View Teaching Logs <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                         </button>
                     </div>

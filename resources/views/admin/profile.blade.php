@@ -113,7 +113,7 @@
                     {{-- HAPUS class 'h-full' disini juga --}}
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                         <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                             Update Password
                         </h3>
                         <p class="text-sm text-gray-500 mb-6">Ensure your account is using a long, random password to stay secure.</p>
@@ -126,27 +126,27 @@
                                 <div class="md:col-span-2">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Current Password <span class="text-red-500">*</span></label>
                                     <input type="password" name="current_password" 
-                                        class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring-purple-500 text-sm transition-all">
+                                        class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-sm transition-all">
                                     <x-input-error :messages="$errors->updatePassword->get('current_password')" class="mt-2" />
                                 </div>
 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">New Password <span class="text-red-500">*</span></label>
                                     <input type="password" name="password" autocomplete="new-password" 
-                                        class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring-purple-500 text-sm transition-all">
+                                        class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-sm transition-all">
                                     <x-input-error :messages="$errors->updatePassword->get('password')" class="mt-2" />
                                 </div>
 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Password <span class="text-red-500">*</span></label>
                                     <input type="password" name="password_confirmation" autocomplete="new-password" 
-                                        class="w-full rounded-lg border-gray-300 focus:border-purple-500 focus:ring-purple-500 text-sm transition-all">
+                                        class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-sm transition-all">
                                     <x-input-error :messages="$errors->updatePassword->get('password_confirmation')" class="mt-2" />
                                 </div>
                             </div>
 
                             <div class="flex justify-end pt-4">
-                                <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-6 rounded-lg transition shadow-sm">
+                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg transition shadow-sm">
                                     Update Password
                                 </button>
                             </div>

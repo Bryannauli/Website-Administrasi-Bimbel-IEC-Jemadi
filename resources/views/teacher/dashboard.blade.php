@@ -47,7 +47,7 @@
                         </p>
                     </div>
                     @if($todaysClasses->isNotEmpty())
-                        <span class="bg-white border border-gray-200 text-gray-600 px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm">
+                        <span class="bg-white text-black px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm">
                             {{ $todaysClasses->count() }} Sessions
                         </span>
                     @endif
