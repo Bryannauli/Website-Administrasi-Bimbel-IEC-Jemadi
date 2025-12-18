@@ -54,7 +54,7 @@ class ProfileController extends Controller
         // UPDATE ROLE LOGIC (HANYA JIKA ADMIN YANG REQUEST)
         // Ini memastikan guru tidak bisa mengubah 'is_teacher' mereka sendiri 
         // meskipun mereka memanipulasi HTML form.
-        if ($user->role === 'admin' && $request->has('is_teacher')) {
+        if ($user->role === 'admin') {
             $user->is_teacher = $request->boolean('is_teacher');
         }
 

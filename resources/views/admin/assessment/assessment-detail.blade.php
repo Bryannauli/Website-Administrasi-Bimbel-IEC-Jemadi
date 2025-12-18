@@ -7,16 +7,38 @@
         $mixPrintUrl = route('admin.classes.assessment.printMix', ['classId' => $class->id]);
     @endphp
 
-    {{-- SETUP ALPINE JS --}}
+    {{-- SETUP ALPINE JS (UPDATED) --}}
     <div class="py-6" x-data="{ 
         isEditing: {{ (request('mode') == 'edit' || $errors->any()) ? 'true' : 'false' }},
         assessmentType: '{{ $type }}',
-        showPrintModal: false
+        showPrintModal: false,
+        
+        // FUNGSI BARU: Menangani logika Edit langsung di dalam Alpine
+        handleEditClick(status) {
+            if (status === 'draft') {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Teacher is Working',
+                    text: 'This assessment is still in DRAFT mode. Please wait for the teacher to submit before you review.',
+                    confirmButtonColor: '#3B82F6'
+                });
+            } else if (status === 'final') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Already Finalized',
+                    text: 'This assessment is already FINAL. You can only view the report cards.',
+                    confirmButtonColor: '#8B5CF6'
+                });
+            } else {
+                // Berhasil: Masuk mode edit
+                this.isEditing = true;
+            }
+        }
     }">
 
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
-            {{-- 1. BREADCRUMB (FIXED: Selalu via Class Detail) --}}
+            {{-- 1. BREADCRUMB --}}
             <nav class="flex mb-5" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-3">
                     {{-- Dashboard --}}
@@ -35,7 +57,7 @@
                         </div>
                     </li>
 
-                    {{-- Class Detail (Nama Kelas) --}}
+                    {{-- Class Detail --}}
                     <li>
                         <div class="flex items-center">
                             <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
@@ -45,7 +67,7 @@
                         </div>
                     </li>
 
-                    {{-- Current Page (Assessment) --}}
+                    {{-- Current Page --}}
                     <li aria-current="page">
                         <div class="flex items-center">
                             <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
@@ -75,46 +97,39 @@
                     </div>
                 </div>
                 
-                {{-- Form Hidden untuk Quick Actions (Approve / Revert) --}}
+                {{-- Form Hidden untuk Quick Actions --}}
                 <form id="quickStatusForm" method="POST" action="{{ route('admin.classes.assessment.storeOrUpdateGrades', ['classId' => $class->id, 'type' => $type]) }}" style="display: none;">
                     @csrf
                     <input type="hidden" name="action_type" value=""> 
                 </form>
 
-                {{-- Action Buttons (Tampil saat Mode Baca/View) --}}
+                {{-- Action Buttons --}}
                 <div x-show="!isEditing"
-     class="
-        flex flex-col gap-2
-        sm:flex-col
-        md:flex-row md:justify-end md:items-center md:gap-2
-        lg:flex-row lg:justify-end lg:gap-3
-     "
-     x-transition>
+                    class="flex flex-wrap items-center justify-start sm:justify-end gap-3"
+                    x-transition>
 
-
-                    
-                    {{-- Edit Button --}}
+                    {{-- Review & Edit Button --}}
                     <button type="button" 
-                            onclick="handleEdit('{{ $session->status }}')"
-                            class="h-13 px-3 w-full md:w-auto py-1 font-bold rounded-lg transition shadow-md flex items-center gap-2
+                            @click="handleEditClick('{{ $session->status }}')"
+                            class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-bold rounded-lg transition shadow-md gap-2 min-h-[44px]
                             {{ $session->status === 'submitted' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-100 text-gray-400 border border-gray-300' }}">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                         Review & Edit
                     </button>
 
-                    {{-- Approve Button (Jika Submitted) --}}
+                    {{-- Approve Button --}}
                     @if($session->status === 'submitted')
                         <button type="submit" form="quickStatusForm" name="action_type" value="finalize_quick" onclick="return confirmFinalize(document.getElementById('quickStatusForm'))"
-                                class="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold rounded-lg transition shadow-md flex items-center gap-2">
+                                class="inline-flex items-center justify-center px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold rounded-lg transition shadow-md gap-2 min-h-[44px]">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             Approve & Finalize
                         </button>
                     @endif
                     
-                    {{-- Print Button (Memicu Modal) --}}
+                    {{-- Print Button --}}
                     <button type="button" 
                             @click="'{{ $session->status }}' === 'final' ? showPrintModal = true : handlePrint('{{ $session->status }}', '{{ $printUrl }}')"
-                            class="px-4 py-4 font-bold rounded-lg transition shadow-sm border flex items-center gap-2 text-sm
+                            class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-bold rounded-lg transition shadow-sm border gap-2 min-h-[44px]
                             {{ $session->status === 'final' ? 'bg-purple-600 text-white hover:bg-purple-700 border-transparent' : 'bg-gray-100 text-gray-400 border-gray-300' }}">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 00-2 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -122,10 +137,10 @@
                         Print
                     </button>
 
-                    {{-- Revert Button (Jika sudah final/submitted) --}}
+                    {{-- Revert Button --}}
                     @if($session->status === 'submitted' || $session->status === 'final')
                         <button type="submit" form="quickStatusForm" name="action_type" value="draft_quick" onclick="return confirmRevert(document.getElementById('quickStatusForm'))"
-                                class="px-4 py-2.5 bg-red-100 text-red-600 hover:bg-red-200 border border-red-200 text-sm font-bold rounded-lg transition flex items-center gap-2">
+                                class="inline-flex items-center justify-center px-4 py-2.5 bg-red-100 text-red-600 hover:bg-red-200 border border-red-200 text-sm font-bold rounded-lg transition gap-2 min-h-[44px]">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
                             Revert to Draft
                         </button>
@@ -133,7 +148,7 @@
                 </div>
             </div>
 
-            {{-- 3. FORM UTAMA (Tabel Input Nilai) --}}
+            {{-- 3. FORM UTAMA --}}
             <form id="assessmentForm" method="POST" action="{{ route('admin.classes.assessment.storeOrUpdateGrades', ['classId' => $class->id, 'type' => $type]) }}">
                 @csrf
                 
@@ -239,7 +254,7 @@
                     </div>
                 </div>
 
-                {{-- C. GRADES TABLE (Input & Perhitungan Nilai) --}}
+                {{-- C. GRADES TABLE --}}
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse min-w-max">
@@ -365,22 +380,10 @@
                 </div>
 
                 {{-- D. BOTTOM ACTIONS (Hanya muncul saat Edit Mode) --}}
-                <div x-show="isEditing" x-transition class="flex justify-between items-center mt-6 p-4 bg-white rounded-2xl shadow-sm border border-gray-200">
-                    
-                    {{-- Tombol Print (Sama logicnya: trigger modal) --}}
-                    <button type="button" 
-                            @click="'{{ $session->status }}' === 'final' ? showPrintModal = true : handlePrint('{{ $session->status }}', '{{ $printUrl }}')"
-                            class="px-4 py-2.5 font-bold rounded-lg transition shadow-sm border flex items-center gap-2
-                            {{ $session->status === 'final' ? 'bg-purple-600 text-white hover:bg-purple-700 border-transparent' : 'bg-gray-100 text-gray-400 border-gray-300' }}">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 00-2 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                        </svg>
-                        Print PDF
-                    </button>
-
+                <div x-show="isEditing" x-transition class="flex justify-end items-center mt-6 p-4 bg-white rounded-2xl shadow-sm border border-gray-200">
                     <div class="flex items-center gap-3">
                         <a href="{{ route('admin.classes.assessment.detail', ['classId' => $class->id, 'type' => $type]) }}"
-                           class="px-4 py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-bold rounded-lg transition shadow-sm">
+                        class="px-4 py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-bold rounded-lg transition shadow-sm">
                             Cancel
                         </a>
                         <button type="submit" name="action_type" value="save"
@@ -400,7 +403,7 @@
             </form>
         </div>
 
-        {{-- 4. PRINT SELECTION MODAL (POPUP) --}}
+        {{-- 4. PRINT SELECTION MODAL --}}
         <div x-show="showPrintModal" 
              style="display: none;"
              class="fixed inset-0 z-[60] overflow-y-auto" 
@@ -431,7 +434,7 @@
                         <p class="text-sm text-gray-500 mb-6 leading-relaxed">Choose the document format you want to generate for this class session.</p>
                         
                         <div class="space-y-3">
-                            {{-- OPSI 1: Laporan Per Sesi (Selalu Aktif jika Status = Final) --}}
+                            {{-- OPSI 1: Laporan Per Sesi --}}
                             <a href="{{ $printUrl }}" target="_blank" @click="showPrintModal = false"
                                class="flex items-center p-4 border-2 border-gray-100 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all group">
                                 <div class="p-3 bg-blue-100 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
@@ -443,7 +446,7 @@
                                 </div>
                             </a>
 
-                            {{-- OPSI 2: Mix Report (Dikunci jika sesi 'sebelah' belum Final) --}}
+                            {{-- OPSI 2: Mix Report --}}
                             @if($isBothFinal)
                                 <a href="{{ $mixPrintUrl }}" target="_blank" @click="showPrintModal = false"
                                    class="flex items-center p-4 border-2 border-gray-100 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all group">
@@ -482,16 +485,8 @@
     {{-- SCRIPTS --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        function handleEdit(status) {
-            if (status === 'draft') {
-                Swal.fire({ icon: 'info', title: 'Teacher is Working', text: 'This assessment is still in DRAFT mode. Please wait for the teacher to submit before you review.', confirmButtonColor: '#3B82F6' });
-            } else if (status === 'final') {
-                Swal.fire({ icon: 'success', title: 'Already Finalized', text: 'This assessment is already FINAL. You can only view the report cards.', confirmButtonColor: '#8B5CF6' });
-            } else {
-                document.querySelector('[x-data]').__x.$data.isEditing = true;
-            }
-        }
-
+        // Note: handleEdit sudah dipindah ke Alpine (x-data) di atas.
+        
         function handlePrint(status, printUrl) {
             if (status !== 'final') {
                 Swal.fire({ icon: 'warning', title: 'Print Locked', text: 'Report cards can only be printed after the assessment status is set to FINAL.', confirmButtonColor: '#F59E0B' });
