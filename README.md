@@ -86,11 +86,11 @@ DB_PASSWORD=
 #### **Credential Khusus Role**
 Tambahkan variabel dibawah ini untuk koneksi database role tertentu:
 ```env
-DB_IEC_ADMIN_USERNAME=iec_admin
-DB_IEC_ADMIN_PASSWORD=IEC_Jemadi_Admin
+DB_IEC_ADMIN_USERNAME=isi_username_admin_anda
+DB_IEC_ADMIN_PASSWORD=isi_password_admin_anda
 
-DB_IEC_TEACHER_USERNAME=iec_teacher
-DB_IEC_TEACHER_PASSWORD=IEC_Teacher123
+DB_IEC_TEACHER_USERNAME=isi_username_teacher_anda
+DB_IEC_TEACHER_PASSWORD=isi_password_teacher_anda
 ```
 > Pastikan nilai di atas **sinkron dengan seeder pengguna** agar login awal berfungsi.
 
