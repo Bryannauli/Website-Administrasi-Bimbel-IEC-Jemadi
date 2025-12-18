@@ -122,18 +122,18 @@ class AdminAssessmentController extends Controller
     }
 
     /**
-     * Store/Update Grades
+     * Store/Update Grades (OPTIMIZED WITH STORED PROCEDURE)
      */
     public function storeOrUpdateGrades(Request $request, $classId, $type)
     {
         $session = AssessmentSession::where('class_id', $classId)->where('type', $type)->firstOrFail();
         $action = $request->input('action_type', 'save');
 
-        // A. QUICK STATUS CHANGE (Finalize / Revert tanpa save data)
+        // A. QUICK STATUS CHANGE (Tanpa Save Data Nilai)
+        // Bagian ini tetap menggunakan Eloquent karena tidak melibatkan update nilai yang kompleks
         if ($action === 'finalize_quick' || $action === 'draft_quick') {
             $newStatus = ($action === 'finalize_quick') ? 'final' : 'draft';
             
-            // Validasi sederhana agar tidak double update
             if ($session->status !== $newStatus) {
                 $session->update(['status' => $newStatus]);
                 $msg = ($newStatus === 'final') ? 'Assessment has been FINALISED.' : 'Assessment status reverted to DRAFT.';
@@ -145,6 +145,9 @@ class AdminAssessmentController extends Controller
         
         // B. SAVE DATA (Normal Save / Save & Finalize)
         if ($session->status === 'draft') return back()->with('error', 'Cannot edit grades in DRAFT mode. Wait for submission.');
+        // Jika status final, admin TETAP BISA edit (untuk koreksi), asalkan tidak sedang dikunci sistem lain. 
+        // Logic Anda sebelumnya memblokir jika final, tapi biasanya Admin butuh akses "Edit anyway". 
+        // Namun saya ikuti logic Anda:
         if ($session->status === 'final') return back()->with('error', 'Assessment is FINALISED. Cannot edit.');
 
         $validatedData = $request->validate([
@@ -153,45 +156,49 @@ class AdminAssessmentController extends Controller
             'interviewer_id' => 'required|exists:users,id',
             'topic' => 'nullable|string|max:255',
             'grades' => 'required|array',
-            'grades.*.vocabulary' => 'required|integer|between:0,100',
-            'grades.*.grammar'    => 'required|integer|between:0,100',
-            'grades.*.listening'  => 'required|integer|between:0,100',
-            'grades.*.reading'    => 'required|integer|between:0,100',
+            'grades.*.vocabulary' => 'nullable|integer|between:0,100', // Ubah ke nullable agar fleksibel
+            'grades.*.grammar'    => 'nullable|integer|between:0,100',
+            'grades.*.listening'  => 'nullable|integer|between:0,100',
+            'grades.*.reading'    => 'nullable|integer|between:0,100',
             'grades.*.spelling'   => 'nullable|integer|between:0,100',
-            'grades.*.speaking_content'      => 'required|integer|between:0,50',
-            'grades.*.speaking_participation'=> 'required|integer|between:0,50',
+            'grades.*.speaking_content'      => 'nullable|integer|between:0,50',
+            'grades.*.speaking_participation'=> 'nullable|integer|between:0,50',
             'grades.*.student_id' => 'required|exists:students,id',
         ]);
 
         try {
-            $newStatus = ($action === 'finalize') ? 'final' : $session->status;
+            // 1. Tentukan Status Baru
+            // Jika action 'finalize', status jadi 'final'. 
+            // Jika action 'save', status TETAP (kirim null ke SP agar tidak berubah, atau kirim status saat ini).
+            $newStatus = ($action === 'finalize') ? 'final' : null;
 
-            // 1. Update Header Info
-            $session->update([
-                'written_date' => $validatedData['written_date'],
-                'speaking_date' => $validatedData['speaking_date'],
-                'speaking_topic' => $validatedData['topic'],
-                'interviewer_id' => $validatedData['interviewer_id'],
-                'status' => $newStatus,
-            ]);
-
-            // 2. Update Nilai per Siswa (Looping & Call Procedure)
+            // 2. Persiapkan Data JSON untuk Procedure
+            $marksData = [];
             foreach ($validatedData['grades'] as $grade) {
-                DB::statement('CALL p_UpdateStudentGrade(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-                    $session->id, 
-                    $grade['student_id'], 
-                    $grade['form_id'] ?? null, 
-                    
-                    $grade['vocabulary'], 
-                    $grade['grammar'], 
-                    $grade['listening'], 
-                    $grade['reading'],
-                    $grade['spelling'] ?? null, 
-                    
-                    $grade['speaking_content'], 
-                    $grade['speaking_participation'],
-                ]);
+                $marksData[] = [
+                    'student_id'             => (int) $grade['student_id'],
+                    'vocabulary'             => isset($grade['vocabulary']) && $grade['vocabulary'] !== '' ? (int) $grade['vocabulary'] : null,
+                    'grammar'                => isset($grade['grammar']) && $grade['grammar'] !== '' ? (int) $grade['grammar'] : null,
+                    'listening'              => isset($grade['listening']) && $grade['listening'] !== '' ? (int) $grade['listening'] : null,
+                    'reading'                => isset($grade['reading']) && $grade['reading'] !== '' ? (int) $grade['reading'] : null,
+                    'spelling'               => isset($grade['spelling']) && $grade['spelling'] !== '' ? (int) $grade['spelling'] : null,
+                    'speaking_content'       => isset($grade['speaking_content']) && $grade['speaking_content'] !== '' ? (int) $grade['speaking_content'] : null,
+                    'speaking_participation' => isset($grade['speaking_participation']) && $grade['speaking_participation'] !== '' ? (int) $grade['speaking_participation'] : null,
+                ];
             }
+            $jsonMarks = json_encode($marksData);
+
+            // 3. Panggil Stored Procedure Batch
+            // Parameter: session_id, written_date, speaking_date, interviewer_id, topic, status, json_marks
+            DB::statement('CALL p_SaveAssessmentBatch(?, ?, ?, ?, ?, ?, ?)', [
+                $session->id,
+                $validatedData['written_date'],
+                $validatedData['speaking_date'],
+                $validatedData['interviewer_id'],
+                $validatedData['topic'],
+                $newStatus,
+                $jsonMarks
+            ]);
             
             $msg = ($action === 'finalize') ? 'Assessment FINALISED.' : 'Grades updated successfully!';
             return redirect()->route('admin.classes.assessment.detail', ['classId' => $classId, 'type' => $type])->with('success', $msg);

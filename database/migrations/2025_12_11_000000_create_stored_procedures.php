@@ -380,6 +380,145 @@ return new class extends Migration
                 ORDER BY s.student_number ASC;
             END
         ");
+
+        // ==========================================
+        // 12. PROCEDURE: Save Assessment Batch (ADMIN & TEACHER) [BARU]
+        // Deskripsi: Simpan Header & Nilai Siswa SEKALIGUS (Batch) via JSON.
+        // ==========================================
+        DB::unprepared("
+            DROP PROCEDURE IF EXISTS p_SaveAssessmentBatch;
+            CREATE PROCEDURE p_SaveAssessmentBatch(
+                IN p_session_id INT,
+                IN p_written_date DATE,
+                IN p_speaking_date DATE,
+                IN p_interviewer_id BIGINT,
+                IN p_topic VARCHAR(255),
+                IN p_status VARCHAR(20),
+                IN p_marks_json JSON
+            )
+            BEGIN
+                DECLARE EXIT HANDLER FOR SQLEXCEPTION
+                BEGIN
+                    ROLLBACK;
+                    RESIGNAL;
+                END;
+
+                START TRANSACTION;
+
+                -- 1. Update Header Assessment (Session)
+                UPDATE assessment_sessions 
+                SET 
+                    written_date = p_written_date,
+                    speaking_date = p_speaking_date,
+                    interviewer_id = p_interviewer_id,
+                    speaking_topic = p_topic,
+                    status = IF(p_status IS NOT NULL, p_status, status), -- Update status jika dikirim
+                    updated_at = NOW()
+                WHERE id = p_session_id;
+
+                -- 2. Bulk Upsert ke Table speaking_test_results (Pakai JSON_TABLE)
+                INSERT INTO speaking_test_results (assessment_session_id, student_id, content_score, participation_score, created_at, updated_at)
+                SELECT 
+                    p_session_id,
+                    jt.student_id,
+                    jt.s_content,
+                    jt.s_partic,
+                    NOW(),
+                    NOW()
+                FROM JSON_TABLE(
+                    p_marks_json,
+                    '$[*]' COLUMNS (
+                        student_id INT PATH '$.student_id',
+                        s_content INT PATH '$.speaking_content',
+                        s_partic INT PATH '$.speaking_participation'
+                    )
+                ) AS jt
+                ON DUPLICATE KEY UPDATE
+                    content_score = VALUES(content_score),
+                    participation_score = VALUES(participation_score),
+                    updated_at = NOW();
+
+                -- 3. Bulk Upsert ke Table assessment_forms (Pakai JSON_TABLE)
+                -- Note: Kolom 'speaking' adalah total dari content + participation
+                INSERT INTO assessment_forms (assessment_session_id, student_id, vocabulary, grammar, listening, reading, spelling, speaking, created_at, updated_at)
+                SELECT 
+                    p_session_id,
+                    jt.student_id,
+                    jt.vocab,
+                    jt.grammar,
+                    jt.listening,
+                    jt.reading,
+                    jt.spelling,
+                    (IFNULL(jt.s_content, 0) + IFNULL(jt.s_partic, 0)), -- Hitung Total Speaking otomatis
+                    NOW(),
+                    NOW()
+                FROM JSON_TABLE(
+                    p_marks_json,
+                    '$[*]' COLUMNS (
+                        student_id INT PATH '$.student_id',
+                        vocab INT PATH '$.vocabulary',
+                        grammar INT PATH '$.grammar',
+                        listening INT PATH '$.listening',
+                        reading INT PATH '$.reading',
+                        spelling INT PATH '$.spelling',
+                        s_content INT PATH '$.speaking_content',
+                        s_partic INT PATH '$.speaking_participation'
+                    )
+                ) AS jt
+                ON DUPLICATE KEY UPDATE
+                    vocabulary = VALUES(vocabulary),
+                    grammar = VALUES(grammar),
+                    listening = VALUES(listening),
+                    reading = VALUES(reading),
+                    spelling = VALUES(spelling),
+                    speaking = VALUES(speaking),
+                    updated_at = NOW();
+
+                COMMIT;
+            END
+        ");
+
+        // ==========================================
+        // 13. PROCEDURE: Save Attendance Batch (TEACHER) (NEW & OPTIMIZED)
+        // Deskripsi: Simpan Absensi Banyak Siswa SEKALIGUS (Batch) via JSON.
+        // ==========================================
+        DB::unprepared("
+            DROP PROCEDURE IF EXISTS p_SaveAttendanceBatch;
+            CREATE PROCEDURE p_SaveAttendanceBatch(
+                IN p_session_id INT,
+                IN p_attendance_json JSON
+            )
+            BEGIN
+                DECLARE EXIT HANDLER FOR SQLEXCEPTION
+                BEGIN
+                    ROLLBACK;
+                    RESIGNAL;
+                END;
+
+                START TRANSACTION;
+
+                -- Bulk Upsert ke Table attendance_records menggunakan JSON_TABLE
+                INSERT INTO attendance_records (class_session_id, student_id, status, created_at, updated_at)
+                SELECT 
+                    p_session_id,
+                    jt.student_id,
+                    jt.status,
+                    NOW(),
+                    NOW()
+                FROM JSON_TABLE(
+                    p_attendance_json,
+                    '$[*]' COLUMNS (
+                        student_id INT PATH '$.student_id',
+                        status VARCHAR(20) PATH '$.status'
+                    )
+                ) AS jt
+                ON DUPLICATE KEY UPDATE
+                    status = VALUES(status),
+                    updated_at = NOW();
+
+                COMMIT;
+            END
+        ");
     }
 
     public function down(): void
@@ -395,5 +534,7 @@ return new class extends Migration
         DB::unprepared('DROP PROCEDURE IF EXISTS p_GetSessionAttendanceList');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_UpsertAttendance');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_GetAssessmentSheet');
+        DB::unprepared('DROP PROCEDURE IF EXISTS p_SaveAssessmentBatch');
+        DB::unprepared('DROP PROCEDURE IF EXISTS p_SaveAttendanceBatch');
     }
 };

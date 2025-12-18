@@ -66,7 +66,7 @@ class TeacherAssessmentController extends Controller
     }
 
     /**
-     * Menyimpan / Update Nilai
+     * Menyimpan / Update Nilai (OPTIMIZED WITH JSON STORED PROCEDURE)
      */
     public function updateAssessmentMarks(Request $request, $classId, $assessmentId)
     {
@@ -76,33 +76,34 @@ class TeacherAssessmentController extends Controller
             return redirect()->back()->with('error', 'Assessment has been submitted. Changes locked.');
         }
 
+        // 1. Validasi Input
         $request->validate([
-            'written_date' => 'required|date',
-            'speaking_date' => 'nullable|date',
+            'written_date'   => 'required|date',
+            'speaking_date'  => 'nullable|date',
             'interviewer_id' => 'nullable|exists:users,id',
-            'topic' => 'nullable|string|max:200',
-            'action_type' => 'required|in:save,submit', 
+            'topic'          => 'nullable|string|max:200',
+            'action_type'    => 'required|in:save,submit', 
             
-            'marks' => 'array',
-            'marks.*.vocabulary' => 'nullable|numeric|min:0|max:100',
-            'marks.*.grammar'    => 'nullable|numeric|min:0|max:100',
-            'marks.*.listening'  => 'nullable|numeric|min:0|max:100',
-            'marks.*.reading'    => 'nullable|numeric|min:0|max:100',
-            'marks.*.spelling'   => 'nullable|numeric|min:0|max:100',
-            'marks.*.speaking_content' => 'nullable|numeric|min:0|max:50',
+            'marks'                          => 'array',
+            'marks.*.vocabulary'             => 'nullable|numeric|min:0|max:100',
+            'marks.*.grammar'                => 'nullable|numeric|min:0|max:100',
+            'marks.*.listening'              => 'nullable|numeric|min:0|max:100',
+            'marks.*.reading'                => 'nullable|numeric|min:0|max:100',
+            'marks.*.spelling'               => 'nullable|numeric|min:0|max:100',
+            'marks.*.speaking_content'       => 'nullable|numeric|min:0|max:50',
             'marks.*.speaking_participation' => 'nullable|numeric|min:0|max:50',
         ]);
 
-        // --- VALIDASI LOGIKA SUBMIT ---
+        // 2. Cek Logika Submit (Minimal 1 siswa lengkap)
         if ($request->action_type === 'submit') {
             if (!$request->has('marks') || empty($request->marks)) {
-                return redirect()->back()->with('error', 'Cannot submit empty assessment. Please input grades.')->withInput();
+                return redirect()->back()->with('error', 'Cannot submit empty assessment.')->withInput();
             }
 
             $hasOneCompleteStudent = collect($request->marks)->contains(function ($scores) {
                 $mandatoryFields = ['vocabulary', 'grammar', 'listening', 'reading', 'speaking_content', 'speaking_participation'];
                 foreach ($mandatoryFields as $field) {
-                    if (!array_key_exists($field, $scores) || $scores[$field] === null || $scores[$field] === '') return false;
+                    if (!isset($scores[$field]) || $scores[$field] === '' || $scores[$field] === null) return false;
                 }
                 return true;
             });
@@ -113,47 +114,38 @@ class TeacherAssessmentController extends Controller
         }
 
         try {
-            DB::beginTransaction();
-
-            // [UPDATED] Update Header Assessment (Gabungan Written & Speaking)
-            $updateData = [
-                'written_date'   => $request->written_date,  // Kolom baru
-                'speaking_date'  => $request->speaking_date, // Pindah dari tabel speaking_tests
-                'speaking_topic' => $request->topic,         // Pindah dari tabel speaking_tests
-                'interviewer_id' => $request->interviewer_id // Pindah dari tabel speaking_tests
-            ];
-            
-            if ($request->action_type === 'submit') {
-                $updateData['status'] = 'submitted';
-            }
-            
-            $session->update($updateData);
-
-            // Loop Nilai Siswa
+            // 3. Persiapkan Data JSON untuk Procedure
+            // Kita ubah array marks menjadi array of objects yang bersih (null jika kosong)
+            $marksData = [];
             if ($request->has('marks')) {
                 foreach ($request->marks as $studentId => $scores) {
-                    // [UPDATED] Procedure call: Hapus parameter ke-4 (speaking_test_id)
-                    // Total parameter sekarang 10 (sebelumnya 11)
-                    DB::statement('CALL p_UpdateStudentGrade(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-                        $assessmentId,                          
-                        $studentId,                             
-                        0, // p_form_id (dummy, handled inside proc)
-                        
-                        // Nilai Written
-                        $scores['vocabulary'] ?? null,          
-                        $scores['grammar'] ?? null,             
-                        $scores['listening'] ?? null,           
-                        $scores['reading'] ?? null,             
-                        $scores['spelling'] ?? null,            
-                        
-                        // Nilai Speaking
-                        $scores['speaking_content'] ?? null,      
-                        $scores['speaking_participation'] ?? null 
-                    ]);
+                    $marksData[] = [
+                        'student_id'             => (int) $studentId,
+                        'vocabulary'             => $scores['vocabulary'] !== null ? (int) $scores['vocabulary'] : null,
+                        'grammar'                => $scores['grammar'] !== null ? (int) $scores['grammar'] : null,
+                        'listening'              => $scores['listening'] !== null ? (int) $scores['listening'] : null,
+                        'reading'                => $scores['reading'] !== null ? (int) $scores['reading'] : null,
+                        'spelling'               => $scores['spelling'] !== null ? (int) $scores['spelling'] : null,
+                        'speaking_content'       => $scores['speaking_content'] !== null ? (int) $scores['speaking_content'] : null,
+                        'speaking_participation' => $scores['speaking_participation'] !== null ? (int) $scores['speaking_participation'] : null,
+                    ];
                 }
             }
+            $jsonMarks = json_encode($marksData);
 
-            DB::commit();
+            // 4. Tentukan Status Baru
+            $newStatus = ($request->action_type === 'submit') ? 'submitted' : null; // Kirim null jika save draft (agar status tidak berubah di SP)
+
+            // 5. Panggil Stored Procedure Batch (SINGLE QUERY)
+            DB::statement('CALL p_SaveAssessmentBatch(?, ?, ?, ?, ?, ?, ?)', [
+                $assessmentId,
+                $request->written_date,
+                $request->speaking_date,
+                $request->interviewer_id,
+                $request->topic,
+                $newStatus,
+                $jsonMarks // Parameter JSON
+            ]);
 
             $msg = ($request->action_type === 'submit') 
                 ? 'Assessment submitted successfully!' 
@@ -163,7 +155,6 @@ class TeacherAssessmentController extends Controller
                             ->with('success', $msg);
 
         } catch (\Exception $e) {
-            DB::rollBack();
             return back()->withInput()->with('error', 'Database Error: ' . $e->getMessage());
         }
     }

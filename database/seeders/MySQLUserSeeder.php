@@ -88,6 +88,8 @@ class MySQLUserSeeder extends Seeder
         // 2. Detail Kelas & Assessment Sheet
         DB::statement("GRANT EXECUTE ON PROCEDURE {$dbName}.p_get_class_attendance_stats TO '{$teacherUser}'@'%';");
         DB::statement("GRANT EXECUTE ON PROCEDURE {$dbName}.p_GetAssessmentSheet TO '{$teacherUser}'@'%';");
+        DB::statement("GRANT EXECUTE ON PROCEDURE {$dbName}.p_SaveAssessmentBatch TO '{$teacherUser}'@'%';");
+        DB::statement("GRANT EXECUTE ON PROCEDURE {$dbName}.p_SaveAttendanceBatch TO '{$teacherUser}'@'%';");
         
         // 3. Input Absensi
         DB::statement("GRANT EXECUTE ON PROCEDURE {$dbName}.p_GetSessionAttendanceList TO '{$teacherUser}'@'%';");

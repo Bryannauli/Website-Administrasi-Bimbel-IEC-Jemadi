@@ -61,7 +61,7 @@ class TeacherAttendanceController extends Controller
         return view('teacher.classes.session-attandance', compact('class', 'session', 'students'));
     }
 
-    // Update Session (OPTIMIZED)
+    // Update Session (OPTIMIZED WITH JSON BATCH)
     public function updateSession(Request $request, $classId, $sessionId)
     {
         $request->validate([
@@ -72,28 +72,33 @@ class TeacherAttendanceController extends Controller
         // Pastikan sesi valid milik kelas ini
         ClassSession::where('class_id', $classId)->where('id', $sessionId)->firstOrFail();
 
-        DB::beginTransaction();
         try {
+            // 1. Persiapkan Data JSON
+            // Ubah format array [id => status] menjadi array of objects [{"student_id": 1, "status": "present"}, ...]
+            $attendanceData = [];
             foreach ($request->input('attendance') as $studentId => $status) {
-                // Normalisasi status untuk Database
+                // Normalisasi status ('permitted' di view -> 'permission' di database)
                 $dbStatus = ($status === 'permitted') ? 'permission' : $status;
-
-                // [OPTIMISASI] Panggil Procedure Upsert
-                // Logika "Insert or Update" ditangani database
-                DB::statement('CALL p_UpsertAttendance(?, ?, ?)', [
-                    $sessionId,
-                    $studentId,
-                    $dbStatus
-                ]);
+                
+                $attendanceData[] = [
+                    'student_id' => (int) $studentId,
+                    'status'     => $dbStatus
+                ];
             }
+            
+            $jsonAttendance = json_encode($attendanceData);
 
-            DB::commit();
+            // 2. Panggil Stored Procedure Batch (SINGLE QUERY)
+            // Procedure ini menangani Transaction, Insert, dan Update sekaligus.
+            DB::statement('CALL p_SaveAttendanceBatch(?, ?)', [
+                $sessionId,
+                $jsonAttendance
+            ]);
 
             return redirect()->route('teacher.classes.detail', $classId)
                             ->with('success', 'Attendance updated successfully.');
 
         } catch (\Exception $e) {
-            DB::rollBack();
             return redirect()->back()->with('error', 'Failed: ' . $e->getMessage());
         }
     }
