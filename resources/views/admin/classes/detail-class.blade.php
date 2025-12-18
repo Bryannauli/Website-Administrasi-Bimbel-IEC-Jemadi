@@ -407,8 +407,8 @@
 
                             @if($lastTeacher)
                                 <h3 class="text-lg font-bold truncate" title="{{ $lastTeacher->name }}">{{ $lastTeacher->name }}</h3>
-                                <div class="mt-3 bg-blue-600  p-3 rounded-lg border border-blue-500 border-opacity-30">
-                                    <p class="text-blue-50 text-xs italic line-clamp-3">"{{ $lastSession->comment ?? 'No teaching notes provided.' }}"</p>
+                                <div class="mt-3 bg-blue-100  p-3 rounded-lg border  border-opacity-30">
+                                    <p class="text-blue-700 text-xs italic line-clamp-3">"{{ $lastSession->comment ?? 'No teaching notes provided.' }}"</p>
                                 </div>
                             @else
                                 <h3 class="text-xl font-bold">No Data Yet</h3>
@@ -417,7 +417,7 @@
                         </div>
 
                         <button @click="showHistoryModal = true" 
-                                class="mt-4 w-full py-2.5 bg-gray-100 text-blue-700 rounded-lg text-sm font-bold hover:bg-gray-200 transition shadow-sm flex items-center justify-center gap-2">
+                                class="mt-4 w-full py-2.5 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition shadow-blue-200 shadow-sm flex items-center justify-center gap-2">
                             View Teaching Logs <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                         </button>
                     </div>
