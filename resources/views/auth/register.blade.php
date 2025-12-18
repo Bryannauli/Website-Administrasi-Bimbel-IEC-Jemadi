@@ -33,7 +33,7 @@
         .input-underline:focus {
             border-color: #3B82F6;
             box-shadow: none;
-            ring: none;
+            /* ring: none; */
         }
     </style>
 </head>
