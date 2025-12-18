@@ -154,12 +154,12 @@
 
                     {{-- B. ATTENDANCE & ACTION CARD (LOGIC CREATE/EDIT TODAY) --}}
                     <div class="lg:col-span-1">
-                        <div class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-lg shadow-blue-200 p-6 text-white relative overflow-hidden group h-full flex flex-col justify-between">
+                        <div class="bg-white rounded-2xl shadow-lg shadow-blue-200 p-6 text-black relative overflow-hidden group h-full flex flex-col justify-between">
                             <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition duration-500"></div>
                             
                             <div class="relative z-10">
                                 <h3 class="text-lg font-bold mb-2">Class Attendance</h3>
-                                <p class="text-blue-100 text-xs mb-6 opacity-90 leading-relaxed">
+                                <p class="text-blue-700 text-xs mb-6 opacity-90 leading-relaxed">
                                     @if(isset($sessionToday) && $sessionToday)
                                         Session for today ({{ \Carbon\Carbon::parse($sessionToday->date)->format('d M Y') }}) is already created. Edit now or view history.
                                     @else
@@ -181,7 +181,7 @@
                                 @else
                                     {{-- JIKA BELUM ADA SESI HARI INI: Tombol Create --}}
                                     <button @click="showHistoryModal = true; $nextTick(() => { document.getElementById('createSessionBtn').click(); })" 
-                                        class="w-full py-3.5 bg-white text-blue-700 rounded-xl text-sm font-bold hover:bg-blue-50 transition shadow-lg shadow-blue-900/10 flex items-center justify-center gap-2 group-hover:scale-[1.02]">
+                                        class="w-full py-3.5 bg-blue-700 text-white rounded-xl text-sm font-bold hover:bg-blue-800 transition shadow-lg shadow-blue-900/10 flex items-center justify-center gap-2  ">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                                         Create Today's Session
                                     </button>
@@ -189,7 +189,7 @@
 
                                 {{-- Tombol View History --}}
                                 <button @click="showHistoryModal = true" 
-                                    class="w-full py-2 bg-blue-800/80 text-blue-200 rounded-xl text-xs font-bold hover:bg-blue-800 transition">
+                                    class="w-full py-2 bg-gray-200 text-black rounded-xl text-xs font-bold hover:bg-gray-300 transition">
                                     View Full History
                                 </button>
                             </div>
