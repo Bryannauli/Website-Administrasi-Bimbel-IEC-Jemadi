@@ -1,8 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -11,40 +10,72 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->string('username')->unique();
-            $table->string('name');
-            
-            // informasi tambahan
-            $table->string('email')->unique()->nullable();
-            $table->string('phone')->unique()->nullable();
-            $table->string('address')->nullable();
-            $table->timestamp('email_verified_at')->nullable();
-            
-            $table->string('password');
-            $table->enum('role', ['admin', 'teacher']);
-            $table->boolean('is_teacher')->default(false);
-            $table->boolean('is_active')->default(true);
-            $table->rememberToken();
-            $table->timestamps();
-            $table->softDeletes();
-        });
+        // =========================
+        // Table: users
+        // =========================
+        DB::unprepared("
+            CREATE TABLE users (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(255) NOT NULL UNIQUE,
+                name VARCHAR(255) NOT NULL,
 
-        Schema::create('password_reset_tokens', function (Blueprint $table) {
-            $table->string('email')->primary();
-            $table->string('token');
-            $table->timestamp('created_at')->nullable();
-        });
+                email VARCHAR(255) UNIQUE NULL,
+                phone VARCHAR(255) UNIQUE NULL,
+                address VARCHAR(255) NULL,
+                email_verified_at TIMESTAMP NULL,
 
-        Schema::create('sessions', function (Blueprint $table) {
-            $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index();
-            $table->string('ip_address', 45)->nullable();
-            $table->text('user_agent')->nullable();
-            $table->longText('payload');
-            $table->integer('last_activity')->index();
-        });
+                password VARCHAR(255) NOT NULL,
+                role ENUM('admin', 'teacher') NOT NULL,
+                is_teacher TINYINT(1) NOT NULL DEFAULT 0,
+                is_active TINYINT(1) NOT NULL DEFAULT 1,
+
+                remember_token VARCHAR(100) NULL,
+
+                created_at TIMESTAMP NULL DEFAULT NULL,
+                updated_at TIMESTAMP NULL DEFAULT NULL,
+                deleted_at TIMESTAMP NULL DEFAULT NULL
+            ) ENGINE=InnoDB
+            DEFAULT CHARSET=utf8mb4
+            COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // =========================
+        // Table: password_reset_tokens
+        // =========================
+        DB::unprepared("
+            CREATE TABLE password_reset_tokens (
+                email VARCHAR(255) NOT NULL PRIMARY KEY,
+                token VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP NULL DEFAULT NULL
+            ) ENGINE=InnoDB
+            DEFAULT CHARSET=utf8mb4
+            COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // =========================
+        // Table: sessions
+        // =========================
+        DB::unprepared("
+            CREATE TABLE sessions (
+                id VARCHAR(255) NOT NULL PRIMARY KEY,
+                user_id BIGINT UNSIGNED NULL,
+                ip_address VARCHAR(45) NULL,
+                user_agent TEXT NULL,
+                payload LONGTEXT NOT NULL,
+                last_activity INT NOT NULL,
+
+                INDEX idx_sessions_user_id (user_id),
+                INDEX idx_sessions_last_activity (last_activity),
+
+                CONSTRAINT fk_sessions_user
+                    FOREIGN KEY (user_id)
+                    REFERENCES users(id)
+                    ON DELETE CASCADE
+                    ON UPDATE CASCADE
+            ) ENGINE=InnoDB
+            DEFAULT CHARSET=utf8mb4
+            COLLATE=utf8mb4_unicode_ci;
+        ");
     }
 
     /**
@@ -52,8 +83,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
-        Schema::dropIfExists('sessions');
+        DB::unprepared("DROP TABLE IF EXISTS sessions;");
+        DB::unprepared("DROP TABLE IF EXISTS password_reset_tokens;");
+        DB::unprepared("DROP TABLE IF EXISTS users;");
     }
 };

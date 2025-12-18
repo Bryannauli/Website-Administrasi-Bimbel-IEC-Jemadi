@@ -1,8 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -11,35 +10,49 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // 1. GANTI NAMA TABEL menjadi 'class_sessions'
-        Schema::create('class_sessions', function (Blueprint $table) { 
-            $table->id();
-            $table->foreignId('class_id')->constrained('classes')->cascadeOnDelete();
-            $table->date('date');
-            
-            // 2. TAMBAHKAN foreign key untuk guru yang mengajar
-            $table->foreignId('teacher_id') 
-                    ->nullable()
-                    ->constrained('users')
-                    ->nullOnDelete(); 
-                    
-            // 3. Kolom comment (berdasarkan konteks sebelumnya)
-            $table->text('comment')->nullable();
-            
-            $table->timestamps();
-            $table->softDeletes();
-        });
+        DB::unprepared("
+            CREATE TABLE class_sessions (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 
-        Schema::dropIfExists('teacher_attendance_records');
+                class_id BIGINT UNSIGNED NOT NULL,
+                date DATE NOT NULL,
+
+                teacher_id BIGINT UNSIGNED NULL,
+
+                comment TEXT NULL,
+
+                created_at TIMESTAMP NULL DEFAULT NULL,
+                updated_at TIMESTAMP NULL DEFAULT NULL,
+                deleted_at TIMESTAMP NULL DEFAULT NULL,
+
+                INDEX idx_class_sessions_class (class_id),
+                INDEX idx_class_sessions_teacher (teacher_id),
+
+                CONSTRAINT fk_class_sessions_class
+                    FOREIGN KEY (class_id)
+                    REFERENCES classes(id)
+                    ON DELETE CASCADE
+                    ON UPDATE CASCADE,
+
+                CONSTRAINT fk_class_sessions_teacher
+                    FOREIGN KEY (teacher_id)
+                    REFERENCES users(id)
+                    ON DELETE SET NULL
+                    ON UPDATE CASCADE
+            ) ENGINE=InnoDB
+            DEFAULT CHARSET=utf8mb4
+            COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        // hapus tabel lama
+        DB::unprepared("DROP TABLE IF EXISTS teacher_attendance_records;");
     }
-
 
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        // GANTI NAMA TABEL
-        Schema::dropIfExists('class_sessions');
+        DB::unprepared("DROP TABLE IF EXISTS class_sessions;");
     }
 };

@@ -1,8 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -11,28 +10,44 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('assessment_forms', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('assessment_session_id')
-                ->constrained('assessment_sessions')
-                ->cascadeOnDelete();
-            
-            $table->foreignId('student_id')
-                    ->constrained('students')
-                    ->cascadeOnDelete();
+        DB::unprepared("
+            CREATE TABLE assessment_forms (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 
-            // Skor tiap skill (0–100), nullable karena bisa belum diisi
-            $table->unsignedTinyInteger('vocabulary')->nullable();
-            $table->unsignedTinyInteger('grammar')->nullable();
-            $table->unsignedTinyInteger('listening')->nullable();
-            $table->unsignedTinyInteger('speaking')->nullable(); // bisa diisi total dari speaking_test_results
-            $table->unsignedTinyInteger('reading')->nullable();
-            $table->unsignedTinyInteger('spelling')->nullable();
+                assessment_session_id BIGINT UNSIGNED NOT NULL,
+                student_id BIGINT UNSIGNED NOT NULL,
 
-            $table->timestamps();
-            $table->unique(['assessment_session_id', 'student_id']);
-            $table->softDeletes();
-        });
+                vocabulary TINYINT UNSIGNED NULL,
+                grammar TINYINT UNSIGNED NULL,
+                listening TINYINT UNSIGNED NULL,
+                speaking TINYINT UNSIGNED NULL,
+                reading TINYINT UNSIGNED NULL,
+                spelling TINYINT UNSIGNED NULL,
+
+                created_at TIMESTAMP NULL DEFAULT NULL,
+                updated_at TIMESTAMP NULL DEFAULT NULL,
+                deleted_at TIMESTAMP NULL DEFAULT NULL,
+
+                UNIQUE KEY uq_assessment_forms (assessment_session_id, student_id),
+
+                INDEX idx_assessment_forms_session (assessment_session_id),
+                INDEX idx_assessment_forms_student (student_id),
+
+                CONSTRAINT fk_assessment_forms_session
+                    FOREIGN KEY (assessment_session_id)
+                    REFERENCES assessment_sessions(id)
+                    ON DELETE CASCADE
+                    ON UPDATE CASCADE,
+
+                CONSTRAINT fk_assessment_forms_student
+                    FOREIGN KEY (student_id)
+                    REFERENCES students(id)
+                    ON DELETE CASCADE
+                    ON UPDATE CASCADE
+            ) ENGINE=InnoDB
+            DEFAULT CHARSET=utf8mb4
+            COLLATE=utf8mb4_unicode_ci;
+        ");
     }
 
     /**
@@ -40,6 +55,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('assessment_forms');
+        DB::unprepared("DROP TABLE IF EXISTS assessment_forms;");
     }
 };

@@ -1,8 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -11,30 +10,47 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('assessment_sessions', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('class_id')
-                ->nullable()
-                ->constrained('classes')
-                ->nullOnDelete();
+        DB::unprepared("
+            CREATE TABLE assessment_sessions (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 
-            $table->enum('type', ['mid', 'final']);
+                class_id BIGINT UNSIGNED NULL,
 
-            $table->date('written_date')->nullable();
-            
-            $table->date('speaking_date')->nullable();
-            $table->string('speaking_topic', 200)->nullable();
-            $table->foreignId('interviewer_id')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
+                type ENUM('mid', 'final') NOT NULL,
 
-            $table->enum('status', ['draft', 'submitted', 'final'])->default('draft');
+                written_date DATE NULL,
 
-            $table->timestamps();
-            $table->unique(['class_id', 'type']);
-            $table->softDeletes();
-        });
+                speaking_date DATE NULL,
+                speaking_topic VARCHAR(200) NULL,
+
+                interviewer_id BIGINT UNSIGNED NULL,
+
+                status ENUM('draft', 'submitted', 'final') NOT NULL DEFAULT 'draft',
+
+                created_at TIMESTAMP NULL DEFAULT NULL,
+                updated_at TIMESTAMP NULL DEFAULT NULL,
+                deleted_at TIMESTAMP NULL DEFAULT NULL,
+
+                UNIQUE KEY uq_assessment_class_type (class_id, type),
+
+                INDEX idx_assessment_class_id (class_id),
+                INDEX idx_assessment_interviewer (interviewer_id),
+
+                CONSTRAINT fk_assessment_class
+                    FOREIGN KEY (class_id)
+                    REFERENCES classes(id)
+                    ON DELETE SET NULL
+                    ON UPDATE CASCADE,
+
+                CONSTRAINT fk_assessment_interviewer
+                    FOREIGN KEY (interviewer_id)
+                    REFERENCES users(id)
+                    ON DELETE SET NULL
+                    ON UPDATE CASCADE
+            ) ENGINE=InnoDB
+            DEFAULT CHARSET=utf8mb4
+            COLLATE=utf8mb4_unicode_ci;
+        ");
     }
 
     /**
@@ -42,6 +58,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('assessment_sessions');
+        DB::unprepared("DROP TABLE IF EXISTS assessment_sessions;");
     }
 };

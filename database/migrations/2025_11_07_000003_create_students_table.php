@@ -1,8 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -11,19 +10,36 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // ini untuk kelola data siswanya, kalo misal di masa depan siswa bisa login kita gabungkan ke tabel user
-        Schema::create('students', function (Blueprint $table) {
-            $table->id();
-            $table->string('student_number')->unique();
-            $table->string('name');
-            $table->enum('gender', ['male', 'female']);
-            $table->string('phone')->nullable();
-            $table->text('address')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->foreignId('class_id')->nullable()->constrained('classes')->nullOnDelete();
-            $table->timestamps();
-            $table->softDeletes();
-        });
+        DB::unprepared("
+            CREATE TABLE students (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+                student_number VARCHAR(255) NOT NULL UNIQUE,
+                name VARCHAR(255) NOT NULL,
+
+                gender ENUM('male', 'female') NOT NULL,
+                phone VARCHAR(255) NULL,
+                address TEXT NULL,
+
+                is_active TINYINT(1) NOT NULL DEFAULT 1,
+
+                class_id BIGINT UNSIGNED NULL,
+
+                created_at TIMESTAMP NULL DEFAULT NULL,
+                updated_at TIMESTAMP NULL DEFAULT NULL,
+                deleted_at TIMESTAMP NULL DEFAULT NULL,
+
+                INDEX idx_students_class_id (class_id),
+
+                CONSTRAINT fk_students_class
+                    FOREIGN KEY (class_id)
+                    REFERENCES classes(id)
+                    ON DELETE SET NULL
+                    ON UPDATE CASCADE
+            ) ENGINE=InnoDB
+            DEFAULT CHARSET=utf8mb4
+            COLLATE=utf8mb4_unicode_ci;
+        ");
     }
 
     /**
@@ -31,6 +47,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('students');
+        DB::unprepared("DROP TABLE IF EXISTS students;");
     }
 };

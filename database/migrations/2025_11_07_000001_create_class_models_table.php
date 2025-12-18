@@ -1,8 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -11,35 +10,56 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('classes', function (Blueprint $table) {
-            $table->id();
-            // Jenjang kelas
-            $table->enum('category', ['pre_level', 'level', 'step', 'private']);
-            // Nama kelas: "Step 1", "Private Student", "Level 3"
-            $table->string('name', 100);
-            // Classroom: China, Italy, France, ...
-            $table->string('classroom', 50);
-            
-            // Relasi ke guru: form teacher dan local teacher
-            $table->foreignId('form_teacher_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('local_teacher_id')->nullable()->constrained('users')->nullOnDelete();
+        DB::unprepared("
+            CREATE TABLE classes (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 
-            $table->time('start_time');
-            $table->time('end_time');
-            $table->enum('start_month', [
-                'January', 'February', 'March', 'April', 'May', 'June',
-                'July', 'August', 'September', 'October', 'November', 'December'
-            ]);
-            $table->enum('end_month', [
-                'January', 'February', 'March', 'April', 'May', 'June',
-                'July', 'August', 'September', 'October', 'November', 'December'
-            ]);
-            $table->year('academic_year');
-            
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-            $table->softDeletes();
-        });
+                category ENUM('pre_level', 'level', 'step', 'private') NOT NULL,
+                name VARCHAR(100) NOT NULL,
+                classroom VARCHAR(50) NOT NULL,
+
+                form_teacher_id BIGINT UNSIGNED NULL,
+                local_teacher_id BIGINT UNSIGNED NULL,
+
+                start_time TIME NOT NULL,
+                end_time TIME NOT NULL,
+
+                start_month ENUM(
+                    'January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'
+                ) NOT NULL,
+
+                end_month ENUM(
+                    'January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'
+                ) NOT NULL,
+
+                academic_year YEAR NOT NULL,
+
+                is_active TINYINT(1) NOT NULL DEFAULT 1,
+
+                created_at TIMESTAMP NULL DEFAULT NULL,
+                updated_at TIMESTAMP NULL DEFAULT NULL,
+                deleted_at TIMESTAMP NULL DEFAULT NULL,
+
+                INDEX idx_classes_form_teacher (form_teacher_id),
+                INDEX idx_classes_local_teacher (local_teacher_id),
+
+                CONSTRAINT fk_classes_form_teacher
+                    FOREIGN KEY (form_teacher_id)
+                    REFERENCES users(id)
+                    ON DELETE SET NULL
+                    ON UPDATE CASCADE,
+
+                CONSTRAINT fk_classes_local_teacher
+                    FOREIGN KEY (local_teacher_id)
+                    REFERENCES users(id)
+                    ON DELETE SET NULL
+                    ON UPDATE CASCADE
+            ) ENGINE=InnoDB
+            DEFAULT CHARSET=utf8mb4
+            COLLATE=utf8mb4_unicode_ci;
+        ");
     }
 
     /**
@@ -47,6 +67,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('classes');
+        DB::unprepared("DROP TABLE IF EXISTS classes;");
     }
 };

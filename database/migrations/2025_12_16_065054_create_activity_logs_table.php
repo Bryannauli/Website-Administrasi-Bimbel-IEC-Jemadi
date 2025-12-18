@@ -1,46 +1,49 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('activity_logs', function (Blueprint $table) {
-            $table->id();
+        DB::unprepared("
+            CREATE TABLE activity_logs (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 
-            // 1. ACTOR (Siapa yang melakukan?)
-            // Menggantikan 'causer' menjadi 'actor'
-            $table->nullableMorphs('actor'); 
-            // Otomatis bikin: actor_type (string), actor_id (bigint)
+                -- 1. ACTOR (polymorphic)
+                actor_type VARCHAR(255) NULL,
+                actor_id BIGINT UNSIGNED NULL,
 
-            // 2. SUBJECT (Apa yang diubah?)
-            $table->nullableMorphs('subject'); 
-            // Otomatis bikin: subject_type (string), subject_id (bigint)
+                -- 2. SUBJECT (polymorphic)
+                subject_type VARCHAR(255) NULL,
+                subject_id BIGINT UNSIGNED NULL,
 
-            // 3. DETAIL AKSI
-            $table->string('event'); // create, update, delete, restore
-            $table->string('description')->nullable(); // Deskripsi tambahan
+                -- 3. DETAIL AKSI
+                event VARCHAR(255) NOT NULL,
+                description VARCHAR(255) NULL,
 
-            // 4. DATA LOG (JSON)
-            // Menyimpan 'old' dan 'attributes' (new)
-            $table->json('properties')->nullable();
+                -- 4. DATA LOG
+                properties JSON NULL,
 
-            // 5. METADATA TAMBAHAN (Opsional tapi berguna)
-            $table->string('ip_address', 45)->nullable();
-            $table->string('user_agent')->nullable();
+                -- 5. METADATA TAMBAHAN
+                ip_address VARCHAR(45) NULL,
+                user_agent VARCHAR(255) NULL,
 
-            $table->timestamps();
-            
-            // Indexing untuk performa pencarian log
-            $table->index('event');
-        });
+                created_at TIMESTAMP NULL DEFAULT NULL,
+                updated_at TIMESTAMP NULL DEFAULT NULL,
+
+                INDEX idx_activity_logs_event (event),
+                INDEX idx_activity_logs_actor (actor_type, actor_id),
+                INDEX idx_activity_logs_subject (subject_type, subject_id)
+            ) ENGINE=InnoDB
+            DEFAULT CHARSET=utf8mb4
+            COLLATE=utf8mb4_unicode_ci;
+        ");
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('activity_logs');
+        DB::unprepared("DROP TABLE IF EXISTS activity_logs;");
     }
 };
