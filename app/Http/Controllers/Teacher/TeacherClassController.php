@@ -105,7 +105,7 @@ class TeacherClassController extends Controller
         $classSessions = DB::table('v_class_activity_logs')
             ->where('class_id', $id)
             ->orderBy('date', 'desc')
-            ->paginate(5, ['*'], 'session_page'); 
+            ->get(); 
 
         // 4. Sesi Hari Ini
         $sessionToday = ClassSession::where('class_id', $id)
