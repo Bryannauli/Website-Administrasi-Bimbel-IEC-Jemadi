@@ -192,23 +192,17 @@ class AdminClassController extends Controller
 
     public function detailClass(Request $request, $id)
     {
-        // 1. UPDATE: Tambahkan sorting student_number pada relasi students
         $class = ClassModel::with([
-            'schedules', 
-            'formTeacher', 
-            'localTeacher', 
-            'students' => function($q) { 
-                $q->orderBy('student_number', 'asc'); // <<< SORT BY ID
-            }, 
+            'schedules', 'formTeacher', 'localTeacher', 
+            'students' => function($q) { $q->orderBy('student_number', 'asc'); }, 
             'assessmentSessions'
         ])->findOrFail($id);
         
         $class->students_count = $class->students->count();
 
-        // 2. UPDATE: availableStudents juga di-sort by student_number
         $query = \App\Models\Student::where('is_active', true)
             ->whereNull('class_id')
-            ->orderBy('student_number', 'asc'); // <<< SORT BY ID
+            ->orderBy('student_number', 'asc');
 
         if ($request->filled('search_student')) {
             $search = $request->search_student;
@@ -218,11 +212,19 @@ class AdminClassController extends Controller
         }
         $availableStudents = $query->get();
 
-        $teachingLogs = DB::table('v_class_activity_logs')->where('class_id', $id)->orderBy('date', 'asc')->get();
+        // 1. teachingLogs (Activity History) -> DESCENDING (Terbaru di ATAS/Row 1)
+        // Ini digunakan untuk Modal "History"
+        $teachingLogs = DB::table('v_class_activity_logs')
+            ->where('class_id', $id)
+            ->orderBy('date', 'desc') 
+            ->get();
+
+        // 2. matrixSessions (Attendance Matrix) -> ASCENDING (Terbaru di KANAN)
+        // Kita membalik urutan collection teachingLogs agar menjadi Ascending (Old -> New)
+        // Ini digunakan untuk Modal "Attendance" (Table Header & Looping Cells)
+        $matrixSessions = $teachingLogs->reverse();
 
         $lastSession = ClassSession::where('class_id', $id)->with('teacher')->orderBy('date', 'desc')->orderBy('created_at', 'desc')->first();
-            
-        // Procedure ini sudah diupdate di langkah sebelumnya utk sort by ID
         $studentStats = DB::select('CALL p_get_class_attendance_stats(?)', [$id]);
         
         $rawLogs = ClassSession::where('class_id', $id)->with(['records:id,class_session_id,student_id,status'])->get();
@@ -237,8 +239,9 @@ class AdminClassController extends Controller
         $years = ClassModel::select('academic_year')->distinct()->pluck('academic_year')->sortDesc();
         $teachers = User::where('is_teacher', true)->orderBy('name', 'asc')->get();
 
+        // Pass 'matrixSessions' ke view
         return view('admin.classes.detail-class', compact(
-            'class', 'availableStudents', 'teachingLogs', 'lastSession',
+            'class', 'availableStudents', 'teachingLogs', 'matrixSessions', 'lastSession',
             'studentStats', 'attendanceMatrix', 'categories', 'years', 'teachers'
         ));
     }

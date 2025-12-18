@@ -152,14 +152,19 @@
                         </div>
                     </div>
 
-                    {{-- B. ATTENDANCE & ACTION CARD (LOGIC CREATE/EDIT TODAY) --}}
+                    {{-- B. CLASS ACTIVITY (UPDATED) --}}
                     <div class="lg:col-span-1">
-                        <div class="bg-white rounded-2xl shadow-lg shadow-blue-200 p-6 text-black relative overflow-hidden group h-full flex flex-col justify-between">
+                        {{-- Container Card (Tetap pakai 'group' agar background blur effect di belakang tetap jalan saat card dihover) --}}
+                        <div class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-lg shadow-blue-200 p-6 text-white relative overflow-hidden group h-full flex flex-col justify-between">
+                            
+                            {{-- Background Blur Effect --}}
                             <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition duration-500"></div>
                             
                             <div class="relative z-10">
-                                <h3 class="text-lg font-bold mb-2">Class Attendance</h3>
-                                <p class="text-blue-700 text-xs mb-6 opacity-90 leading-relaxed">
+                                <h3 class="text-lg font-bold mb-2">Class Activities</h3>
+                                
+                                {{-- Deskripsi (Reverted sesuai permintaan) --}}
+                                <p class="text-blue-100 text-xs mb-6 opacity-90 leading-relaxed">
                                     @if(isset($sessionToday) && $sessionToday)
                                         Session for today ({{ \Carbon\Carbon::parse($sessionToday->date)->format('d M Y') }}) is already created. Edit now or view history.
                                     @else
@@ -168,29 +173,13 @@
                                 </p>
                             </div>
                             
-                            {{-- BUTTON LOGIC --}}
-                            <div class="relative z-10 mt-auto flex flex-col gap-2">
-                                
-                                @if(isset($sessionToday) && $sessionToday)
-                                    {{-- JIKA SUDAH ADA SESI HARI INI: Tombol Edit --}}
-                                    <a href="{{ route('teacher.classes.session.detail', ['classId' => $class->id, 'sessionId' => $sessionToday->id]) }}" 
-                                        class="w-full py-3.5 bg-yellow-500 text-white rounded-xl text-sm font-bold hover:bg-yellow-600 transition shadow-lg shadow-yellow-900/10 flex items-center justify-center gap-2 group-hover:scale-[1.02]">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                                        Edit Today's Attendance
-                                    </a>
-                                @else
-                                    {{-- JIKA BELUM ADA SESI HARI INI: Tombol Create --}}
-                                    <button @click="showHistoryModal = true; $nextTick(() => { document.getElementById('createSessionBtn').click(); })" 
-                                        class="w-full py-3.5 bg-blue-700 text-white rounded-xl text-sm font-bold hover:bg-blue-800 transition shadow-lg shadow-blue-900/10 flex items-center justify-center gap-2  ">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                                        Create Today's Session
-                                    </button>
-                                @endif
-
-                                {{-- Tombol View History --}}
+                            {{-- UNIFIED BUTTON --}}
+                            <div class="relative z-10 mt-auto">
+                                {{-- UPDATE: group-hover:scale-[1.02] diganti menjadi hover:scale-[1.02] --}}
                                 <button @click="showHistoryModal = true" 
-                                    class="w-full py-2 bg-gray-200 text-black rounded-xl text-xs font-bold hover:bg-gray-300 transition">
-                                    View Full History
+                                    class="w-full py-3.5 bg-white text-blue-700 rounded-xl text-sm font-bold hover:bg-blue-50 transition shadow-lg shadow-blue-900/10 flex items-center justify-center gap-2 hover:scale-[1.02]">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                                    View & Create Activity
                                 </button>
                             </div>
                         </div>
