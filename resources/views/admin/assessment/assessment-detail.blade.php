@@ -82,12 +82,21 @@
                 </form>
 
                 {{-- Action Buttons (Tampil saat Mode Baca/View) --}}
-                <div x-show="!isEditing" class="flex flex-wrap items-center gap-2" x-transition>
+                <div x-show="!isEditing"
+     class="
+        flex flex-col gap-2
+        sm:flex-col
+        md:flex-row md:justify-end md:items-center md:gap-2
+        lg:flex-row lg:justify-end lg:gap-3
+     "
+     x-transition>
+
+
                     
                     {{-- Edit Button --}}
                     <button type="button" 
                             onclick="handleEdit('{{ $session->status }}')"
-                            class="px-6 py-2.5 font-bold rounded-lg transition shadow-md flex items-center gap-2
+                            class="h-13 px-3 w-full md:w-auto py-1 font-bold rounded-lg transition shadow-md flex items-center gap-2
                             {{ $session->status === 'submitted' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-100 text-gray-400 border border-gray-300' }}">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                         Review & Edit
@@ -96,7 +105,7 @@
                     {{-- Approve Button (Jika Submitted) --}}
                     @if($session->status === 'submitted')
                         <button type="submit" form="quickStatusForm" name="action_type" value="finalize_quick" onclick="return confirmFinalize(document.getElementById('quickStatusForm'))"
-                                class="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold rounded-lg transition shadow-md flex items-center gap-2">
+                                class="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold rounded-lg transition shadow-md flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             Approve & Finalize
                         </button>
@@ -105,7 +114,7 @@
                     {{-- Print Button (Memicu Modal) --}}
                     <button type="button" 
                             @click="'{{ $session->status }}' === 'final' ? showPrintModal = true : handlePrint('{{ $session->status }}', '{{ $printUrl }}')"
-                            class="px-4 py-2.5 font-bold rounded-lg transition shadow-sm border flex items-center gap-2 text-sm
+                            class="px-4 py-4 font-bold rounded-lg transition shadow-sm border flex items-center gap-2 text-sm
                             {{ $session->status === 'final' ? 'bg-purple-600 text-white hover:bg-purple-700 border-transparent' : 'bg-gray-100 text-gray-400 border-gray-300' }}">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 00-2 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
