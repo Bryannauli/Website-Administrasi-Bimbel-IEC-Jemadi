@@ -40,29 +40,29 @@
                         {{-- Search Input Hidden agar tidak hilang saat filter berubah --}}
                         <input type="hidden" name="search" value="{{ request('search') }}">
                         
-                        <div class="flex flex-wrap items-end gap-3">
-                            <select name="academic_year" onchange="this.form.submit()" class="h-10 px-3 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500">
+                        <div class="flex flex-wrap items-end gap-3 ">
+                            <select name="academic_year" onchange="this.form.submit()" class="h-10 px-3 border pr-10  border-gray-300 rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500">
                                 <option value="">All Years</option>
                                 @foreach($years as $year)
                                     <option value="{{ $year }}" {{ request('academic_year') == $year ? 'selected' : '' }}>{{ $year }}</option>
                                 @endforeach
                             </select>
 
-                            <select name="category" onchange="this.form.submit()" class="h-10 px-3 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500">
+                            <select name="category" onchange="this.form.submit()" class="h-10 px-3 border pr-10 border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500">
                                 <option value="">All Categories</option>
                                 @foreach($categories as $category)
                                     <option value="{{ $category }}" {{ request('category') == $category ? 'selected' : '' }}>{{ ucwords(str_replace('_', ' ', $category)) }}</option>
                                 @endforeach
                             </select>
 
-                            <select name="type" onchange="this.form.submit()" class="h-10 px-3 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500">
+                            <select name="type" onchange="this.form.submit()" class="h-10 px-3 border border-gray-300 pr-10 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500">
                                 <option value="">All Types</option>
                                 @foreach($types as $type)
                                     <option value="{{ $type }}" {{ request('type') == $type ? 'selected' : '' }}>{{ ucfirst($type) }}</option>
                                 @endforeach
                             </select>
 
-                            <select name="assessment_status" onchange="this.form.submit()" class="h-10 px-3 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500">
+                            <select name="assessment_status" onchange="this.form.submit()" class="h-10 px-3 pr-10 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500">
                                 <option value="">All Progress</option>
                                 @foreach($statuses as $statusOption)
                                     <option value="{{ $statusOption }}" {{ request('assessment_status') == $statusOption ? 'selected' : '' }}>{{ ucfirst($statusOption) }}</option>
