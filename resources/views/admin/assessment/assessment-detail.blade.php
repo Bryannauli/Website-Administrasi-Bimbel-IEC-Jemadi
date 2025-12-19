@@ -7,13 +7,12 @@
         $mixPrintUrl = route('admin.classes.assessment.printMix', ['classId' => $class->id]);
     @endphp
 
-    {{-- SETUP ALPINE JS (UPDATED) --}}
+    {{-- SETUP ALPINE JS --}}
     <div class="py-6" x-data="{ 
         isEditing: {{ (request('mode') == 'edit' || $errors->any()) ? 'true' : 'false' }},
         assessmentType: '{{ $type }}',
         showPrintModal: false,
         
-        // FUNGSI BARU: Menangani logika Edit langsung di dalam Alpine
         handleEditClick(status) {
             if (status === 'draft') {
                 Swal.fire({
@@ -30,7 +29,6 @@
                     confirmButtonColor: '#8B5CF6'
                 });
             } else {
-                // Berhasil: Masuk mode edit
                 this.isEditing = true;
             }
         }
@@ -41,23 +39,18 @@
             {{-- 1. BREADCRUMB --}}
             <nav class="flex mb-5" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-3">
-                    {{-- Dashboard --}}
                     <li class="inline-flex items-center">
                         <a href="{{ route('admin.dashboard') }}" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors">
                             <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
                             Dashboard
                         </a>
                     </li>
-                    
-                    {{-- Classes Index --}}
                     <li>
                         <div class="flex items-center">
                             <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
                             <a href="{{ route('admin.classes.index') }}" class="ml-1 text-sm font-medium text-gray-500 hover:text-blue-600 md:ml-2">Classes</a>
                         </div>
                     </li>
-
-                    {{-- Class Detail --}}
                     <li>
                         <div class="flex items-center">
                             <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
@@ -66,8 +59,6 @@
                             </a>
                         </div>
                     </li>
-
-                    {{-- Current Page --}}
                     <li aria-current="page">
                         <div class="flex items-center">
                             <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
@@ -108,7 +99,6 @@
                     class="flex flex-wrap items-center justify-start sm:justify-end gap-3"
                     x-transition>
 
-                    {{-- Review & Edit Button --}}
                     <button type="button" 
                             @click="handleEditClick('{{ $session->status }}')"
                             class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-bold rounded-lg transition shadow-md gap-2 min-h-[44px]
@@ -117,7 +107,6 @@
                         Review & Edit
                     </button>
 
-                    {{-- Approve Button --}}
                     @if($session->status === 'submitted')
                         <button type="submit" form="quickStatusForm" name="action_type" value="finalize_quick" onclick="return confirmFinalize(document.getElementById('quickStatusForm'))"
                                 class="inline-flex items-center justify-center px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold rounded-lg transition shadow-md gap-2 min-h-[44px]">
@@ -126,7 +115,6 @@
                         </button>
                     @endif
                     
-                    {{-- Print Button --}}
                     <button type="button" 
                             @click="'{{ $session->status }}' === 'final' ? showPrintModal = true : handlePrint('{{ $session->status }}', '{{ $printUrl }}')"
                             class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-bold rounded-lg transition shadow-sm border gap-2 min-h-[44px]
@@ -137,7 +125,6 @@
                         Print
                     </button>
 
-                    {{-- Revert Button --}}
                     @if($session->status === 'submitted' || $session->status === 'final')
                         <button type="submit" form="quickStatusForm" name="action_type" value="draft_quick" onclick="return confirmRevert(document.getElementById('quickStatusForm'))"
                                 class="inline-flex items-center justify-center px-4 py-2.5 bg-red-100 text-red-600 hover:bg-red-200 border border-red-200 text-sm font-bold rounded-lg transition gap-2 min-h-[44px]">
@@ -196,7 +183,7 @@
                     </div>
                 </div>
 
-                {{-- B. READ-ONLY SUMMARY (View Mode) --}}
+                {{-- B. READ-ONLY SUMMARY --}}
                 <div x-show="!isEditing" class="space-y-4 mb-8" x-transition>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 border-l-4 border-l-yellow-600">
@@ -379,7 +366,7 @@
                     </div>
                 </div>
 
-                {{-- D. BOTTOM ACTIONS (Hanya muncul saat Edit Mode) --}}
+                {{-- D. BOTTOM ACTIONS --}}
                 <div x-show="isEditing" x-transition class="flex justify-end items-center mt-6 p-4 bg-white rounded-2xl shadow-sm border border-gray-200">
                     <div class="flex items-center gap-3">
                         <a href="{{ route('admin.classes.assessment.detail', ['classId' => $class->id, 'type' => $type]) }}"
@@ -485,8 +472,6 @@
     {{-- SCRIPTS --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        // Note: handleEdit sudah dipindah ke Alpine (x-data) di atas.
-        
         function handlePrint(status, printUrl) {
             if (status !== 'final') {
                 Swal.fire({ icon: 'warning', title: 'Print Locked', text: 'Report cards can only be printed after the assessment status is set to FINAL.', confirmButtonColor: '#F59E0B' });
@@ -496,6 +481,60 @@
         }
 
         function confirmFinalize(formElement) {
+            // 1. Cek Validasi Form secara Frontend (Hanya jika form-nya adalah assessmentForm / Edit Mode)
+            if (formElement.id === 'assessmentForm') {
+                const inputs = Array.from(formElement.querySelectorAll('input[type="number"][name^="grades"]'));
+                const studentGrades = {};
+
+                // Grouping nilai berdasarkan Student ID (Admin menggunakan name="grades[id][field]")
+                inputs.forEach(input => {
+                    const match = input.name.match(/grades\[(\d+)\]\[(\w+)\]/);
+                    if (match) {
+                        const studentId = match[1];
+                        const fieldType = match[2];
+                        if (!studentGrades[studentId]) studentGrades[studentId] = {};
+                        studentGrades[studentId][fieldType] = input.value.trim();
+                    }
+                });
+
+                // Field Wajib (Tanpa Spelling)
+                const mandatoryFields = ['vocabulary', 'grammar', 'listening', 'reading', 'speaking_content', 'speaking_participation'];
+                let incompleteError = false;
+
+                for (const id in studentGrades) {
+                    const grades = studentGrades[id];
+                    
+                    // Cek apakah siswa ada data sama sekali (termasuk spelling)
+                    const allFields = [...mandatoryFields, 'spelling'];
+                    const hasAnyData = allFields.some(field => grades[field] !== undefined && grades[field] !== "");
+
+                    if (hasAnyData) {
+                        // Jika ada data, cek field wajib
+                        const isMandatoryComplete = mandatoryFields.every(field => grades[field] !== undefined && grades[field] !== "");
+                        
+                        if (!isMandatoryComplete) {
+                            incompleteError = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (incompleteError) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Incomplete Grades',
+                        html: `<p class="text-sm text-gray-600 mb-2">You cannot finalize yet.</p>
+                               <ul class="text-left text-xs text-red-600 list-disc pl-5">
+                                    <li>Mandatory fields: <b>Vocab, Grammar, Listening, Reading, Speaking</b>.</li>
+                                    <li><b>Spelling</b> is optional.</li>
+                                    <li>Please ensure graded students have all mandatory fields filled.</li>
+                               </ul>`,
+                        confirmButtonText: 'Check Again'
+                    });
+                    return false; // Stop submission
+                }
+            }
+
             Swal.fire({ title: 'Approve & Finalize?', text: "Confirming this will lock the grades and set the status to FINAL.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#9333ea', cancelButtonColor: '#6B7280', confirmButtonText: 'Yes, Finalize!' }).then((result) => {
                 if (result.isConfirmed) {
                     Swal.fire({title: 'Processing...', allowOutsideClick: false, showConfirmButton: false, didOpen: () => { Swal.showLoading() }});

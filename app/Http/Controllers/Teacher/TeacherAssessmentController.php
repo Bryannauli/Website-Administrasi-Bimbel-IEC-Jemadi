@@ -76,7 +76,7 @@ class TeacherAssessmentController extends Controller
             return redirect()->back()->with('error', 'Assessment has been submitted. Changes locked.');
         }
 
-        // 1. Validasi Input
+        // 1. Validasi Input Dasar
         $request->validate([
             'written_date'   => 'required|date',
             'speaking_date'  => 'nullable|date',
@@ -89,33 +89,51 @@ class TeacherAssessmentController extends Controller
             'marks.*.grammar'                => 'nullable|numeric|min:0|max:100',
             'marks.*.listening'              => 'nullable|numeric|min:0|max:100',
             'marks.*.reading'                => 'nullable|numeric|min:0|max:100',
-            'marks.*.spelling'               => 'nullable|numeric|min:0|max:100',
+            'marks.*.spelling'               => 'nullable|numeric|min:0|max:100', // Spelling Nullable
             'marks.*.speaking_content'       => 'nullable|numeric|min:0|max:50',
             'marks.*.speaking_participation' => 'nullable|numeric|min:0|max:50',
         ]);
 
-        // 2. Cek Logika Submit (Minimal 1 siswa lengkap)
+        // 2. LOGIKA VALIDASI SUBMIT
         if ($request->action_type === 'submit') {
             if (!$request->has('marks') || empty($request->marks)) {
                 return redirect()->back()->with('error', 'Cannot submit empty assessment.')->withInput();
             }
 
-            $hasOneCompleteStudent = collect($request->marks)->contains(function ($scores) {
-                $mandatoryFields = ['vocabulary', 'grammar', 'listening', 'reading', 'speaking_content', 'speaking_participation'];
-                foreach ($mandatoryFields as $field) {
-                    if (!isset($scores[$field]) || $scores[$field] === '' || $scores[$field] === null) return false;
-                }
-                return true;
-            });
+            // Field Wajib (Spelling TIDAK masuk sini)
+            $mandatoryFields = ['vocabulary', 'grammar', 'listening', 'reading', 'speaking_content', 'speaking_participation'];
+            $filledStudentsCount = 0;
 
-            if (!$hasOneCompleteStudent) {
-                return redirect()->back()->with('error', 'Submission Failed: At least one student must have ALL mandatory grades.')->withInput();
+            foreach ($request->marks as $studentId => $scores) {
+                // Cek apakah siswa ini punya setidaknya satu data (termasuk spelling)
+                $hasSomeData = false;
+                foreach ($scores as $val) {
+                    if ($val !== null && $val !== '') {
+                        $hasSomeData = true;
+                        break;
+                    }
+                }
+
+                // Jika siswa ini dinilai, maka Field Wajib HARUS lengkap
+                if ($hasSomeData) {
+                    $filledStudentsCount++;
+                    foreach ($mandatoryFields as $field) {
+                        if (!isset($scores[$field]) || $scores[$field] === '' || $scores[$field] === null) {
+                            return redirect()->back()
+                                ->with('error', "Submission Failed. Student ID $studentId has incomplete grades. You must fill Vocab, Grammar, Listening, Reading, and Speaking. Spelling is optional.")
+                                ->withInput();
+                        }
+                    }
+                }
+            }
+
+            if ($filledStudentsCount === 0) {
+                return redirect()->back()->with('error', 'Submission Failed: No student grades entered.')->withInput();
             }
         }
 
         try {
             // 3. Persiapkan Data JSON untuk Procedure
-            // Kita ubah array marks menjadi array of objects yang bersih (null jika kosong)
             $marksData = [];
             if ($request->has('marks')) {
                 foreach ($request->marks as $studentId => $scores) {
@@ -125,7 +143,7 @@ class TeacherAssessmentController extends Controller
                         'grammar'                => $scores['grammar'] !== null ? (int) $scores['grammar'] : null,
                         'listening'              => $scores['listening'] !== null ? (int) $scores['listening'] : null,
                         'reading'                => $scores['reading'] !== null ? (int) $scores['reading'] : null,
-                        'spelling'               => $scores['spelling'] !== null ? (int) $scores['spelling'] : null,
+                        'spelling'               => $scores['spelling'] !== null ? (int) $scores['spelling'] : null, // Tetap kirim null jika kosong
                         'speaking_content'       => $scores['speaking_content'] !== null ? (int) $scores['speaking_content'] : null,
                         'speaking_participation' => $scores['speaking_participation'] !== null ? (int) $scores['speaking_participation'] : null,
                     ];
@@ -134,9 +152,9 @@ class TeacherAssessmentController extends Controller
             $jsonMarks = json_encode($marksData);
 
             // 4. Tentukan Status Baru
-            $newStatus = ($request->action_type === 'submit') ? 'submitted' : null; // Kirim null jika save draft (agar status tidak berubah di SP)
+            $newStatus = ($request->action_type === 'submit') ? 'submitted' : null;
 
-            // 5. Panggil Stored Procedure Batch (SINGLE QUERY)
+            // 5. Panggil Stored Procedure
             DB::statement('CALL p_SaveAssessmentBatch(?, ?, ?, ?, ?, ?, ?)', [
                 $assessmentId,
                 $request->written_date,
@@ -144,7 +162,7 @@ class TeacherAssessmentController extends Controller
                 $request->interviewer_id,
                 $request->topic,
                 $newStatus,
-                $jsonMarks // Parameter JSON
+                $jsonMarks
             ]);
 
             $msg = ($request->action_type === 'submit') 

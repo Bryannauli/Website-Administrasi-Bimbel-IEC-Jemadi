@@ -382,8 +382,9 @@ return new class extends Migration
         ");
 
         // ==========================================
-        // 12. PROCEDURE: Save Assessment Batch (ADMIN & TEACHER) [BARU]
-        // Deskripsi: Simpan Header & Nilai Siswa SEKALIGUS (Batch) via JSON.
+        // 12. PROCEDURE: Save Assessment Batch (ADMIN & TEACHER) [VALIDATED]
+        // Deskripsi: Simpan Header & Nilai. 
+        // UPDATE: Menolak penyimpanan jika ada siswa yang nilainya tidak lengkap (Kecuali Spelling).
         // ==========================================
         DB::unprepared("
             DROP PROCEDURE IF EXISTS p_SaveAssessmentBatch;
@@ -397,6 +398,8 @@ return new class extends Migration
                 IN p_marks_json JSON
             )
             BEGIN
+                DECLARE v_invalid_count INT DEFAULT 0;
+
                 DECLARE EXIT HANDLER FOR SQLEXCEPTION
                 BEGIN
                     ROLLBACK;
@@ -405,6 +408,55 @@ return new class extends Migration
 
                 START TRANSACTION;
 
+                -- ==========================================================
+                -- A. VALIDASI DATA (BENTENG TERAKHIR)
+                -- Cek apakah ada siswa yang punya data parsial tapi tidak lengkap wajibnya
+                -- ==========================================================
+                SELECT COUNT(*) INTO v_invalid_count
+                FROM JSON_TABLE(
+                    p_marks_json,
+                    '$[*]' COLUMNS (
+                        vocab INT PATH '$.vocabulary',
+                        grammar INT PATH '$.grammar',
+                        listening INT PATH '$.listening',
+                        reading INT PATH '$.reading',
+                        spelling INT PATH '$.spelling',
+                        s_content INT PATH '$.speaking_content',
+                        s_partic INT PATH '$.speaking_participation'
+                    )
+                ) AS jt
+                WHERE 
+                    -- 1. Cek apakah Siswa ini 'Disentuh' (Ada minimal 1 nilai terisi, termasuk spelling)
+                    (
+                        jt.vocab IS NOT NULL OR 
+                        jt.grammar IS NOT NULL OR 
+                        jt.listening IS NOT NULL OR 
+                        jt.reading IS NOT NULL OR 
+                        jt.spelling IS NOT NULL OR 
+                        jt.s_content IS NOT NULL OR 
+                        jt.s_partic IS NOT NULL
+                    )
+                    AND
+                    -- 2. Jika Disentuh, Cek Kelengkapan Field WAJIB (Spelling TIDAK dicek disini)
+                    (
+                        jt.vocab IS NULL OR 
+                        jt.grammar IS NULL OR 
+                        jt.listening IS NULL OR 
+                        jt.reading IS NULL OR 
+                        jt.s_content IS NULL OR 
+                        jt.s_partic IS NULL
+                    );
+
+                -- Jika ditemukan data tidak valid, lempar Error ke Laravel
+                IF v_invalid_count > 0 THEN
+                    SIGNAL SQLSTATE '45000' 
+                    SET MESSAGE_TEXT = 'Database Integrity Error: One or more students have incomplete mandatory grades. Spelling is optional, but other fields are required if the student is graded.';
+                END IF;
+
+                -- ==========================================================
+                -- B. PROSES SIMPAN (Jika Lolos Validasi)
+                -- ==========================================================
+
                 -- 1. Update Header Assessment (Session)
                 UPDATE assessment_sessions 
                 SET 
@@ -412,11 +464,11 @@ return new class extends Migration
                     speaking_date = p_speaking_date,
                     interviewer_id = p_interviewer_id,
                     speaking_topic = p_topic,
-                    status = IF(p_status IS NOT NULL, p_status, status), -- Update status jika dikirim
+                    status = IF(p_status IS NOT NULL, p_status, status), 
                     updated_at = NOW()
                 WHERE id = p_session_id;
 
-                -- 2. Bulk Upsert ke Table speaking_test_results (Pakai JSON_TABLE)
+                -- 2. Bulk Upsert ke Table speaking_test_results
                 INSERT INTO speaking_test_results (assessment_session_id, student_id, content_score, participation_score, created_at, updated_at)
                 SELECT 
                     p_session_id,
@@ -438,8 +490,7 @@ return new class extends Migration
                     participation_score = VALUES(participation_score),
                     updated_at = NOW();
 
-                -- 3. Bulk Upsert ke Table assessment_forms (Pakai JSON_TABLE)
-                -- Note: Kolom 'speaking' adalah total dari content + participation
+                -- 3. Bulk Upsert ke Table assessment_forms
                 INSERT INTO assessment_forms (assessment_session_id, student_id, vocabulary, grammar, listening, reading, spelling, speaking, created_at, updated_at)
                 SELECT 
                     p_session_id,
@@ -449,7 +500,7 @@ return new class extends Migration
                     jt.listening,
                     jt.reading,
                     jt.spelling,
-                    (IFNULL(jt.s_content, 0) + IFNULL(jt.s_partic, 0)), -- Hitung Total Speaking otomatis
+                    (IFNULL(jt.s_content, 0) + IFNULL(jt.s_partic, 0)), 
                     NOW(),
                     NOW()
                 FROM JSON_TABLE(

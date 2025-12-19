@@ -12,6 +12,7 @@ return new class extends Migration
         // =========================================================================
         
         // 1. Logic Validasi Assessment Forms (Range: 0-100)
+        // [UPDATED] Spelling dicek hanya jika TIDAK NULL
         $validateAssessmentSql = '
             BEGIN
                 IF NEW.vocabulary < 0 OR NEW.vocabulary > 100 THEN
@@ -26,6 +27,7 @@ return new class extends Migration
                 IF NEW.reading < 0 OR NEW.reading > 100 THEN
                     SIGNAL SQLSTATE "45000" SET MESSAGE_TEXT = "Validation Error: Reading score must be between 0 and 100";
                 END IF;
+                -- Cek Spelling hanya jika ada isinya
                 IF NEW.spelling IS NOT NULL AND (NEW.spelling < 0 OR NEW.spelling > 100) THEN
                     SIGNAL SQLSTATE "45000" SET MESSAGE_TEXT = "Validation Error: Spelling score must be between 0 and 100";
                 END IF;
@@ -64,7 +66,7 @@ return new class extends Migration
         // B. SESSION INTEGRITY TRIGGERS (MENCEGAH DUPLIKASI SESI)
         // =========================================================================
 
-        // 3. Prevent Insert: Mencegah pembuatan sesi baru jika tanggal & kelas sudah ada
+        // 3. Prevent Insert: Mencegah pembuatan sesi kelas duplikat di tanggal sama
         DB::unprepared("DROP TRIGGER IF EXISTS tr_prevent_duplicate_session_insert");
         DB::unprepared("
             CREATE TRIGGER tr_prevent_duplicate_session_insert
@@ -107,10 +109,12 @@ return new class extends Migration
         ");
 
         // =========================================================================
-        // C. WORKFLOW INTEGRITY (BARU: MENCEGAH SUBMIT KOSONG)
+        // C. WORKFLOW INTEGRITY (MENCEGAH SUBMIT JIKA DATA 0)
         // =========================================================================
         
-        // 5. Mencegah status berubah ke 'submitted' jika belum ada minimal 1 data lengkap
+        // 5. Mencegah status berubah ke 'submitted' jika BELUM ADA SATUPUN siswa yang lengkap
+        // Ini adalah benteng terakhir. Validasi detail per siswa dilakukan di Stored Procedure.
+        // Trigger ini hanya mencegah submit "Blank Form".
         DB::unprepared("DROP TRIGGER IF EXISTS tr_prevent_premature_submission");
         DB::unprepared("
             CREATE TRIGGER tr_prevent_premature_submission
@@ -122,9 +126,10 @@ return new class extends Migration
                 -- Hanya cek jika status berubah menjadi 'submitted'
                 IF NEW.status = 'submitted' AND OLD.status != 'submitted' THEN
                     
-                    -- [UPDATED JOIN] Langsung ke speaking_test_results via assessment_session_id
+                    -- [UPDATED] Query disesuaikan dengan struktur baru
                     SELECT COUNT(*) INTO complete_count
                     FROM assessment_forms af
+                    -- Join ke speaking results untuk memastikan speaking juga ada
                     INNER JOIN speaking_test_results str 
                         ON str.assessment_session_id = NEW.id 
                         AND str.student_id = af.student_id
@@ -133,10 +138,12 @@ return new class extends Migration
                         AND af.grammar IS NOT NULL
                         AND af.listening IS NOT NULL
                         AND af.reading IS NOT NULL
+                        -- Speaking components check
                         AND str.content_score IS NOT NULL
                         AND str.participation_score IS NOT NULL;
+                        -- Note: Spelling TIDAK dicek disini karena opsional
 
-                    -- Jika tidak ada satupun yang lengkap, tolak update
+                    -- Jika tidak ada satupun siswa yang datanya lengkap, tolak update
                     IF complete_count = 0 THEN
                         SIGNAL SQLSTATE '45000' 
                         SET MESSAGE_TEXT = 'Data Integrity Violation: Cannot submit assessment. At least one student must have complete grades (Written & Speaking).';
@@ -146,14 +153,14 @@ return new class extends Migration
         ");
 
         // =========================================================================
-        // D. AUTOMATIC SYNC: SPEAKING TOTAL (BARU)
-        // Deskripsi: Mengupdate kolom 'speaking' di assessment_forms secara otomatis
+        // D. AUTOMATIC SYNC: SPEAKING TOTAL (BARU & PENTING)
+        // Deskripsi: Menjumlahkan Content + Participation secara otomatis ke tabel assessment_forms
         // =========================================================================
         
         $syncSpeakingSql = "
             BEGIN
                 UPDATE assessment_forms 
-                SET speaking = NEW.content_score + NEW.participation_score
+                SET speaking = IFNULL(NEW.content_score, 0) + IFNULL(NEW.participation_score, 0)
                 WHERE assessment_session_id = NEW.assessment_session_id 
                     AND student_id = NEW.student_id;
             END

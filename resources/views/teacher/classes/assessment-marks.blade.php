@@ -84,24 +84,20 @@
                         </div>
                         <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 border-l-4 border-l-blue-500">
                             <div class="p-2.5 bg-blue-50/80 text-blue-700 rounded-xl"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>
-                            {{-- [UPDATED] written_date --}}
                             <div><p class="text-[10px] font-bold text-gray-400 uppercase">Written Exam Date</p><p class="text-sm font-bold text-gray-800">{{ $assessment->written_date ? \Carbon\Carbon::parse($assessment->written_date)->format('d F Y') : '-' }}</p></div>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 border-l-4 border-l-purple-500">
                             <div class="p-2.5 bg-purple-50/80 text-purple-700 rounded-xl"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg></div>
-                            {{-- [UPDATED] speaking_date --}}
                             <div><p class="text-[10px] font-bold text-gray-400 uppercase">Speaking Date</p><p class="text-sm font-bold text-gray-800">{{ $assessment->speaking_date ? \Carbon\Carbon::parse($assessment->speaking_date)->format('d F Y') : '-' }}</p></div>
                         </div>
                         <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 border-l-4 border-l-green-600">
                             <div class="p-2.5 bg-green-50/80 text-green-700 rounded-xl"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg></div>
-                            {{-- [UPDATED] interviewer --}}
                             <div><p class="text-[10px] font-bold text-gray-400 uppercase">Interviewer</p><p class="text-sm font-bold text-gray-800">{{ $assessment->interviewer->name ?? '-' }}</p></div>
                         </div>
                         <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3 border-l-4 border-l-orange-600">
-                            <div class="p-2.5 bg-orange-50/80 text-orange-700 rounded-xl"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></div>
-                            {{-- [UPDATED] speaking_topic --}}
+                            <div class="p-2.5 bg-orange-50/80 text-orange-700 rounded-xl"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 00-2-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></div>
                             <div><p class="text-[10px] font-bold text-gray-400 uppercase">Speaking Topic</p><p class="text-sm font-bold text-gray-800">{{ $assessment->speaking_topic ?? '-' }}</p></div>
                         </div>
                     </div>
@@ -114,7 +110,6 @@
                             <h3 class="text-xs font-bold text-blue-600 uppercase tracking-widest pb-1 border-b border-gray-100">Written Test Info</h3>
                             <div>
                                 <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Exam Date <span class="text-red-500">*</span></label>
-                                {{-- [UPDATED] written_date --}}
                                 <input type="date" name="written_date" value="{{ old('written_date', $assessment->written_date) }}"
                                        class="block w-full rounded-xl border border-gray-300 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 sm:text-sm transition-all @error('written_date') border-red-500 @enderror">
                                 @error('written_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
@@ -125,7 +120,6 @@
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Speaking Date</label>
-                                    {{-- [UPDATED] speaking_date --}}
                                     <input type="date" name="speaking_date" value="{{ old('speaking_date', $assessment->speaking_date ?? '') }}"
                                            class="block w-full rounded-xl border border-gray-300 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-purple-500 sm:text-sm transition-all">
                                 </div>
@@ -134,7 +128,6 @@
                                     <select name="interviewer_id" class="block w-full rounded-xl border border-gray-300 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-purple-500 sm:text-sm transition-all">
                                         <option value="">-- Select Teacher --</option>
                                         @foreach($teachers as $t)
-                                            {{-- [UPDATED] Check against $assessment->interviewer_id --}}
                                             <option value="{{ $t->id }}" {{ (old('interviewer_id', $assessment->interviewer_id ?? '') == $t->id) ? 'selected' : '' }}>
                                                 {{ $t->name }}
                                             </option>
@@ -144,7 +137,6 @@
                             </div>
                             <div>
                                 <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Speaking Topic</label>
-                                {{-- [UPDATED] speaking_topic --}}
                                 <input type="text" name="topic" value="{{ old('topic', $assessment->speaking_topic ?? '') }}" placeholder="e.g. Daily Activity"
                                        class="block w-full rounded-xl border border-gray-300 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-purple-500 sm:text-sm transition-all">
                             </div>
@@ -152,7 +144,7 @@
                     </div>
                 </div>
 
-                {{-- C. GRADES TABLE (Tidak Berubah dari sebelumnya) --}}
+                {{-- C. GRADES TABLE --}}
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse min-w-max">
@@ -282,7 +274,7 @@
                     </div>
                 </div>
 
-                {{-- 5. BOTTOM ACTIONS (Hanya saat isEditing) --}}
+                {{-- 5. BOTTOM ACTIONS --}}
                 <div x-show="isEditing" class="flex justify-end items-center mt-6 p-4 bg-white rounded-2xl shadow-sm border border-gray-200" x-transition>
                     <div class="flex items-center gap-3">
                         <a href="{{ route('teacher.classes.assessment.detail', ['classId' => $class->id, 'assessmentId' => $assessment->id]) }}"
@@ -306,15 +298,17 @@
         </div>
     </div>
 
-    {{-- SCRIPTS (Sama seperti sebelumnya) --}}
+    {{-- SCRIPTS --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         function confirmSubmit(e) {
             e.preventDefault(); 
             const form = e.target.form;
             
+            // Ambil semua input dan group by Student ID
             const inputs = Array.from(form.querySelectorAll('input[type="number"][name^="marks"]'));
             const studentGrades = {};
+            
             inputs.forEach(input => {
                 const match = input.name.match(/marks\[(\d+)\]\[(\w+)\]/);
                 if (match) {
@@ -325,20 +319,55 @@
                 }
             });
 
+            // Field WAJIB diisi (Spelling TIDAK masuk)
             const mandatoryFields = ['vocabulary', 'grammar', 'listening', 'reading', 'speaking_content', 'speaking_participation'];
-            let hasCompleteStudent = false;
+            
+            let filledStudentCount = 0;
+            let incompleteError = false;
+
             for (const id in studentGrades) {
                 const grades = studentGrades[id];
-                const isComplete = mandatoryFields.every(field => grades[field] !== undefined && grades[field] !== "");
-                if (isComplete) { hasCompleteStudent = true; break; }
+                
+                // 1. Cek apakah ada satu pun data (termasuk spelling)
+                const allFields = [...mandatoryFields, 'spelling'];
+                const hasAnyData = allFields.some(field => grades[field] !== undefined && grades[field] !== "");
+
+                if (hasAnyData) {
+                    filledStudentCount++;
+                    
+                    // 2. Jika ada data, cek Field WAJIB
+                    const isMandatoryComplete = mandatoryFields.every(field => grades[field] !== undefined && grades[field] !== "");
+                    
+                    if (!isMandatoryComplete) {
+                        incompleteError = true;
+                        break; 
+                    }
+                }
             }
 
-            if (!hasCompleteStudent) {
+            // Validasi A: Belum ada siswa yang dinilai
+            if (filledStudentCount === 0) {
+                 Swal.fire({
+                    icon: 'error',
+                    title: 'No Grades Entered',
+                    text: 'Please grade at least one student before submitting.',
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
+
+            // Validasi B: Ada siswa yang nilainya tidak lengkap (selain spelling)
+            if (incompleteError) {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Incomplete Assessment',
-                    html: `<p class="text-sm text-gray-600 mb-2">You cannot submit yet.</p><ul class="text-left text-xs text-red-600 list-disc pl-5"><li>At least <b>ONE student</b> must be fully graded.</li><li>Mandatory fields: <b>Vocab, Grammar, Listening, Reading, Speaking</b>.</li><li><b>Spelling</b> is optional.</li></ul>`,
-                    confirmButtonText: 'OK'
+                    title: 'Incomplete Grades',
+                    html: `<p class="text-sm text-gray-600 mb-2">Some graded students are missing mandatory fields.</p>
+                           <ul class="text-left text-xs text-red-600 list-disc pl-5">
+                                <li>You must fill <b>Vocab, Grammar, Listening, Reading, & Speaking</b>.</li>
+                                <li><b>Spelling</b> is optional (can be left blank).</li>
+                                <li>Please check all rows ensuring no empty mandatory cells.</li>
+                           </ul>`,
+                    confirmButtonText: 'Check Again'
                 });
                 return;
             }

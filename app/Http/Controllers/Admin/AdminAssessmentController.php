@@ -129,11 +129,42 @@ class AdminAssessmentController extends Controller
         $session = AssessmentSession::where('class_id', $classId)->where('type', $type)->firstOrFail();
         $action = $request->input('action_type', 'save');
 
-        // A. QUICK STATUS CHANGE (Tanpa Save Data Nilai)
-        // Bagian ini tetap menggunakan Eloquent karena tidak melibatkan update nilai yang kompleks
+        // A. QUICK STATUS CHANGE (HEADER BUTTON)
         if ($action === 'finalize_quick' || $action === 'draft_quick') {
             $newStatus = ($action === 'finalize_quick') ? 'final' : 'draft';
             
+            // [FIX VALIDATION] Validasi Data Database Sebelum Quick Finalize
+            // Kita ambil data nilai saat ini dari SP untuk dicek
+            if ($newStatus === 'final') {
+                $currentGrades = DB::select('CALL p_GetAssessmentSheet(?, ?)', [$classId, $session->id]);
+                
+                $mandatoryFields = ['vocabulary', 'grammar', 'listening', 'reading', 'speaking_content', 'speaking_participation'];
+
+                foreach ($currentGrades as $row) {
+                    // 1. Cek apakah siswa ini punya setidaknya satu nilai (termasuk spelling)
+                    $hasData = false;
+                    $allFields = array_merge($mandatoryFields, ['spelling']);
+                    
+                    foreach ($allFields as $f) {
+                        // Pastikan properti ada dan tidak null/kosong
+                        if (property_exists($row, $f) && !is_null($row->$f) && $row->$f !== '') {
+                            $hasData = true; 
+                            break;
+                        }
+                    }
+
+                    // 2. Jika siswa ada datanya, maka Field Wajib HARUS lengkap (Kecuali Spelling)
+                    if ($hasData) {
+                        foreach ($mandatoryFields as $f) {
+                            if (!property_exists($row, $f) || is_null($row->$f) || $row->$f === '') {
+                                return back()->with('error', "Cannot Finalize: Student '{$row->name}' has incomplete grades. You must fill all mandatory fields (Vocab, Grammar, etc). Spelling is optional.");
+                            }
+                        }
+                    }
+                }
+            }
+            // [END FIX]
+
             if ($session->status !== $newStatus) {
                 $session->update(['status' => $newStatus]);
                 $msg = ($newStatus === 'final') ? 'Assessment has been FINALISED.' : 'Assessment status reverted to DRAFT.';
@@ -143,11 +174,8 @@ class AdminAssessmentController extends Controller
             return redirect()->route('admin.classes.assessment.detail', ['classId' => $classId, 'type' => $type])->with('success', $msg);
         }
         
-        // B. SAVE DATA (Normal Save / Save & Finalize)
+        // B. SAVE DATA (FORM SUBMIT)
         if ($session->status === 'draft') return back()->with('error', 'Cannot edit grades in DRAFT mode. Wait for submission.');
-        // Jika status final, admin TETAP BISA edit (untuk koreksi), asalkan tidak sedang dikunci sistem lain. 
-        // Logic Anda sebelumnya memblokir jika final, tapi biasanya Admin butuh akses "Edit anyway". 
-        // Namun saya ikuti logic Anda:
         if ($session->status === 'final') return back()->with('error', 'Assessment is FINALISED. Cannot edit.');
 
         $validatedData = $request->validate([
@@ -156,11 +184,11 @@ class AdminAssessmentController extends Controller
             'interviewer_id' => 'required|exists:users,id',
             'topic' => 'nullable|string|max:255',
             'grades' => 'required|array',
-            'grades.*.vocabulary' => 'nullable|integer|between:0,100', // Ubah ke nullable agar fleksibel
+            'grades.*.vocabulary' => 'nullable|integer|between:0,100',
             'grades.*.grammar'    => 'nullable|integer|between:0,100',
             'grades.*.listening'  => 'nullable|integer|between:0,100',
             'grades.*.reading'    => 'nullable|integer|between:0,100',
-            'grades.*.spelling'   => 'nullable|integer|between:0,100',
+            'grades.*.spelling'   => 'nullable|integer|between:0,100', 
             'grades.*.speaking_content'      => 'nullable|integer|between:0,50',
             'grades.*.speaking_participation'=> 'nullable|integer|between:0,50',
             'grades.*.student_id' => 'required|exists:students,id',
@@ -168,11 +196,37 @@ class AdminAssessmentController extends Controller
 
         try {
             // 1. Tentukan Status Baru
-            // Jika action 'finalize', status jadi 'final'. 
-            // Jika action 'save', status TETAP (kirim null ke SP agar tidak berubah, atau kirim status saat ini).
             $newStatus = ($action === 'finalize') ? 'final' : null;
 
-            // 2. Persiapkan Data JSON untuk Procedure
+            // [LOGIKA VALIDASI MANUAL SAAT EDIT & FINALIZE]
+            if ($action === 'finalize') {
+                $mandatoryFields = ['vocabulary', 'grammar', 'listening', 'reading', 'speaking_content', 'speaking_participation'];
+                
+                foreach ($validatedData['grades'] as $grade) {
+                    // Cek ada data apapun (termasuk spelling)
+                    $hasData = false;
+                    $allFields = array_merge($mandatoryFields, ['spelling']);
+                    foreach ($allFields as $f) {
+                        if (isset($grade[$f]) && $grade[$f] !== '' && $grade[$f] !== null) {
+                            $hasData = true;
+                            break;
+                        }
+                    }
+
+                    // Jika ada data, Mandatory wajib diisi
+                    if ($hasData) {
+                        foreach ($mandatoryFields as $field) {
+                            if (!isset($grade[$field]) || $grade[$field] === '' || $grade[$field] === null) {
+                                return back()
+                                    ->with('error', 'Cannot Finalize: Student (ID: ' . $grade['student_id'] . ') has incomplete mandatory grades. Spelling is optional, others are required.')
+                                    ->withInput();
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. Persiapkan Data JSON & Store Procedure
             $marksData = [];
             foreach ($validatedData['grades'] as $grade) {
                 $marksData[] = [
@@ -188,8 +242,6 @@ class AdminAssessmentController extends Controller
             }
             $jsonMarks = json_encode($marksData);
 
-            // 3. Panggil Stored Procedure Batch
-            // Parameter: session_id, written_date, speaking_date, interviewer_id, topic, status, json_marks
             DB::statement('CALL p_SaveAssessmentBatch(?, ?, ?, ?, ?, ?, ?)', [
                 $session->id,
                 $validatedData['written_date'],
