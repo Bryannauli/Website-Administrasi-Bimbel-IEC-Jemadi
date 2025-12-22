@@ -10,6 +10,7 @@ return new class extends Migration
         // ==========================================
         // 1. PROCEDURE: Dashboard Stats (ADMIN)
         // ==========================================
+        // 3 variabel yang nanti akan diisi hasilnya
         DB::unprepared('
             DROP PROCEDURE IF EXISTS p_GetDashboardStats;
             CREATE PROCEDURE p_GetDashboardStats(
@@ -18,56 +19,58 @@ return new class extends Migration
                 OUT total_classes INT
             )
             BEGIN
+                -- Hitung semua baris di tabel students, lalu simpan hasilnya ke variabel total_students
+                -- Hanya hitung siswa yang aktif dan tidak dihapus (deleted_at IS NULL)
                 SELECT COUNT(*) INTO total_students FROM students WHERE is_active = 1 AND deleted_at IS NULL;
+
+                -- Hitung semua baris di tabel users yang merupakan guru, lalu simpan hasilnya ke variabel total_teachers
+                -- Hanya hitung guru yang aktif dan tidak dihapus (deleted_at IS NULL)
                 SELECT COUNT(*) INTO total_teachers FROM users WHERE is_teacher = 1 AND is_active = 1 AND deleted_at IS NULL;
+
+                -- Hitung semua baris di tabel classes, lalu simpan hasilnya ke variabel total_classes
+                -- Hanya hitung kelas yang aktif dan tidak dihapus (deleted_at IS NULL)
                 SELECT COUNT(*) INTO total_classes FROM classes WHERE is_active = 1 AND deleted_at IS NULL;
             END
         ');
 
         // ==========================================
-        // 2. PROCEDURE: Attendance Stats (Global/Class) (ADMIN)
-        // ==========================================
-        DB::unprepared("
-            DROP PROCEDURE IF EXISTS p_GetAttendanceStats;
-            CREATE PROCEDURE p_GetAttendanceStats(IN date_filter DATE)
-            BEGIN
-                SELECT
-                    IFNULL(ROUND(SUM(ar.status = 'present') / COUNT(*) * 100, 0), 0) AS present,
-                    IFNULL(ROUND(SUM(ar.status = 'permission') / COUNT(*) * 100, 0), 0) AS permission,
-                    IFNULL(ROUND(SUM(ar.status = 'sick') / COUNT(*) * 100, 0), 0) AS sick,
-                    IFNULL(ROUND(SUM(ar.status = 'late') / COUNT(*) * 100, 0), 0) AS late,
-                    IFNULL(ROUND(SUM(ar.status = 'absent') / COUNT(*) * 100, 0), 0) AS absent
-                FROM attendance_records ar
-                INNER JOIN class_sessions s ON ar.class_session_id = s.id
-                WHERE (date_filter IS NULL OR s.date = date_filter);
-            END
-        ");
-
-        // ==========================================
-        // 3. PROCEDURE: Student Attendance Summary (Per Siswa) (ADMIN)
+        // 2. PROCEDURE: Student Attendance Summary (Per Siswa) (ADMIN)
         // ==========================================
         DB::unprepared("
             DROP PROCEDURE IF EXISTS p_get_attendance_summary;
             CREATE PROCEDURE p_get_attendance_summary (IN studentIdIn INT)
             BEGIN
                 SELECT
+                    -- hitung berapa banyak data absensi yg ditemukan untuk siswa ini disimpan dalam total_days
                     COUNT(ar.id) AS total_days,
+
+                    -- hitung jika present dihitung 1, selain itu 0, lalu dijumlahkan
                     SUM(CASE WHEN ar.status = 'present' THEN 1 ELSE 0 END) AS present,
                     SUM(CASE WHEN ar.status = 'absent' THEN 1 ELSE 0 END) AS absent,
                     SUM(CASE WHEN ar.status = 'late' THEN 1 ELSE 0 END) AS late,
                     SUM(CASE WHEN ar.status = 'permission' THEN 1 ELSE 0 END) AS permission,
                     SUM(CASE WHEN ar.status = 'sick' THEN 1 ELSE 0 END) AS sick,
+
+                    -- hitung persentase kehadiran sebagai present / total_days * 100
                     IFNULL((SUM(CASE WHEN ar.status = 'present' THEN 1 ELSE 0 END) / COUNT(ar.id)) * 100, 0) AS present_percent
+
                 FROM attendance_records ar
+                -- join ke tabel class_sessions untuk mendapatkan informasi sesi kelas
                 JOIN class_sessions s ON ar.class_session_id = s.id
+
+                -- join ke tabel students untuk mendapatkan class_id siswa
                 JOIN students stu ON ar.student_id = stu.id
+
+                -- hanya ambil data untuk studentIdIn
                 WHERE ar.student_id = studentIdIn
+
+                -- pastikan hanya menghitung sesi dari kelas dimana siswa tersebut terdaftar
                     AND s.class_id = stu.class_id; 
             END
         ");
 
         // ==========================================
-        // 4. PROCEDURE: Class Attendance Stats (ADMIN & TEACHER) [UPDATED]
+        // 3. PROCEDURE: Class Attendance Stats (ADMIN & TEACHER) [UPDATED]
         // Deskripsi: Menampilkan statistik kehadiran per siswa dalam satu kelas.
         // UPDATE: Menampilkan siswa yang Unassigned TAPI punya history kehadiran di kelas ini.
         // ==========================================
@@ -82,7 +85,10 @@ return new class extends Migration
                     s.is_active,
                     s.deleted_at,  -- <<< INI WAJIB ADA AGAR WARNA DI MODAL BERUBAH
                     
+                    -- total sesi yang sudah direkam untuk kelas ini
                     COUNT(cs.id) AS total_sessions_recorded,
+                    
+                    -- hitung total kehadiran (present + late)
                     SUM(CASE WHEN ar.status IN ('present', 'late') THEN 1 ELSE 0 END) AS total_present,
                     ROUND(
                         (SUM(CASE WHEN ar.status IN ('present', 'late') THEN 1 ELSE 0 END) / NULLIF(COUNT(cs.id), 0)) * 100
@@ -103,94 +109,7 @@ return new class extends Migration
         ");
 
         // ==========================================
-        // 5. PROCEDURE: Student Global Stats (ADMIN)
-        // ==========================================
-        DB::unprepared('
-            DROP PROCEDURE IF EXISTS p_get_student_global_stats;
-            CREATE PROCEDURE p_get_student_global_stats(
-                OUT total_students INT,
-                OUT total_active INT,
-                OUT total_inactive INT
-            )
-            BEGIN
-                SELECT COUNT(*) INTO total_students FROM students WHERE deleted_at IS NULL;
-                SELECT COUNT(*) INTO total_active FROM students WHERE is_active = 1 AND deleted_at IS NULL;
-                SELECT COUNT(*) INTO total_inactive FROM students WHERE is_active = 0 AND deleted_at IS NULL;
-            END
-        ');
-
-        // ==========================================
-        // 6. PROCEDURE: p_UpdateStudentGrade [UPDATED]
-        // Deskripsi: Update nilai siswa (Written & Speaking) dalam satu transaksi.
-        // Perubahan: Menghapus parameter p_speaking_test_id.
-        // ==========================================
-        DB::unprepared('
-            DROP PROCEDURE IF EXISTS p_UpdateStudentGrade;
-            CREATE PROCEDURE p_UpdateStudentGrade(
-                IN p_session_id INT,
-                IN p_student_id INT,
-                IN p_form_id INT,          
-                -- IN p_speaking_test_id INT,  <-- DIHAPUS
-                
-                IN p_vocab INT,
-                IN p_grammar INT,
-                IN p_listening INT,
-                IN p_reading INT,
-                IN p_spelling INT,
-                
-                IN p_s_content INT,
-                IN p_s_partic INT
-            )
-            BEGIN
-                DECLARE total_speaking INT;
-                
-                DECLARE EXIT HANDLER FOR SQLEXCEPTION
-                BEGIN
-                    ROLLBACK;
-                    RESIGNAL;
-                END;
-
-                START TRANSACTION;
-                
-                -- 1. Simpan Detail Speaking (Langsung pakai Session ID)
-                INSERT INTO speaking_test_results (assessment_session_id, student_id, content_score, participation_score, created_at, updated_at)
-                VALUES (p_session_id, p_student_id, p_s_content, p_s_partic, NOW(), NOW())
-                ON DUPLICATE KEY UPDATE
-                    content_score = p_s_content,
-                    participation_score = p_s_partic,
-                    updated_at = NOW();
-                
-                -- Hitung Total Speaking
-                SET total_speaking = IFNULL(p_s_content, 0) + IFNULL(p_s_partic, 0);
-                IF p_s_content IS NULL AND p_s_partic IS NULL THEN
-                    SET total_speaking = NULL;
-                END IF;
-
-                -- 2. Simpan Nilai Tertulis
-                IF EXISTS (SELECT 1 FROM assessment_forms WHERE student_id = p_student_id AND assessment_session_id = p_session_id) THEN
-                    -- UPDATE Existing Record
-                    UPDATE assessment_forms
-                    SET
-                        vocabulary = p_vocab,
-                        grammar = p_grammar,
-                        listening = p_listening,
-                        reading = p_reading,
-                        spelling = p_spelling,
-                        speaking = total_speaking,
-                        updated_at = NOW()
-                    WHERE student_id = p_student_id AND assessment_session_id = p_session_id;
-                ELSE
-                    -- INSERT New Record
-                    INSERT INTO assessment_forms (student_id, assessment_session_id, vocabulary, grammar, listening, reading, spelling, speaking, created_at, updated_at)
-                    VALUES (p_student_id, p_session_id, p_vocab, p_grammar, p_listening, p_reading, p_spelling, total_speaking, NOW(), NOW());
-                END IF;
-                    
-                COMMIT;
-            END
-        ');
-
-        // ==========================================
-        // 7. PROCEDURE: Create Class [UPDATED]
+        // 4. PROCEDURE: Create Class [UPDATED]
         // Deskripsi: Membuat kelas beserta jadwal ujian otomatis.
         // Perubahan: Menghapus insert ke tabel speaking_tests.
         // ==========================================
@@ -211,14 +130,17 @@ return new class extends Migration
                 OUT p_new_class_id BIGINT
             )
             BEGIN
+            -- simpan guru yg uji speaking
                 DECLARE v_interviewer_id BIGINT;
 
+                -- Error Handling
+                -- Batalkan transaksi jika ada error
                 DECLARE EXIT HANDLER FOR SQLEXCEPTION
                 BEGIN
                     ROLLBACK;
                     RESIGNAL;
                 END;
-
+                -- mulai transaksi
                 START TRANSACTION; 
 
                 -- A. Insert Data Kelas
@@ -243,6 +165,7 @@ return new class extends Migration
                     NOW(), 
                     NOW()
                 FROM JSON_TABLE(
+                -- p_schedules adalah parameter JSON yang berisi array jadwal
                     p_schedules, 
                     '$[*]' COLUMNS (
                         day VARCHAR(20) PATH '$.day',
@@ -251,6 +174,7 @@ return new class extends Migration
                 ) AS jt;
 
                 -- C. Otomatisasi Assessment (Include Speaking Info di sini)
+                -- Tentukan interviewer_id dari local_teacher_id
                 SET v_interviewer_id = p_local_teacher_id;
 
                 -- Mid Term (Insert interviewer default ke session)
@@ -266,7 +190,7 @@ return new class extends Migration
         ");
 
         // ==========================================
-        // 8. PROCEDURE: Teacher Global Stats (ADMIN)
+        // 5. PROCEDURE: Teacher Global Stats (ADMIN)
         // ==========================================
         DB::unprepared('
             DROP PROCEDURE IF EXISTS p_get_teacher_global_stats;
@@ -283,7 +207,7 @@ return new class extends Migration
         ');
 
         // ==========================================
-        // 9. PROCEDURE: Get Session Attendance List (TEACHER & ADMIN)
+        // 6. PROCEDURE: Get Session Attendance List (TEACHER & ADMIN)
         // ==========================================
         DB::unprepared("
             DROP PROCEDURE IF EXISTS p_GetSessionAttendanceList;
@@ -311,26 +235,7 @@ return new class extends Migration
         ");
 
         // ==========================================
-        // 10. PROCEDURE: Upsert Attendance (TEACHER & ADMIN)
-        // ==========================================
-        DB::unprepared("
-            DROP PROCEDURE IF EXISTS p_UpsertAttendance;
-            CREATE PROCEDURE p_UpsertAttendance(
-                IN p_session_id INT,
-                IN p_student_id INT,
-                IN p_status VARCHAR(20)
-            )
-            BEGIN
-                INSERT INTO attendance_records (class_session_id, student_id, status, created_at, updated_at)
-                VALUES (p_session_id, p_student_id, p_status, NOW(), NOW())
-                ON DUPLICATE KEY UPDATE
-                    status = p_status,
-                    updated_at = NOW();
-            END
-        ");
-
-        // ==========================================
-        // 11. PROCEDURE: Get Assessment Sheet (ADMIN) [BARU]
+        // 7. PROCEDURE: Get Assessment Sheet (ADMIN) [BARU]
         // Deskripsi: Mengambil data siswa + nilai untuk lembar penilaian.
         // Menggabungkan siswa aktif di kelas tsb ATAU siswa non-aktif yang sudah punya nilai.
         // ==========================================
@@ -382,7 +287,7 @@ return new class extends Migration
         ");
 
         // ==========================================
-        // 12. PROCEDURE: Save Assessment Batch (ADMIN & TEACHER) [VALIDATED]
+        // 8. PROCEDURE: Save Assessment Batch (ADMIN & TEACHER) [VALIDATED]
         // Deskripsi: Simpan Header & Nilai. 
         // UPDATE: Menolak penyimpanan jika ada siswa yang nilainya tidak lengkap (Kecuali Spelling).
         // ==========================================
@@ -469,6 +374,9 @@ return new class extends Migration
                 WHERE id = p_session_id;
 
                 -- 2. Bulk Upsert ke Table speaking_test_results
+                -- Kita ekstrak content_score dan participation_score dari JSON.
+                -- Simpan ke tabel speaking_test_results.
+                -- Jika sudah ada, update nilainya.
                 INSERT INTO speaking_test_results (assessment_session_id, student_id, content_score, participation_score, created_at, updated_at)
                 SELECT 
                     p_session_id,
@@ -530,7 +438,7 @@ return new class extends Migration
         ");
 
         // ==========================================
-        // 13. PROCEDURE: Save Attendance Batch (TEACHER) (NEW & OPTIMIZED)
+        // 9. PROCEDURE: Save Attendance Batch (TEACHER) (NEW & OPTIMIZED)
         // Deskripsi: Simpan Absensi Banyak Siswa SEKALIGUS (Batch) via JSON.
         // ==========================================
         DB::unprepared("
@@ -563,6 +471,7 @@ return new class extends Migration
                         status VARCHAR(20) PATH '$.status'
                     )
                 ) AS jt
+                 -- dilihat aoakah duplikat datanya
                 ON DUPLICATE KEY UPDATE
                     status = VALUES(status),
                     updated_at = NOW();
@@ -575,15 +484,11 @@ return new class extends Migration
     public function down(): void
     {
         DB::unprepared('DROP PROCEDURE IF EXISTS p_CreateClass'); 
-        DB::unprepared('DROP PROCEDURE IF EXISTS p_UpdateStudentGrade');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_GetDashboardStats');
-        DB::unprepared('DROP PROCEDURE IF EXISTS p_GetAttendanceStats');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_get_attendance_summary');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_get_class_attendance_stats');
-        DB::unprepared('DROP PROCEDURE IF EXISTS p_get_student_global_stats');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_get_teacher_global_stats');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_GetSessionAttendanceList');
-        DB::unprepared('DROP PROCEDURE IF EXISTS p_UpsertAttendance');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_GetAssessmentSheet');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_SaveAssessmentBatch');
         DB::unprepared('DROP PROCEDURE IF EXISTS p_SaveAttendanceBatch');
