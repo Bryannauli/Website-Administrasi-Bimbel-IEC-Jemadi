@@ -41,6 +41,7 @@
             <!-- MENU DESKTOP -->
             <div class="hidden md:flex items-center space-x-10">
 
+
                 @auth
                     <a href="{{ url('/dashboard') }}"
                        class="bg-brand-blue text-white px-6 py-2 rounded-lg font-bold">
@@ -76,7 +77,7 @@
                             Manage students, classes, and attendance efficiently with a secure and centralized web-based system.
                         </p>
                         <div>
-                            <a href="#" class="inline-block bg-brand-blue hover:bg-opacity-90 text-white font-bold py-3 px-10 rounded-lg shadow-lg text-lg transition duration-300">
+                            <a href="{{ route('login') }}" class="inline-block bg-brand-blue hover:bg-opacity-90 text-white font-bold py-3 px-10 rounded-lg shadow-lg text-lg transition duration-300">
                                 Get Started
                             </a>
                         </div>
