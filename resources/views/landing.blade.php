@@ -40,9 +40,6 @@
 
             <!-- MENU DESKTOP -->
             <div class="hidden md:flex items-center space-x-10">
-                <a href="#" class="font-medium text-gray-700 hover:text-brand-blue">Home</a>
-                <a href="#" class="font-medium text-gray-700 hover:text-brand-blue">About Us</a>
-                <a href="#" class="font-medium text-gray-700 hover:text-brand-blue">Services</a>
 
                 @auth
                     <a href="{{ url('/dashboard') }}"
@@ -60,43 +57,6 @@
                     </a> -->
                 @endauth
             </div>
-
-            <!-- HAMBURGER -->
-            <button @click="open = !open" class="md:hidden">
-                <svg class="w-7 h-7 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M4 6h16M4 12h16M4 18h16"/>
-                </svg>
-            </button>
-
-            <!-- MENU MOBILE -->
-            <div x-show="open"
-                 x-transition
-                 @click.outside="open = false"
-                 class="absolute top-16 left-0 w-full bg-gradient-to-br from-red-100 to-blue-100 shadow-lg md:hidden">
-                <div class="flex flex-col p-6 space-y-4">
-                    <a href="#" class="font-medium text-gray-700">Home</a>
-                    <a href="#" class="font-medium text-gray-700">About Us</a>
-                    <a href="#" class="font-medium text-gray-700">Services</a>
-
-                    @auth
-                        <a href="{{ url('/dashboard') }}"
-                           class="bg-brand-blue text-white text-center py-2 rounded-lg font-bold">
-                            Dashboard
-                        </a>
-                    @else
-                        <a href="{{ route('login') }}"
-                           class="bg-brand-blue text-white text-center py-2 rounded-lg font-bold">
-                            Login
-                        </a>
-                        <!-- <a href="{{ route('register') }}"
-                           class="border border-brand-blue text-brand-blue text-center py-2 rounded-lg font-bold">
-                            Register
-                        </a> -->
-                    @endauth
-                </div>
-            </div>
-
         </nav>
     </div>
 </header>
